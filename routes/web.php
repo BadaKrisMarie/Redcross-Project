@@ -10,6 +10,8 @@ use App\Http\Controllers\Volunteer\CommunicationController;
 use App\Http\Controllers\WebAuthn\WebAuthnRegisterController;
 use App\Http\Controllers\WebAuthn\WebAuthnAttendanceController;
 use App\Http\Controllers\Admin\ActivityController;
+use App\Http\Controllers\Admin\AdminController;
+use App\Http\Controllers\Admin\AdminProfileController;
 use App\Http\Controllers\Admin\AttendanceController as AdminAttendanceController;
 use App\Http\Controllers\Admin\CommunicationController as AdminCommunicationController;
 use Illuminate\Foundation\Application;
@@ -31,12 +33,11 @@ Route::get('/about', function () {
     return Inertia::render('About');
 })->name('about');
 
-// ── ADDED: Contact page route ──────────────────────────────────────────────────
 Route::get('/contact', function () {
     return Inertia::render('Contact');
 })->name('contact');
 
-// ─── Notification Routes (session-based auth) ─────────────────────────────────
+// ─── Notification Routes ───────────────────────────────────────────────────────
 Route::middleware('auth')->group(function () {
 
     Route::get('/volunteer/notifications', function (Request $request) {
@@ -88,21 +89,16 @@ Route::middleware('auth')->group(function () {
 
 // ─── Admin Routes ─────────────────────────────────────────────────────────────
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
-    Route::get('/dashboard', function () {
-        $pendingCount    = \App\Models\User::role('volunteer')->where('status', 'pending')->count();
-        $totalVolunteers = \App\Models\User::role('volunteer')->where('status', 'approved')->count();
-        $activeToday     = \App\Models\Attendance::whereDate('date', today())->count();
-        return Inertia::render('Admin/Dashboard', [
-            'pendingCount'    => $pendingCount,
-            'totalVolunteers' => $totalVolunteers,
-            'activeToday'     => $activeToday,
-        ]);
-    })->name('dashboard');
 
+    Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard');
+
+    // Volunteers
     Route::get('/volunteers', [VolunteerController::class, 'index'])->name('volunteers');
+    Route::get('/volunteers/{id}', [VolunteerController::class, 'show'])->name('volunteers.show');
     Route::patch('/volunteers/{id}/approve', [VolunteerController::class, 'approve'])->name('volunteers.approve');
     Route::patch('/volunteers/{id}/reject', [VolunteerController::class, 'reject'])->name('volunteers.reject');
 
+    // Activities
     Route::get('/activities', [ActivityController::class, 'index'])->name('activities.index');
     Route::get('/activities/create', [ActivityController::class, 'create'])->name('activities.create');
     Route::post('/activities', [ActivityController::class, 'store'])->name('activities.store');
@@ -110,13 +106,20 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::patch('/activities/{activity}', [ActivityController::class, 'update'])->name('activities.update');
     Route::delete('/activities/{activity}', [ActivityController::class, 'destroy'])->name('activities.destroy');
 
+    // Attendance
     Route::get('/attendance', [AdminAttendanceController::class, 'index'])->name('attendance.index');
     Route::get('/attendance/export-pdf', [AdminAttendanceController::class, 'exportPdf'])->name('attendance.export.pdf');
 
+    // Communication
     Route::get('/communication', [AdminCommunicationController::class, 'index'])->name('communication');
     Route::post('/communication/reply/{sentEmail}', [AdminCommunicationController::class, 'reply'])->name('communication.reply');
     Route::post('/communication/announce', [AdminCommunicationController::class, 'announce'])->name('communication.announce');
     Route::delete('/communication/announcement/{announcement}', [AdminCommunicationController::class, 'deleteAnnouncement'])->name('communication.announcement.delete');
+
+    // Profile & Password
+    Route::get('/profile',           [AdminProfileController::class, 'edit'])->name('profile');
+    Route::patch('/profile',         [AdminProfileController::class, 'update'])->name('profile.update');
+    Route::post('/profile/password', [AdminProfileController::class, 'changePassword'])->name('profile.password');
 });
 
 // ─── Volunteer Routes ─────────────────────────────────────────────────────────

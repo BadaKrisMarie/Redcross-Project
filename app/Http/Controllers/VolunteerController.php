@@ -14,10 +14,47 @@ class VolunteerController extends Controller
 {
     public function index()
     {
-        $volunteers = User::role('volunteer')->get();
+        $volunteers = User::role('volunteer')
+            ->get()
+            ->map(fn($v) => [
+                'id'         => $v->id,
+                'name'       => $v->name,
+                'email'      => $v->email,
+                'status'     => $v->status,
+                'created_at' => $v->created_at,
+                'photo'      => $v->photo ? asset('storage/' . $v->photo) : null,
+            ]);
 
         return Inertia::render('Admin/Volunteers', [
             'volunteers' => $volunteers,
+        ]);
+    }
+
+    public function show($id)
+    {
+        $volunteer = User::findOrFail($id);
+
+        $totalHours      = \App\Models\Attendance::where('user_id', $volunteer->id)->sum('hours_rendered');
+        $attendanceCount = \App\Models\Attendance::where('user_id', $volunteer->id)->count();
+
+        return Inertia::render('Admin/Volunteers/Show', [
+            'volunteer' => [
+                'id'               => $volunteer->id,
+                'name'             => $volunteer->name,
+                'email'            => $volunteer->email,
+                'status'           => $volunteer->status,
+                'phone'            => $volunteer->phone    ?? null,
+                'address'          => $volunteer->address  ?? null,
+                'birthday'         => $volunteer->birthday ?? null,
+                'gender'           => $volunteer->gender   ?? null,
+                'created_at'       => $volunteer->created_at,
+                'photo'            => $volunteer->photo
+                                        ? asset('storage/' . $volunteer->photo)
+                                        : null,
+                'total_hours'      => $totalHours,
+                'attendance_count' => $attendanceCount,
+                'documents_count'  => 0,
+            ],
         ]);
     }
 
@@ -35,7 +72,6 @@ class VolunteerController extends Controller
             'updated_at' => now(),
         ]);
 
-        // Send Gmail notification
         Mail::to($user->email)->send(new VolunteerApproved($user));
 
         return redirect()->route('admin.volunteers')->with('success', 'Volunteer approved successfully.');
@@ -55,7 +91,6 @@ class VolunteerController extends Controller
             'updated_at' => now(),
         ]);
 
-        // Send Gmail notification
         Mail::to($user->email)->send(new VolunteerRejected($user));
 
         return redirect()->route('admin.volunteers')->with('success', 'Volunteer rejected.');

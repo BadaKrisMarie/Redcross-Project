@@ -12,9 +12,20 @@ export default function Volunteers({ volunteers }) {
         router.patch(route('admin.volunteers.reject', id));
     };
 
-    const pending = volunteers.filter(v => v.status === 'pending');
+    const viewProfile = (id) => {
+        router.visit(route('admin.volunteers.show', id));
+    };
+
+    const pending  = volunteers.filter(v => v.status === 'pending');
     const approved = volunteers.filter(v => v.status === 'approved');
     const rejected = volunteers.filter(v => v.status === 'rejected');
+
+    const btnView = {
+        background: '#1d4ed8', color: 'white',
+        border: 'none', padding: '7px 16px',
+        borderRadius: '4px', fontSize: '12px',
+        fontWeight: '600', cursor: 'pointer',
+    };
 
     return (
         <>
@@ -83,50 +94,36 @@ export default function Volunteers({ volunteers }) {
                     {/* Stats */}
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginBottom: '32px' }}>
                         {[
-                            { label: 'Pending Approval', value: pending.length, color: '#f59e0b' },
-                            { label: 'Approved', value: approved.length, color: '#16a34a' },
-                            { label: 'Rejected', value: rejected.length, color: '#DC2626' },
+                            { label: 'Pending Approval', value: pending.length,  color: '#f59e0b' },
+                            { label: 'Approved',         value: approved.length, color: '#16a34a' },
+                            { label: 'Rejected',         value: rejected.length, color: '#DC2626' },
                         ].map(({ label, value, color }) => (
                             <div key={label} style={{
                                 background: 'white', padding: '24px',
                                 borderRadius: '8px', border: '1px solid #e8e8e8'
                             }}>
-                                <div style={{
-                                    fontFamily: 'Oswald, sans-serif',
-                                    fontSize: '36px', color, fontWeight: '600'
-                                }}>{value}</div>
+                                <div style={{ fontFamily: 'Oswald, sans-serif', fontSize: '36px', color, fontWeight: '600' }}>{value}</div>
                                 <div style={{ fontSize: '13px', color: '#888', marginTop: '4px' }}>{label}</div>
                             </div>
                         ))}
                     </div>
 
-                    {/* Pending Table */}
+                    {/* ── PENDING TABLE ── */}
                     <div style={{ background: 'white', borderRadius: '8px', border: '1px solid #e8e8e8', marginBottom: '24px' }}>
-                        <div style={{
-                            padding: '20px 24px', borderBottom: '1px solid #f0f0f0',
-                            display: 'flex', alignItems: 'center', gap: '10px'
-                        }}>
+                        <div style={{ padding: '20px 24px', borderBottom: '1px solid #f0f0f0', display: 'flex', alignItems: 'center', gap: '10px' }}>
                             <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#f59e0b' }}></div>
-                            <span style={{
-                                fontFamily: 'Oswald, sans-serif', fontSize: '16px',
-                                fontWeight: '600', color: '#111', textTransform: 'uppercase'
-                            }}>Pending Approval ({pending.length})</span>
+                            <span style={{ fontFamily: 'Oswald, sans-serif', fontSize: '16px', fontWeight: '600', color: '#111', textTransform: 'uppercase' }}>
+                                Pending Approval ({pending.length})
+                            </span>
                         </div>
                         {pending.length === 0 ? (
-                            <div style={{ padding: '32px', textAlign: 'center', color: '#aaa', fontSize: '13px' }}>
-                                No pending volunteers
-                            </div>
+                            <div style={{ padding: '32px', textAlign: 'center', color: '#aaa', fontSize: '13px' }}>No pending volunteers</div>
                         ) : (
                             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                                 <thead>
                                     <tr style={{ background: '#fafafa' }}>
                                         {['Name', 'Email', 'Registered', 'Actions'].map(h => (
-                                            <th key={h} style={{
-                                                padding: '12px 24px', textAlign: 'left',
-                                                fontSize: '11px', fontWeight: '600',
-                                                color: '#888', textTransform: 'uppercase',
-                                                letterSpacing: '1px'
-                                            }}>{h}</th>
+                                            <th key={h} style={{ padding: '12px 24px', textAlign: 'left', fontSize: '11px', fontWeight: '600', color: '#888', textTransform: 'uppercase', letterSpacing: '1px' }}>{h}</th>
                                         ))}
                                     </tr>
                                 </thead>
@@ -140,24 +137,9 @@ export default function Volunteers({ volunteers }) {
                                             </td>
                                             <td style={{ padding: '14px 24px' }}>
                                                 <div style={{ display: 'flex', gap: '8px' }}>
-                                                    <button
-                                                        onClick={() => approve(v.id)}
-                                                        style={{
-                                                            background: '#16a34a', color: 'white',
-                                                            border: 'none', padding: '7px 16px',
-                                                            borderRadius: '4px', fontSize: '12px',
-                                                            fontWeight: '600', cursor: 'pointer'
-                                                        }}
-                                                    >Approve</button>
-                                                    <button
-                                                        onClick={() => reject(v.id)}
-                                                        style={{
-                                                            background: 'white', color: '#DC2626',
-                                                            border: '1px solid #DC2626', padding: '7px 16px',
-                                                            borderRadius: '4px', fontSize: '12px',
-                                                            fontWeight: '600', cursor: 'pointer'
-                                                        }}
-                                                    >Reject</button>
+                                                    <button onClick={() => viewProfile(v.id)} style={btnView}>View Profile</button>
+                                                    <button onClick={() => approve(v.id)} style={{ background: '#16a34a', color: 'white', border: 'none', padding: '7px 16px', borderRadius: '4px', fontSize: '12px', fontWeight: '600', cursor: 'pointer' }}>Approve</button>
+                                                    <button onClick={() => reject(v.id)}  style={{ background: 'white', color: '#DC2626', border: '1px solid #DC2626', padding: '7px 16px', borderRadius: '4px', fontSize: '12px', fontWeight: '600', cursor: 'pointer' }}>Reject</button>
                                                 </div>
                                             </td>
                                         </tr>
@@ -167,33 +149,22 @@ export default function Volunteers({ volunteers }) {
                         )}
                     </div>
 
-                    {/* Approved Table */}
+                    {/* ── APPROVED TABLE ── */}
                     <div style={{ background: 'white', borderRadius: '8px', border: '1px solid #e8e8e8', marginBottom: '24px' }}>
-                        <div style={{
-                            padding: '20px 24px', borderBottom: '1px solid #f0f0f0',
-                            display: 'flex', alignItems: 'center', gap: '10px'
-                        }}>
+                        <div style={{ padding: '20px 24px', borderBottom: '1px solid #f0f0f0', display: 'flex', alignItems: 'center', gap: '10px' }}>
                             <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#16a34a' }}></div>
-                            <span style={{
-                                fontFamily: 'Oswald, sans-serif', fontSize: '16px',
-                                fontWeight: '600', color: '#111', textTransform: 'uppercase'
-                            }}>Approved Volunteers ({approved.length})</span>
+                            <span style={{ fontFamily: 'Oswald, sans-serif', fontSize: '16px', fontWeight: '600', color: '#111', textTransform: 'uppercase' }}>
+                                Approved Volunteers ({approved.length})
+                            </span>
                         </div>
                         {approved.length === 0 ? (
-                            <div style={{ padding: '32px', textAlign: 'center', color: '#aaa', fontSize: '13px' }}>
-                                No approved volunteers yet
-                            </div>
+                            <div style={{ padding: '32px', textAlign: 'center', color: '#aaa', fontSize: '13px' }}>No approved volunteers yet</div>
                         ) : (
                             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                                 <thead>
                                     <tr style={{ background: '#fafafa' }}>
                                         {['Name', 'Email', 'Registered', 'Actions'].map(h => (
-                                            <th key={h} style={{
-                                                padding: '12px 24px', textAlign: 'left',
-                                                fontSize: '11px', fontWeight: '600',
-                                                color: '#888', textTransform: 'uppercase',
-                                                letterSpacing: '1px'
-                                            }}>{h}</th>
+                                            <th key={h} style={{ padding: '12px 24px', textAlign: 'left', fontSize: '11px', fontWeight: '600', color: '#888', textTransform: 'uppercase', letterSpacing: '1px' }}>{h}</th>
                                         ))}
                                     </tr>
                                 </thead>
@@ -206,15 +177,10 @@ export default function Volunteers({ volunteers }) {
                                                 {new Date(v.created_at).toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' })}
                                             </td>
                                             <td style={{ padding: '14px 24px' }}>
-                                                <button
-                                                    onClick={() => reject(v.id)}
-                                                    style={{
-                                                        background: 'white', color: '#DC2626',
-                                                        border: '1px solid #DC2626', padding: '7px 16px',
-                                                        borderRadius: '4px', fontSize: '12px',
-                                                        fontWeight: '600', cursor: 'pointer'
-                                                    }}
-                                                >Revoke</button>
+                                                <div style={{ display: 'flex', gap: '8px' }}>
+                                                    <button onClick={() => viewProfile(v.id)} style={btnView}>View Profile</button>
+                                                    <button onClick={() => reject(v.id)} style={{ background: 'white', color: '#DC2626', border: '1px solid #DC2626', padding: '7px 16px', borderRadius: '4px', fontSize: '12px', fontWeight: '600', cursor: 'pointer' }}>Revoke</button>
+                                                </div>
                                             </td>
                                         </tr>
                                     ))}
@@ -223,33 +189,22 @@ export default function Volunteers({ volunteers }) {
                         )}
                     </div>
 
-                    {/* Rejected Table */}
+                    {/* ── REJECTED TABLE ── */}
                     <div style={{ background: 'white', borderRadius: '8px', border: '1px solid #e8e8e8' }}>
-                        <div style={{
-                            padding: '20px 24px', borderBottom: '1px solid #f0f0f0',
-                            display: 'flex', alignItems: 'center', gap: '10px'
-                        }}>
+                        <div style={{ padding: '20px 24px', borderBottom: '1px solid #f0f0f0', display: 'flex', alignItems: 'center', gap: '10px' }}>
                             <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#DC2626' }}></div>
-                            <span style={{
-                                fontFamily: 'Oswald, sans-serif', fontSize: '16px',
-                                fontWeight: '600', color: '#111', textTransform: 'uppercase'
-                            }}>Rejected Volunteers ({rejected.length})</span>
+                            <span style={{ fontFamily: 'Oswald, sans-serif', fontSize: '16px', fontWeight: '600', color: '#111', textTransform: 'uppercase' }}>
+                                Rejected Volunteers ({rejected.length})
+                            </span>
                         </div>
                         {rejected.length === 0 ? (
-                            <div style={{ padding: '32px', textAlign: 'center', color: '#aaa', fontSize: '13px' }}>
-                                No rejected volunteers
-                            </div>
+                            <div style={{ padding: '32px', textAlign: 'center', color: '#aaa', fontSize: '13px' }}>No rejected volunteers</div>
                         ) : (
                             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                                 <thead>
                                     <tr style={{ background: '#fafafa' }}>
                                         {['Name', 'Email', 'Registered', 'Actions'].map(h => (
-                                            <th key={h} style={{
-                                                padding: '12px 24px', textAlign: 'left',
-                                                fontSize: '11px', fontWeight: '600',
-                                                color: '#888', textTransform: 'uppercase',
-                                                letterSpacing: '1px'
-                                            }}>{h}</th>
+                                            <th key={h} style={{ padding: '12px 24px', textAlign: 'left', fontSize: '11px', fontWeight: '600', color: '#888', textTransform: 'uppercase', letterSpacing: '1px' }}>{h}</th>
                                         ))}
                                     </tr>
                                 </thead>
@@ -262,15 +217,10 @@ export default function Volunteers({ volunteers }) {
                                                 {new Date(v.created_at).toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' })}
                                             </td>
                                             <td style={{ padding: '14px 24px' }}>
-                                                <button
-                                                    onClick={() => approve(v.id)}
-                                                    style={{
-                                                        background: '#16a34a', color: 'white',
-                                                        border: 'none', padding: '7px 16px',
-                                                        borderRadius: '4px', fontSize: '12px',
-                                                        fontWeight: '600', cursor: 'pointer'
-                                                    }}
-                                                >Re-approve</button>
+                                                <div style={{ display: 'flex', gap: '8px' }}>
+                                                    <button onClick={() => viewProfile(v.id)} style={btnView}>View Profile</button>
+                                                    <button onClick={() => approve(v.id)} style={{ background: '#16a34a', color: 'white', border: 'none', padding: '7px 16px', borderRadius: '4px', fontSize: '12px', fontWeight: '600', cursor: 'pointer' }}>Re-approve</button>
+                                                </div>
                                             </td>
                                         </tr>
                                     ))}

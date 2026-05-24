@@ -392,11 +392,7 @@ export default function VolunteerDashboard({ auth, totalHours, totalDays, monthD
                                             onMouseLeave={e => e.currentTarget.style.background = 'none'}>
                                             Edit Profile
                                         </Link>
-                                        <button onClick={handleLogout} style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%', padding: '11px 16px', background: 'none', border: 'none', fontSize: '13px', color: '#CC0000', cursor: 'pointer', textAlign: 'left' }}
-                                            onMouseEnter={e => e.currentTarget.style.background = '#FFF5F5'}
-                                            onMouseLeave={e => e.currentTarget.style.background = 'none'}>
-                                            Log out
-                                        </button>
+                                        
                                     </div>
                                 )}
                             </div>

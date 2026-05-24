@@ -4,7 +4,6 @@ import { useState } from 'react';
 
 export default function VolunteerDocuments({ auth, documents }) {
     const volunteer = auth.user;
-    // ✅ ADDED: photo_url support
     const avatarUrl = volunteer?.photo_url || null;
     const initials = volunteer?.name
         ? volunteer.name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
@@ -12,6 +11,7 @@ export default function VolunteerDocuments({ auth, documents }) {
 
     const [showUpload, setShowUpload] = useState(false);
     const [filterType, setFilterType] = useState('all');
+    const [deleteModal, setDeleteModal] = useState({ open: false, id: null });
 
     const { data, setData, post, processing, reset, errors } = useForm({
         type: 'nbi',
@@ -27,18 +27,19 @@ export default function VolunteerDocuments({ auth, documents }) {
         barangay: { label: 'Barangay Clearance',    icon: '🏛️', color: '#F59E0B' },
     };
 
+    // ✅ CHANGED: "pending" → "submitted" (visible agad sa admin, walang approval needed)
     const statusStyle = {
-        pending:  { background: '#FEF9C3', color: '#854D0E', label: 'Pending Review' },
-        approved: { background: '#DCFCE7', color: '#166534', label: 'Approved' },
-        rejected: { background: '#FEE2E2', color: '#991B1B', label: 'Rejected' },
+        submitted: { background: '#E6F1FB', color: '#185FA5', label: 'Submitted' },
+        approved:  { background: '#DCFCE7', color: '#166534', label: 'Approved' },
+        rejected:  { background: '#FEE2E2', color: '#991B1B', label: 'Rejected' },
     };
 
     const sidebarLinks = [
-        { key: 'dashboard',     label: 'Dashboard',    href: route('volunteer.dashboard'),     icon: <GridIcon /> },
-        { key: 'schedule',      label: 'Schedule',     href: route('volunteer.schedule'),      icon: <CalIcon /> },
-        { key: 'communication', label: 'Communication',href: route('volunteer.communication'), icon: <ChatIcon /> },
-        { key: 'attendance',    label: 'Attendance',   href: route('volunteer.attendance'),    icon: <CheckIcon /> },
-        { key: 'documents',     label: '201',          href: route('volunteer.documents'),     icon: <FolderIcon /> },
+        { key: 'dashboard',     label: 'Dashboard',     href: route('volunteer.dashboard'),     icon: <GridIcon /> },
+        { key: 'schedule',      label: 'Schedule',      href: route('volunteer.schedule'),      icon: <CalIcon /> },
+        { key: 'communication', label: 'Communication', href: route('volunteer.communication'), icon: <ChatIcon /> },
+        { key: 'attendance',    label: 'Attendance',    href: route('volunteer.attendance'),    icon: <CheckIcon /> },
+        { key: 'documents',     label: '201',           href: route('volunteer.documents'),     icon: <FolderIcon /> },
     ];
 
     const handleLogout = () => router.post(route('logout'));
@@ -52,17 +53,24 @@ export default function VolunteerDocuments({ auth, documents }) {
     };
 
     const handleDelete = (id) => {
-        if (confirm('Delete this document?')) {
-            router.delete(route('volunteer.documents.destroy', id));
-        }
+        setDeleteModal({ open: true, id });
+    };
+
+    const confirmDelete = () => {
+        router.delete(route('volunteer.documents.destroy', deleteModal.id));
+        setDeleteModal({ open: false, id: null });
+    };
+
+    const cancelDelete = () => {
+        setDeleteModal({ open: false, id: null });
     };
 
     const filtered = filterType === 'all' ? docs : docs.filter(d => d.type === filterType);
 
     const counts = {
-        all: docs.length,
-        nbi: docs.filter(d => d.type === 'nbi').length,
-        medical: docs.filter(d => d.type === 'medical').length,
+        all:      docs.length,
+        nbi:      docs.filter(d => d.type === 'nbi').length,
+        medical:  docs.filter(d => d.type === 'medical').length,
         training: docs.filter(d => d.type === 'training').length,
         barangay: docs.filter(d => d.type === 'barangay').length,
     };
@@ -71,6 +79,53 @@ export default function VolunteerDocuments({ auth, documents }) {
         <>
             <Head title="201 - Documents" />
             <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
+            {/* ── CUSTOM DELETE MODAL ── */}
+            {deleteModal.open && (
+                <div style={{
+                    position: 'fixed', inset: 0, zIndex: 1000,
+                    background: 'rgba(0,0,0,0.45)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                    <div style={{
+                        background: 'white', borderRadius: '12px',
+                        padding: '32px 28px', width: '380px', maxWidth: '90vw',
+                        boxShadow: '0 20px 60px rgba(0,0,0,0.15)',
+                    }}>
+                        <div style={{
+                            width: '48px', height: '48px', borderRadius: '50%',
+                            background: '#FEE2E2', display: 'flex', alignItems: 'center',
+                            justifyContent: 'center', margin: '0 auto 16px', fontSize: '22px',
+                        }}>🗑️</div>
+                        <h2 style={{ fontSize: '16px', fontWeight: '700', color: '#111', textAlign: 'center', margin: '0 0 8px' }}>
+                            Delete Document
+                        </h2>
+                        <p style={{ fontSize: '13px', color: '#6B7280', textAlign: 'center', margin: '0 0 24px', lineHeight: '1.6' }}>
+                            Are you sure you want to delete this document? This action cannot be undone.
+                        </p>
+                        <div style={{ display: 'flex', gap: '10px' }}>
+                            <button
+                                onClick={cancelDelete}
+                                style={{
+                                    flex: 1, padding: '10px', borderRadius: '8px',
+                                    border: '1px solid #E5E7EB', background: 'white',
+                                    color: '#374151', fontSize: '13px', fontWeight: '600',
+                                    cursor: 'pointer',
+                                }}
+                            >Cancel</button>
+                            <button
+                                onClick={confirmDelete}
+                                style={{
+                                    flex: 1, padding: '10px', borderRadius: '8px',
+                                    border: 'none', background: '#DC2626',
+                                    color: 'white', fontSize: '13px', fontWeight: '600',
+                                    cursor: 'pointer',
+                                }}
+                            >Yes, delete</button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <div style={{ display: 'flex', minHeight: '100vh', fontFamily: "'Inter', sans-serif", background: '#F3F4F6' }}>
 
@@ -141,18 +196,13 @@ export default function VolunteerDocuments({ auth, documents }) {
                                 <span style={{ fontSize: '16px', lineHeight: 1 }}>+</span>
                                 Upload Document
                             </button>
-
-                            {/* ✅ Avatar — plain div, not clickable */}
-                            <div
-                                title={volunteer?.name}
-                                style={{
-                                    width: '32px', height: '32px', borderRadius: '50%',
-                                    background: avatarUrl ? 'transparent' : '#CC0000',
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    color: 'white', fontSize: '13px', fontWeight: '700',
-                                    flexShrink: 0, overflow: 'hidden',
-                                }}
-                            >
+                            <div title={volunteer?.name} style={{
+                                width: '32px', height: '32px', borderRadius: '50%',
+                                background: avatarUrl ? 'transparent' : '#CC0000',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                color: 'white', fontSize: '13px', fontWeight: '700',
+                                flexShrink: 0, overflow: 'hidden',
+                            }}>
                                 {avatarUrl
                                     ? <img src={avatarUrl} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
                                     : initials
@@ -230,8 +280,12 @@ export default function VolunteerDocuments({ auth, documents }) {
                                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
                                             <span style={{ fontSize: '22px' }}>{val.icon}</span>
                                             {hasDoc && (
-                                                <span style={{ ...statusStyle[docOfType?.status], padding: '2px 8px', borderRadius: '20px', fontSize: '10px', fontWeight: '600' }}>
-                                                    {statusStyle[docOfType?.status]?.label}
+                                                <span style={{
+                                                    // ✅ CHANGED: fallback to 'submitted' style kung hindi pa na-update ang existing records
+                                                    ...(statusStyle[docOfType?.status] ?? statusStyle['submitted']),
+                                                    padding: '2px 8px', borderRadius: '20px', fontSize: '10px', fontWeight: '600'
+                                                }}>
+                                                    {statusStyle[docOfType?.status]?.label ?? 'Submitted'}
                                                 </span>
                                             )}
                                         </div>
@@ -272,7 +326,7 @@ export default function VolunteerDocuments({ auth, documents }) {
                         ) : (
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '14px' }}>
                                 {filtered.map(doc => (
-                                    <div key={doc.id} style={{ background: 'white', borderRadius: '12px', border: '1px solid #E5E7EB', padding: '18px', transition: 'box-shadow 0.15s' }}>
+                                    <div key={doc.id} style={{ background: 'white', borderRadius: '12px', border: '1px solid #E5E7EB', padding: '18px' }}>
                                         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '12px' }}>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                                                 <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: `${docTypes[doc.type]?.color}15`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', flexShrink: 0 }}>
@@ -286,8 +340,12 @@ export default function VolunteerDocuments({ auth, documents }) {
                                             <button onClick={() => handleDelete(doc.id)} style={{ background: '#FEF2F2', border: 'none', borderRadius: '4px', padding: '4px 6px', cursor: 'pointer', color: '#DC2626', fontSize: '12px', flexShrink: 0 }}>✕</button>
                                         </div>
                                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                            <span style={{ ...statusStyle[doc.status], padding: '3px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: '600' }}>
-                                                {statusStyle[doc.status]?.label}
+                                            <span style={{
+                                                // ✅ CHANGED: fallback to 'submitted' style para sa existing records na may 'pending' status
+                                                ...(statusStyle[doc.status] ?? statusStyle['submitted']),
+                                                padding: '3px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: '600'
+                                            }}>
+                                                {statusStyle[doc.status]?.label ?? 'Submitted'}
                                             </span>
                                             <span style={{ fontSize: '11px', color: '#9CA3AF' }}>
                                                 {new Date(doc.created_at).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}

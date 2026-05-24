@@ -4,7 +4,6 @@ import { useState } from 'react';
 
 export default function VolunteerCommunication({ auth, sentEmails, announcements }) {
     const volunteer = auth.user;
-    // ✅ ADDED: photo_url support
     const avatarUrl = volunteer?.photo_url || null;
     const initials = volunteer?.name
         ? volunteer.name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
@@ -13,6 +12,8 @@ export default function VolunteerCommunication({ auth, sentEmails, announcements
     const emails = sentEmails || [];
     const announces = announcements || [];
     const [activeTab, setActiveTab] = useState('compose');
+    const [selectedInbox, setSelectedInbox] = useState(null);
+    const [selectedAnnouncement, setSelectedAnnouncement] = useState(null);
 
     const { data, setData, post, processing, reset, errors } = useForm({
         to: 'rizalmuntinlupa@redcross.org.ph',
@@ -51,6 +52,152 @@ export default function VolunteerCommunication({ auth, sentEmails, announcements
         <>
             <Head title="Communication" />
             <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
+            {/* ── INBOX MODAL ── */}
+            {selectedInbox !== null && (
+                <div
+                    onClick={() => setSelectedInbox(null)}
+                    style={{
+                        position: 'fixed', inset: 0, zIndex: 200,
+                        background: 'rgba(0,0,0,0.45)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        padding: '24px',
+                    }}
+                >
+                    <div
+                        onClick={e => e.stopPropagation()}
+                        style={{
+                            background: 'white', borderRadius: '14px',
+                            width: '100%', maxWidth: '560px',
+                            maxHeight: '80vh', overflowY: 'auto',
+                            boxShadow: '0 24px 60px rgba(0,0,0,0.2)',
+                        }}
+                    >
+                        {/* Modal header */}
+                        <div style={{
+                            padding: '20px 24px 16px',
+                            borderBottom: '1px solid #F3F4F6',
+                            display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px',
+                        }}>
+                            <div>
+                                <div style={{ fontSize: '16px', fontWeight: '700', color: '#111', marginBottom: '4px' }}>
+                                    {selectedInbox.subject}
+                                </div>
+                                <div style={{ fontSize: '12px', color: '#9CA3AF' }}>
+                                    {selectedInbox.replied_at
+                                        ? new Date(selectedInbox.replied_at).toLocaleDateString('en-PH', { month: 'long', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+                                        : ''}
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => setSelectedInbox(null)}
+                                style={{
+                                    background: '#F3F4F6', border: 'none', borderRadius: '8px',
+                                    width: '32px', height: '32px', cursor: 'pointer',
+                                    fontSize: '16px', color: '#6B7280', flexShrink: 0,
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                }}
+                            >✕</button>
+                        </div>
+
+                        {/* Your original message */}
+                        <div style={{ padding: '20px 24px' }}>
+                            <div style={{ fontSize: '11px', fontWeight: '600', color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px' }}>Your Message</div>
+                            <div style={{
+                                background: '#F9FAFB', border: '1px solid #E5E7EB',
+                                borderRadius: '10px', padding: '14px 16px',
+                                fontSize: '13px', color: '#374151', lineHeight: '1.7',
+                            }}>
+                                {selectedInbox.message}
+                            </div>
+                        </div>
+
+                        {/* Admin reply */}
+                        <div style={{ padding: '0 24px 24px' }}>
+                            <div style={{ fontSize: '11px', fontWeight: '600', color: '#CC0000', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px' }}>Admin Reply</div>
+                            <div style={{
+                                background: '#FEF2F2', border: '1px solid #FECACA',
+                                borderRadius: '10px', padding: '14px 16px',
+                            }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                                    <div style={{
+                                        width: '28px', height: '28px', borderRadius: '50%',
+                                        background: '#CC0000', display: 'flex', alignItems: 'center',
+                                        justifyContent: 'center', color: 'white', fontSize: '11px', fontWeight: '700',
+                                    }}>A</div>
+                                    <div>
+                                        <div style={{ fontSize: '12px', fontWeight: '600', color: '#CC0000' }}>Admin</div>
+                                        <div style={{ fontSize: '11px', color: '#9CA3AF' }}>Rizal Chapter · Muntinlupa</div>
+                                    </div>
+                                </div>
+                                <div style={{ fontSize: '13px', color: '#374151', lineHeight: '1.7' }}>{selectedInbox.reply}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ── ANNOUNCEMENT MODAL ── */}
+            {selectedAnnouncement !== null && (
+                <div
+                    onClick={() => setSelectedAnnouncement(null)}
+                    style={{
+                        position: 'fixed', inset: 0, zIndex: 200,
+                        background: 'rgba(0,0,0,0.45)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        padding: '24px',
+                    }}
+                >
+                    <div
+                        onClick={e => e.stopPropagation()}
+                        style={{
+                            background: 'white', borderRadius: '14px',
+                            width: '100%', maxWidth: '560px',
+                            maxHeight: '80vh', overflowY: 'auto',
+                            boxShadow: '0 24px 60px rgba(0,0,0,0.2)',
+                        }}
+                    >
+                        {/* Modal header */}
+                        <div style={{
+                            padding: '20px 24px 16px',
+                            borderBottom: '1px solid #F3F4F6',
+                            display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px',
+                        }}>
+                            <div>
+                                <span style={{
+                                    background: '#FEF2F2', color: '#CC0000',
+                                    fontSize: '10px', fontWeight: '700',
+                                    padding: '2px 8px', borderRadius: '10px',
+                                    display: 'inline-block', marginBottom: '8px',
+                                }}>ANNOUNCEMENT</span>
+                                <div style={{ fontSize: '16px', fontWeight: '700', color: '#111', marginBottom: '4px' }}>
+                                    {selectedAnnouncement.title}
+                                </div>
+                                <div style={{ fontSize: '12px', color: '#9CA3AF' }}>
+                                    {new Date(selectedAnnouncement.created_at).toLocaleDateString('en-PH', { month: 'long', day: 'numeric', year: 'numeric' })}
+                                    {' · '}Posted by {selectedAnnouncement.admin?.name || 'Admin'}
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => setSelectedAnnouncement(null)}
+                                style={{
+                                    background: '#F3F4F6', border: 'none', borderRadius: '8px',
+                                    width: '32px', height: '32px', cursor: 'pointer',
+                                    fontSize: '16px', color: '#6B7280', flexShrink: 0,
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                }}
+                            >✕</button>
+                        </div>
+
+                        {/* Body */}
+                        <div style={{ padding: '20px 24px 28px' }}>
+                            <div style={{ fontSize: '14px', color: '#374151', lineHeight: '1.8', whiteSpace: 'pre-wrap' }}>
+                                {selectedAnnouncement.body}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <div style={{ display: 'flex', minHeight: '100vh', fontFamily: "'Inter', sans-serif", background: '#F3F4F6' }}>
 
@@ -106,19 +253,13 @@ export default function VolunteerCommunication({ auth, sentEmails, announcements
                     }}>
                         <div style={{ fontSize: '13px', fontWeight: '600', color: '#111' }}>Communication</div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        
-
-                            {/* ✅ Avatar — plain div, not clickable */}
-                            <div
-                                title={volunteer?.name}
-                                style={{
-                                    width: '30px', height: '30px', borderRadius: '50%',
-                                    background: avatarUrl ? 'transparent' : '#CC0000',
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    color: 'white', fontSize: '12px', fontWeight: '700',
-                                    flexShrink: 0, overflow: 'hidden',
-                                }}
-                            >
+                            <div title={volunteer?.name} style={{
+                                width: '30px', height: '30px', borderRadius: '50%',
+                                background: avatarUrl ? 'transparent' : '#CC0000',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                color: 'white', fontSize: '12px', fontWeight: '700',
+                                flexShrink: 0, overflow: 'hidden',
+                            }}>
                                 {avatarUrl
                                     ? <img src={avatarUrl} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
                                     : initials
@@ -175,6 +316,7 @@ export default function VolunteerCommunication({ auth, sentEmails, announcements
                             </div>
                         )}
 
+                        {/* INBOX — click to open modal */}
                         {activeTab === 'inbox' && (
                             <div style={{ maxWidth: '680px' }}>
                                 <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #E5E7EB', overflow: 'hidden' }}>
@@ -188,15 +330,35 @@ export default function VolunteerCommunication({ auth, sentEmails, announcements
                                         </div>
                                     ) : (
                                         repliedEmails.map((email, i) => (
-                                            <div key={i} style={{ padding: '18px 20px', borderBottom: i < repliedEmails.length - 1 ? '1px solid #F3F4F6' : 'none' }}>
-                                                <div style={{ fontSize: '13px', fontWeight: '600', color: '#111', marginBottom: '4px' }}>{email.subject}</div>
-                                                <div style={{ fontSize: '12px', color: '#6B7280', marginBottom: '10px' }}>Your message: {email.message}</div>
-                                                <div style={{ background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: '8px', padding: '12px 14px' }}>
-                                                    <div style={{ fontSize: '11px', fontWeight: '600', color: '#CC0000', marginBottom: '4px' }}>Admin replied:</div>
-                                                    <div style={{ fontSize: '13px', color: '#374151' }}>{email.reply}</div>
-                                                    <div style={{ fontSize: '10px', color: '#9CA3AF', marginTop: '6px' }}>
-                                                        {email.replied_at ? new Date(email.replied_at).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''}
+                                            <div
+                                                key={i}
+                                                onClick={() => setSelectedInbox(email)}
+                                                style={{
+                                                    padding: '16px 20px',
+                                                    borderBottom: i < repliedEmails.length - 1 ? '1px solid #F3F4F6' : 'none',
+                                                    cursor: 'pointer', display: 'flex', alignItems: 'center',
+                                                    justifyContent: 'space-between', gap: '12px',
+                                                    transition: 'background 0.1s',
+                                                }}
+                                                onMouseEnter={e => e.currentTarget.style.background = '#FAFAFA'}
+                                                onMouseLeave={e => e.currentTarget.style.background = 'white'}
+                                            >
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: 0 }}>
+                                                    <div style={{
+                                                        width: '36px', height: '36px', borderRadius: '50%',
+                                                        background: '#FEF2F2', display: 'flex', alignItems: 'center',
+                                                        justifyContent: 'center', color: '#CC0000', fontSize: '14px',
+                                                        fontWeight: '700', flexShrink: 0,
+                                                    }}>A</div>
+                                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                                        <div style={{ fontSize: '13px', fontWeight: '600', color: '#111' }}>{email.subject}</div>
+                                                        <div style={{ fontSize: '12px', color: '#9CA3AF', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                            Admin: {email.reply}
+                                                        </div>
                                                     </div>
+                                                </div>
+                                                <div style={{ fontSize: '11px', color: '#9CA3AF', flexShrink: 0 }}>
+                                                    {email.replied_at ? new Date(email.replied_at).toLocaleDateString('en-PH', { month: 'short', day: 'numeric' }) : ''}
                                                 </div>
                                             </div>
                                         ))
@@ -205,6 +367,7 @@ export default function VolunteerCommunication({ auth, sentEmails, announcements
                             </div>
                         )}
 
+                        {/* ANNOUNCEMENTS — click to open modal */}
                         {activeTab === 'announcements' && (
                             <div style={{ maxWidth: '680px' }}>
                                 <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #E5E7EB', overflow: 'hidden' }}>
@@ -218,16 +381,34 @@ export default function VolunteerCommunication({ auth, sentEmails, announcements
                                         </div>
                                     ) : (
                                         announces.map((a, i) => (
-                                            <div key={i} style={{ padding: '18px 20px', borderBottom: i < announces.length - 1 ? '1px solid #F3F4F6' : 'none' }}>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-                                                    <span style={{ background: '#FEF2F2', color: '#CC0000', fontSize: '10px', fontWeight: '700', padding: '2px 8px', borderRadius: '10px' }}>ANNOUNCEMENT</span>
-                                                    <span style={{ fontSize: '10px', color: '#9CA3AF' }}>
-                                                        {new Date(a.created_at).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}
-                                                    </span>
+                                            <div
+                                                key={i}
+                                                onClick={() => setSelectedAnnouncement(a)}
+                                                style={{
+                                                    padding: '16px 20px',
+                                                    borderBottom: i < announces.length - 1 ? '1px solid #F3F4F6' : 'none',
+                                                    cursor: 'pointer', display: 'flex', alignItems: 'center',
+                                                    justifyContent: 'space-between', gap: '12px',
+                                                }}
+                                                onMouseEnter={e => e.currentTarget.style.background = '#FAFAFA'}
+                                                onMouseLeave={e => e.currentTarget.style.background = 'white'}
+                                            >
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: 0 }}>
+                                                    <div style={{
+                                                        width: '36px', height: '36px', borderRadius: '50%',
+                                                        background: '#FEF9C3', display: 'flex', alignItems: 'center',
+                                                        justifyContent: 'center', fontSize: '18px', flexShrink: 0,
+                                                    }}>📢</div>
+                                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                                        <div style={{ fontSize: '13px', fontWeight: '600', color: '#111' }}>{a.title}</div>
+                                                        <div style={{ fontSize: '12px', color: '#9CA3AF', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                            {a.body}
+                                                        </div>
+                                                    </div>
                                                 </div>
-                                                <div style={{ fontSize: '14px', fontWeight: '600', color: '#111', marginBottom: '6px' }}>{a.title}</div>
-                                                <div style={{ fontSize: '13px', color: '#374151', lineHeight: '1.6' }}>{a.body}</div>
-                                                <div style={{ fontSize: '11px', color: '#9CA3AF', marginTop: '8px' }}>Posted by: {a.admin?.name || 'Admin'}</div>
+                                                <div style={{ fontSize: '11px', color: '#9CA3AF', flexShrink: 0 }}>
+                                                    {new Date(a.created_at).toLocaleDateString('en-PH', { month: 'short', day: 'numeric' })}
+                                                </div>
                                             </div>
                                         ))
                                     )}
