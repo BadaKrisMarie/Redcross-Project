@@ -18,6 +18,32 @@ class ActivityController extends Controller
         ]);
     }
 
+    public function schedule()
+    {
+        $activities = Activity::with('volunteers')
+            ->orderBy('date', 'asc')
+            ->get()
+            ->map(fn($a) => [
+                'id'            => $a->id,
+                'name'          => $a->name,
+                'description'   => $a->description,
+                'date'          => $a->date,
+                'start_time'    => $a->start_time,
+                'end_time'      => $a->end_time,
+                'location_name' => $a->location_name,
+                'status'        => $a->status,
+                'volunteers'    => $a->volunteers->map(fn($v) => [
+                    'id'   => $v->id,
+                    'name' => $v->name,
+                ]),
+            ]);
+
+        return Inertia::render('Admin/Schedule', [
+            'auth'       => ['user' => auth()->user()],
+            'activities' => $activities,
+        ]);
+    }
+
     public function create()
     {
         $volunteers = User::role('volunteer')

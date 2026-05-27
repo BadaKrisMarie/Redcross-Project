@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useForm, usePage } from '@inertiajs/react';
 
 export default function Contact() {
     const { flash } = usePage().props;
+    const [openTooltip, setOpenTooltip] = useState(null);
 
     const { data, setData, post, processing, errors, reset } = useForm({
         name: '',
@@ -25,32 +26,72 @@ export default function Contact() {
         { dept: 'Fund Generation',          number: '+63 917-831-3924' },
     ];
 
+    const aboutItems = [
+        { label: 'Who We Are',  desc: 'Our story & background' },
+        { label: 'Our Mission', desc: 'Vision, mission & values' },
+        { label: 'Our Team',    desc: 'Meet our volunteers' },
+        { label: 'Our History', desc: 'Years of service' },
+    ];
+
+    const contactItems = [
+        { label: 'Get in Touch', desc: 'Send us a message' },
+        { label: 'Email Us',     desc: 'rizalmuntinlupa@redcross.org.ph' },
+        { label: 'Call Us',      desc: 'Hotline & emergency numbers' },
+        { label: 'Visit Us',     desc: 'Muntinlupa City Branch' },
+    ];
+
+    const tooltipBox = {
+        position: 'absolute', top: 'calc(100% + 10px)', left: '50%',
+        transform: 'translateX(-50%)',
+        background: '#1a1a1a', borderRadius: 8,
+        padding: '10px 14px', minWidth: 190, zIndex: 200,
+        pointerEvents: 'none',
+    };
+
+    const arrowStyle = {
+        position: 'absolute', top: -6, left: '50%', transform: 'translateX(-50%)',
+        borderLeft: '6px solid transparent', borderRight: '6px solid transparent',
+        borderBottom: '6px solid #1a1a1a',
+    };
+
     return (
         <>
             <style>{`
                 @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@300;400;500;600&display=swap');
                 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
                 :root {
-                    --red: #CC1F1F; --red-dark: #A51818;
+                    --red: #DC2626; --red-dark: #A51818;
                     --white: #ffffff; --offwhite: #f8f8f8;
                     --charcoal: #1c1c1c; --gray: #6b6b6b;
                     --light-gray: #e5e5e5; --navy: #1a2744;
                 }
                 body { font-family: 'Barlow', sans-serif; background: var(--white); color: var(--charcoal); overflow-x: hidden; }
 
-                .main-nav { width: 100%; background: var(--white); display: flex; align-items: center; justify-content: space-between; padding: 0 48px; height: 68px; border-bottom: 1px solid var(--light-gray); position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 16px rgba(0,0,0,0.06); }
-                .nav-logo { display: flex; align-items: center; gap: 12px; text-decoration: none; }
-                .nav-logo-icon { width: 38px; height: 38px; background: var(--red); border-radius: 6px; display: flex; align-items: center; justify-content: center; color: white; font-size: 22px; font-weight: 900; font-family: 'Barlow Condensed', sans-serif; }
-                .nav-logo-texts .top { font-family: 'Barlow Condensed', sans-serif; font-size: 17px; font-weight: 700; color: var(--red); line-height: 1.15; display: block; }
-                .nav-logo-texts .bottom { font-size: 11px; color: var(--gray); letter-spacing: 0.04em; display: block; }
-                .nav-links { display: flex; align-items: center; gap: 8px; list-style: none; }
-                .nav-links a { text-decoration: none; font-size: 14px; font-weight: 500; color: var(--charcoal); padding: 6px 16px; border-radius: 4px; transition: background 0.2s, color 0.2s; }
-                .nav-links a:hover, .nav-links a.active { color: var(--red); background: rgba(204,31,31,0.06); }
-                .nav-links .login-btn a { background: var(--red); color: white !important; font-weight: 600; padding: 8px 22px; border-radius: 4px; }
+                .main-nav {
+                    width: 100%;
+                    background: #ffffff;
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    padding: 14px 48px;
+                    border-bottom: 1px solid rgba(200,16,46,0.12);
+                    position: sticky;
+                    top: 0;
+                    z-index: 100;
+                    font-family: Inter, sans-serif;
+                }
+                .nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+                .nav-logo-icon { width: 34px; height: 34px; background: #DC2626; border-radius: 4px; display: flex; align-items: center; justify-content: center; color: white; font-size: 20px; font-weight: 900; }
+                .nav-logo-texts .top { font-size: 12px; font-weight: 600; color: #111111; line-height: 1.2; display: block; }
+                .nav-logo-texts .bottom { font-size: 10px; color: #888880; display: block; }
+                .nav-links { display: flex; align-items: center; gap: 28px; list-style: none; margin: 0; padding: 0; }
+                .nav-links a { text-decoration: none; font-size: 13px; font-weight: 500; color: #444444; padding: 4px 10px; border-radius: 6px; transition: background 0.2s, color 0.2s; }
+                .nav-links a:hover, .nav-links a.active { color: #DC2626; background: rgba(220,38,38,0.08); }
+                .nav-links .login-btn a { background: #DC2626; color: white !important; font-weight: 600; padding: 8px 18px; border-radius: 6px; font-size: 12px; }
                 .nav-links .login-btn a:hover { background: var(--red-dark); }
 
-                .contact-hero { background: #1a1a1a; padding: 72px 60px; text-align: center; position: relative; overflow: hidden; }
-                .contact-hero::before { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, #7f1d1d 0%, #1a1a1a 60%); opacity: 0.9; z-index: 0; }
+                .contact-hero { background: #1a1a1a; padding: 72px 60px; text-align: center; position: relative; overflow: hidden; background-image: url('https://scontent.fmnl8-1.fna.fbcdn.net/v/t39.30808-6/486253255_122117910200759224_1850104524729330657_n.jpg?_nc_cat=108&ccb=1-7&_nc_sid=127cfc&_nc_ohc=s3qPx72vL0QQ7kNvwEIiHPI&_nc_oc=AdqRmmyhVTdlpQ1ucKr3gwtRZUjigQziyUGexQspH0zfnd9XfILoSqGTRbOsO1TXLSzdeB3CaaEb3y_yR-Ejs5Rk&_nc_zt=23&_nc_ht=scontent.fmnl8-1.fna&_nc_gid=OEftzlaHV_BR3OPDU5Gs0g&_nc_ss=7b289&oh=00_Af5Y55emzOdxd-X1_8lK2G_kTNILcyfRuukztDwxOLT0bw&oe=6A1CBC37'); background-size: cover; background-position: center; }
+                .contact-hero::before { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(127,29,29,0.88) 0%, rgba(26,26,26,0.88) 60%); opacity: 1; z-index: 0; }
                 .contact-hero-grid { position: absolute; inset: 0; opacity: 0.05; background-image: repeating-linear-gradient(0deg, #fff 0, #fff 1px, transparent 1px, transparent 40px), repeating-linear-gradient(90deg, #fff 0, #fff 1px, transparent 1px, transparent 40px); z-index: 0; }
                 .contact-hero-ring1 { position: absolute; right: -40px; top: 50%; transform: translateY(-50%); width: 500px; height: 500px; border: 60px solid rgba(220,38,38,0.12); border-radius: 50%; z-index: 0; }
                 .contact-hero-ring2 { position: absolute; right: 60px; top: 50%; transform: translateY(-50%); width: 320px; height: 320px; border: 1.5px solid rgba(220,38,38,0.25); border-radius: 50%; z-index: 0; }
@@ -65,9 +106,9 @@ export default function Contact() {
                 .contact-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 48px; }
 
                 .ccard { background: var(--white); border: 1px solid var(--light-gray); border-radius: 12px; padding: 32px 26px; display: flex; flex-direction: column; align-items: center; text-align: center; transition: border-color 0.25s, box-shadow 0.25s, transform 0.25s; }
-                .ccard:hover { border-color: rgba(204,31,31,0.3); box-shadow: 0 10px 36px rgba(0,0,0,0.08); transform: translateY(-3px); }
-                .ccard.featured { border: 2px solid var(--red); box-shadow: 0 4px 24px rgba(204,31,31,0.1); }
-                .ccard-icon { width: 56px; height: 56px; border-radius: 50%; background: rgba(204,31,31,0.08); display: flex; align-items: center; justify-content: center; margin-bottom: 16px; font-size: 24px; }
+                .ccard:hover { border-color: rgba(220,38,38,0.3); box-shadow: 0 10px 36px rgba(0,0,0,0.08); transform: translateY(-3px); }
+                .ccard.featured { border: 2px solid var(--red); box-shadow: 0 4px 24px rgba(220,38,38,0.1); }
+                .ccard-icon { width: 56px; height: 56px; border-radius: 50%; background: rgba(220,38,38,0.08); display: flex; align-items: center; justify-content: center; margin-bottom: 16px; font-size: 24px; }
                 .ccard h3 { font-family: 'Barlow Condensed', sans-serif; font-size: 22px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--charcoal); margin-bottom: 18px; }
                 .ccard-divider { width: 100%; height: 1px; background: var(--light-gray); margin: 14px 0; }
                 .ccard-desc { font-size: 13px; color: var(--gray); line-height: 1.7; margin-bottom: 16px; }
@@ -91,24 +132,11 @@ export default function Contact() {
                 .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; }
                 .success-msg { background: rgba(34,139,34,0.08); border: 1px solid rgba(34,139,34,0.2); border-radius: 6px; padding: 12px 16px; font-size: 13px; color: #1a7a1a; font-weight: 500; text-align: center; width: 100%; }
 
-                /* ── MAP SECTION ── */
                 .map-section { margin-top: 0; }
                 .map-label { font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: var(--gray); margin-bottom: 12px; }
                 .map-wrapper { position: relative; width: 100%; height: 320px; border-radius: 12px; overflow: hidden; border: 1px solid var(--light-gray); box-shadow: 0 4px 20px rgba(0,0,0,0.06); }
                 .map-wrapper iframe { width: 100%; height: 100%; border: 0; display: block; }
-                .map-open-btn {
-                    position: absolute; bottom: 14px; right: 14px;
-                    background: var(--red); color: white;
-                    padding: 9px 18px; border-radius: 8px;
-                    font-family: 'Barlow Condensed', sans-serif;
-                    font-size: 13px; font-weight: 700;
-                    letter-spacing: 0.06em; text-transform: uppercase;
-                    text-decoration: none;
-                    display: flex; align-items: center; gap: 6px;
-                    box-shadow: 0 4px 16px rgba(204,31,31,0.35);
-                    transition: background 0.2s, transform 0.15s;
-                    z-index: 10;
-                }
+                .map-open-btn { position: absolute; bottom: 14px; right: 14px; background: var(--red); color: white; padding: 9px 18px; border-radius: 8px; font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; text-decoration: none; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 16px rgba(220,38,38,0.35); transition: background 0.2s, transform 0.15s; z-index: 10; }
                 .map-open-btn:hover { background: var(--red-dark); transform: translateY(-1px); }
 
                 footer { background: #111; color: white; padding: 56px 60px 32px; }
@@ -129,7 +157,7 @@ export default function Contact() {
                 .social:hover { background: var(--red); }
 
                 @media (max-width: 900px) {
-                    .main-nav { padding: 0 20px; }
+                    .main-nav { padding: 14px 20px; }
                     .contact-hero { padding: 60px 24px; }
                     .breadcrumb { padding: 12px 24px; }
                     .contact-main { padding: 52px 24px; }
@@ -150,8 +178,53 @@ export default function Contact() {
                 </Link>
                 <ul className="nav-links">
                     <li><Link href="/">Home</Link></li>
-                    <li><Link href="/about">About</Link></li>
-                    <li><Link href="/contact" className="active">Contact</Link></li>
+
+                    {/* ABOUT with tooltip */}
+                    <li
+                        style={{ position: 'relative' }}
+                        onMouseEnter={() => setOpenTooltip('about')}
+                        onMouseLeave={() => setOpenTooltip(null)}
+                    >
+                        <Link href="/about">About</Link>
+                        {openTooltip === 'about' && (
+                            <div style={tooltipBox}>
+                                <div style={arrowStyle} />
+                                {aboutItems.map((item, i) => (
+                                    <div key={item.label} style={{
+                                        padding: '5px 0',
+                                        borderBottom: i < aboutItems.length - 1 ? '1px solid rgba(255,255,255,0.06)' : 'none',
+                                    }}>
+                                        <div style={{ fontSize: 13, color: i === 0 ? '#fff' : '#ccc', fontWeight: i === 0 ? 600 : 500 }}>{item.label}</div>
+                                        <div style={{ fontSize: 11, color: '#888', marginTop: 1 }}>{item.desc}</div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </li>
+
+                    {/* CONTACT with tooltip */}
+                    <li
+                        style={{ position: 'relative' }}
+                        onMouseEnter={() => setOpenTooltip('contact')}
+                        onMouseLeave={() => setOpenTooltip(null)}
+                    >
+                        <Link href="/contact" className="active">Contact</Link>
+                        {openTooltip === 'contact' && (
+                            <div style={tooltipBox}>
+                                <div style={arrowStyle} />
+                                {contactItems.map((item, i) => (
+                                    <div key={item.label} style={{
+                                        padding: '5px 0',
+                                        borderBottom: i < contactItems.length - 1 ? '1px solid rgba(255,255,255,0.06)' : 'none',
+                                    }}>
+                                        <div style={{ fontSize: 13, color: i === 0 ? '#fff' : '#ccc', fontWeight: i === 0 ? 600 : 500 }}>{item.label}</div>
+                                        <div style={{ fontSize: 11, color: '#888', marginTop: 1 }}>{item.desc}</div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </li>
+
                     <li className="login-btn"><Link href="/login">Log In</Link></li>
                 </ul>
             </nav>

@@ -225,14 +225,20 @@ export default function Login({ status, canResetPassword }) {
                     background: '#1a1a1a', overflow: 'hidden',
                     display: 'flex', alignItems: 'center', justifyContent: 'center'
                 }}>
+                    {/* Background image */}
                     <div style={{
                         position: 'absolute', inset: 0,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        background: 'linear-gradient(135deg, #7f1d1d 0%, #1a1a1a 100%)'
-                    }}>
-                        <p style={{ color: 'rgba(255,255,255,0.2)', fontSize: '14px' }}>Your Photo Here</p>
-                    </div>
+                        backgroundImage: "url('https://scontent.fmnl8-1.fna.fbcdn.net/v/t39.30808-6/486253255_122117910200759224_1850104524729330657_n.jpg?_nc_cat=108&ccb=1-7&_nc_sid=127cfc&_nc_ohc=s3qPx72vL0QQ7kNvwEIiHPI&_nc_oc=AdqRmmyhVTdlpQ1ucKr3gwtRZUjigQziyUGexQspH0zfnd9XfILoSqGTRbOsO1TXLSzdeB3CaaEb3y_yR-Ejs5Rk&_nc_zt=23&_nc_ht=scontent.fmnl8-1.fna&_nc_gid=OEftzlaHV_BR3OPDU5Gs0g&_nc_ss=7b289&oh=00_Af5Y55emzOdxd-X1_8lK2G_kTNILcyfRuukztDwxOLT0bw&oe=6A1CBC37')",
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'center',
+                    }} />
+                    {/* Dark overlay */}
+                    <div style={{
+                        position: 'absolute', inset: 0,
+                        background: 'linear-gradient(135deg, rgba(127,29,29,0.82) 0%, rgba(26,26,26,0.82) 100%)',
+                    }} />
 
+                    {/* Bottom text */}
                     <div style={{
                         position: 'absolute', bottom: '60px', left: '48px', right: '48px',
                         zIndex: 2

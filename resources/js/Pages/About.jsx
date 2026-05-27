@@ -12,54 +12,136 @@ const DARK = "#111111";
 const DOT_BG = `url("data:image/svg+xml,%3Csvg width='24' height='24' viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='1' cy='1' r='1' fill='%23C8102E' fill-opacity='0.07'/%3E%3C/svg%3E")`;
 
 function Nav() {
+  const [openTooltip, setOpenTooltip] = useState(null);
+
   return (
     <nav style={{
       display: "flex", alignItems: "center", justifyContent: "space-between",
-      padding: "16px 48px", background: WHITE,
-      borderBottom: `1px solid ${BORDER}`,
+      padding: "14px 48px",
+      background: "#ffffff",
+      borderBottom: "1px solid rgba(200,16,46,0.12)",
       position: "sticky", top: 0, zIndex: 100,
-      backdropFilter: "blur(12px)",
+      fontFamily: "Inter, sans-serif",
     }}>
-      <Link href="/" style={{ display: "flex", alignItems: "center", gap: 12, textDecoration: "none" }}>
+      <Link href="/" style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none" }}>
         <div style={{
-          width: 44, height: 44, borderRadius: 12,
-          background: "#FEE8EC", border: `1.5px solid #F5C0C8`,
+          width: 34, height: 34, borderRadius: 4,
+          background: "#DC2626",
           display: "flex", alignItems: "center", justifyContent: "center",
-        }}>
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-            <rect x="9.5" y="3" width="5" height="18" rx="1.5" fill={RED}/>
-            <rect x="3" y="9.5" width="18" height="5" rx="1.5" fill={RED}/>
-          </svg>
-        </div>
+          color: "white", fontSize: 20, fontWeight: 900,
+        }}>+</div>
         <div>
-          <div style={{ fontSize: 14, fontWeight: 700, color: RED, lineHeight: 1.25 }}>Rizal Chapter</div>
-          <div style={{ fontSize: 11, fontWeight: 500, color: "#B05060", lineHeight: 1.25 }}>Muntinlupa City Branch</div>
+          <div style={{ fontSize: 12, fontWeight: 600, color: "#111111", lineHeight: 1.2 }}>Rizal Chapter</div>
+          <div style={{ fontSize: 10, color: "#888880" }}>Muntinlupa City Branch</div>
         </div>
       </Link>
 
-      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+      <div style={{ display: "flex", gap: 28, alignItems: "center" }}>
         <Link href="/" style={{
-          textDecoration: "none", fontSize: 14, color: MUTED,
-          fontWeight: 400, padding: "6px 14px", borderRadius: 8,
+          textDecoration: "none", fontSize: 13, color: "#444444",
+          fontWeight: 500, padding: "4px 10px", borderRadius: 6,
         }}>Home</Link>
 
-        <Link href="/about" style={{
-          textDecoration: "none", fontSize: 14, color: RED,
-          fontWeight: 600, padding: "6px 14px", borderRadius: 8,
-          background: "#FEE8EC",
-        }}>About</Link>
+        {/* ABOUT with tooltip */}
+        <div
+          style={{ position: "relative" }}
+          onMouseEnter={() => setOpenTooltip("about")}
+          onMouseLeave={() => setOpenTooltip(null)}
+        >
+          <Link href="/about" style={{
+            textDecoration: "none", fontSize: 13, color: "#DC2626",
+            fontWeight: 600, padding: "4px 10px", borderRadius: 6,
+            background: "rgba(220,38,38,0.08)",
+          }}>About</Link>
 
-        <a href="/#contact" style={{
-          textDecoration: "none", fontSize: 14, color: MUTED,
-          fontWeight: 400, padding: "6px 14px", borderRadius: 8,
-        }}>Contact</a>
+          {openTooltip === "about" && (
+            <div style={{
+              position: "absolute", top: "calc(100% + 10px)", left: "50%",
+              transform: "translateX(-50%)",
+              background: "#1a1a1a", borderRadius: 8,
+              padding: "10px 14px", minWidth: 180, zIndex: 200,
+              pointerEvents: "none",
+            }}>
+              {/* Arrow */}
+              <div style={{
+                position: "absolute", top: -6, left: "50%", transform: "translateX(-50%)",
+                borderLeft: "6px solid transparent", borderRight: "6px solid transparent",
+                borderBottom: "6px solid #1a1a1a",
+              }}/>
+              {[
+                { label: "Who We Are", desc: "Our story & background" },
+                { label: "Our Mission", desc: "Vision, mission & values" },
+                { label: "Our Team", desc: "Meet our volunteers" },
+                { label: "Our History", desc: "Years of service" },
+              ].map((item, i) => (
+                <div key={item.label} style={{
+                  padding: "5px 0",
+                  borderBottom: i < 3 ? "1px solid rgba(255,255,255,0.06)" : "none",
+                }}>
+                  <div style={{
+                    fontSize: 13, color: i === 0 ? "#fff" : "#ccc",
+                    fontWeight: i === 0 ? 600 : 500,
+                    lineHeight: 1.3,
+                  }}>{item.label}</div>
+                  <div style={{ fontSize: 11, color: "#888", marginTop: 1 }}>{item.desc}</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* CONTACT with tooltip */}
+        <div
+          style={{ position: "relative" }}
+          onMouseEnter={() => setOpenTooltip("contact")}
+          onMouseLeave={() => setOpenTooltip(null)}
+        >
+          <Link href="/contact" style={{
+            textDecoration: "none", fontSize: 13, color: "#444444",
+            fontWeight: 500, padding: "4px 10px", borderRadius: 6,
+          }}>Contact</Link>
+
+          {openTooltip === "contact" && (
+            <div style={{
+              position: "absolute", top: "calc(100% + 10px)", left: "50%",
+              transform: "translateX(-50%)",
+              background: "#1a1a1a", borderRadius: 8,
+              padding: "10px 14px", minWidth: 180, zIndex: 200,
+              pointerEvents: "none",
+            }}>
+              {/* Arrow */}
+              <div style={{
+                position: "absolute", top: -6, left: "50%", transform: "translateX(-50%)",
+                borderLeft: "6px solid transparent", borderRight: "6px solid transparent",
+                borderBottom: "6px solid #1a1a1a",
+              }}/>
+              {[
+                { label: "Get in Touch", desc: "Send us a message" },
+                { label: "Email Us", desc: "rizalchapter@redcross.org.ph" },
+                { label: "Call Us", desc: "Hotline & emergency numbers" },
+                { label: "Visit Our Office", desc: "Muntinlupa City Branch" },
+              ].map((item, i) => (
+                <div key={item.label} style={{
+                  padding: "5px 0",
+                  borderBottom: i < 3 ? "1px solid rgba(255,255,255,0.06)" : "none",
+                }}>
+                  <div style={{
+                    fontSize: 13, color: i === 0 ? "#fff" : "#ccc",
+                    fontWeight: i === 0 ? 600 : 500,
+                    lineHeight: 1.3,
+                  }}>{item.label}</div>
+                  <div style={{ fontSize: 11, color: "#888", marginTop: 1 }}>{item.desc}</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
 
         <Link href="/login" style={{
           textDecoration: "none",
-          fontSize: 13, fontWeight: 500, color: DARK,
-          padding: "7px 18px", borderRadius: 8,
-          border: `1px solid ${BORDER}`,
-          marginLeft: 8,
+          fontSize: 12, fontWeight: 600, color: "#ffffff",
+          padding: "8px 18px", borderRadius: 6,
+          background: "#DC2626",
         }}>Log In</Link>
       </div>
     </nav>
@@ -69,19 +151,18 @@ function Nav() {
 function Hero() {
   return (
     <div style={{
-      background: "linear-gradient(to right, #6b0a0a 0%, #3a0808 40%, #1a0303 70%, #0a0000 100%)",
+      backgroundImage: "linear-gradient(to right, rgba(107,10,10,0.92) 0%, rgba(58,8,8,0.88) 40%, rgba(26,3,3,0.85) 70%, rgba(0,0,0,0.88) 100%), url('https://scontent.fmnl8-1.fna.fbcdn.net/v/t39.30808-6/486253255_122117910200759224_1850104524729330657_n.jpg?_nc_cat=108&ccb=1-7&_nc_sid=127cfc&_nc_eui2=AeEw-GcRpW6cF5CDYZ9ZRKZCzVUqOFhpoWXNVSo4WGmhZdHvRS7hLlmRZAbBesLg5GtZF2pP5w207rnDSsD4mH7B&_nc_ohc=eVZESyEoYO4Q7kNvwEBArtn&_nc_oc=Ado0XUsrxF7BC6HChAYWkzAqIXZ-DonRNp8s9hd5dKnQXNTXCNQPLK2MvFg8S8wQFaQueWEYEymxkLTcW5RCws-Y&_nc_zt=23&_nc_ht=scontent.fmnl8-1.fna&_nc_gid=0wJy12mi8ditc1tsAhoFkw&_nc_ss=782a8&oh=00_Af4XeMez1nXhvjGANkLOhozhl2igOmv-c8KFBIfhOlLVmw&oe=6A1AC1F7')",
+      backgroundSize: "cover",
+      backgroundPosition: "center",
       padding: "56px 48px 48px",
       position: "relative", overflow: "hidden",
     }}>
-      {/* Grid texture */}
       <div style={{
         position: "absolute", inset: 0,
         backgroundImage: "linear-gradient(rgba(200,60,60,0.07) 1px, transparent 1px), linear-gradient(90deg, rgba(200,60,60,0.07) 1px, transparent 1px)",
         backgroundSize: "32px 32px",
         pointerEvents: "none",
       }}/>
-
-      {/* Curved background shapes */}
       <div style={{
         position: "absolute", right: -40, bottom: -60,
         width: 320, height: 320, borderRadius: "50%",
@@ -159,9 +240,7 @@ const photos = [
     fullDesc: "Our Community Outreach program reaches the most vulnerable sectors of Muntinlupa City. Volunteers regularly visit barangays to provide basic health consultations, distribute relief goods, and conduct community education sessions. This program has touched thousands of lives across the 9 barangays we serve, ensuring that no family is left behind during times of need.",
     accent: "#C8102E",
     tagLabel: "Outreach",
-    tagBg: "rgba(0,0,0,0.25)",
-    tagColor: "#fde8eb",
-    placeholderBg: "linear-gradient(135deg, #c4606e 0%, #9e3a4a 100%)",
+    image: "https://scontent.fmnl9-3.fna.fbcdn.net/v/t39.30808-6/579912457_122161425698759224_5026736243262263116_n.jpg?_nc_cat=100&ccb=1-7&_nc_sid=127cfc&_nc_eui2=AeGhOEnRV-eh6mXSLEAdZ8L94OVOzjvE3c3g5U7OO8TdzZPUF3iITgkM93516fqpXaq3RyLi9EmyjdkWO50RfDsT&_nc_ohc=KP2a6Z3VHAMQ7kNvwH4yWOP&_nc_oc=AdqK7J_EzW7mqAmEesRsSzJusT1EVjHofgo-g1osQmBeIOnM990-IktlXAZ2gMVQtJA&_nc_zt=23&_nc_ht=scontent.fmnl9-3.fna&_nc_gid=pCiwzN-BEIZtMURihogm5A&_nc_ss=7a2a8&oh=00_Af5EMqKQ6VcWU26OrrvKlmlk8eLjj6uOtB3VPwPkttWxKQ&oe=6A1AA184",
   },
   {
     title: "Relief Distribution",
@@ -170,9 +249,7 @@ const photos = [
     fullDesc: "During disasters and calamities, our Relief Distribution team mobilizes rapidly to deliver food packs, water, hygiene kits, and other essential supplies to affected families. Our logistics network ensures that aid reaches even the most hard-to-reach areas of Muntinlupa within hours of a disaster declaration. We coordinate closely with local government units for maximum efficiency.",
     accent: "#1A1464",
     tagLabel: "Relief",
-    tagBg: "rgba(0,0,0,0.22)",
-    tagColor: "#d8ddf8",
-    placeholderBg: "linear-gradient(135deg, #5a6aaa 0%, #3a4880 100%)",
+    image: "https://scontent.fmnl9-1.fna.fbcdn.net/v/t39.30808-6/525541462_122144559482759224_7305491659323059505_n.jpg?_nc_cat=110&ccb=1-7&_nc_sid=833d8c&_nc_eui2=AeGd-2hqIPnTydhWQTiCxdcpskBCB6y-7jSyQEIHrL7uNLEGjI5Vn4kzpvuuKI9lFf6K2lWDgPj7VC4ZGRIsyLdq&_nc_ohc=aUnmDE865UcQ7kNvwHmyfAV&_nc_oc=Adqt_1wumq-qM3WRFIbzhv-KoOLHmAwlUyLtHigroieYUbkipD9zVz8lswtQHHtpsfM&_nc_zt=23&_nc_ht=scontent.fmnl9-1.fna&_nc_gid=NZxX_aRFwd9YrAinJWef7A&_nc_ss=7a2a8&oh=00_Af78MVUODKUNApl8rzyQ-NzlncZzxnIXrq-AlHF6B8e-1g&oe=6A1A9E6B",
   },
   {
     title: "Community Assistance",
@@ -181,11 +258,18 @@ const photos = [
     fullDesc: "Our Community Assistance program provides ongoing support to marginalized communities in Muntinlupa. Volunteers conduct regular welfare checks, provide psychosocial support, and connect residents with government services and other humanitarian organizations. Special attention is given to elderly residents, persons with disabilities, and families affected by poverty or displacement.",
     accent: "#0A6E3A",
     tagLabel: "Assistance",
-    tagBg: "rgba(0,0,0,0.22)",
-    tagColor: "#c8eedd",
-    placeholderBg: "linear-gradient(135deg, #4a9e70 0%, #2a7050 100%)",
+    image: "https://scontent.fmnl8-1.fna.fbcdn.net/v/t39.30808-6/518412380_122142059048759224_7797772017153258644_n.jpg?_nc_cat=106&ccb=1-7&_nc_sid=127cfc&_nc_eui2=AeHK7K4qe-W4MlWbpf6EKiLsgYc2IzPTZpmBhzYjM9NmmTdEFo7l68QRWxMji-85Jm_JnX0LBT3jPmXiLkpmaY5m&_nc_ohc=_rU2p01_i1QQ7kNvwFhtdmo&_nc_oc=AdonxDN-Up1mY8kKth9Qy74totFIWV9FLtmmt71HXz7rKSFZxo3ld7IWbqE5ERxW2dl7HBbDfYloeOTfj8vHIn3o&_nc_zt=23&_nc_ht=scontent.fmnl8-1.fna&_nc_gid=2grovV96CwF0416-95tfyA&_nc_ss=782a8&oh=00_Af6voPoPD_6-AAouCa8U1RhO8wrjXp6Gqyv0s1GLi7xzcA&oe=6A1AB59E",
   },
 ];
+
+function LocationIcon({ color }) {
+  return (
+    <svg width="11" height="11" viewBox="0 0 14 14" fill="none">
+      <path d="M7 1C4.79 1 3 2.79 3 5c0 3.25 4 8 4 8s4-4.75 4-8c0-2.21-1.79-4-4-4z" fill={color}/>
+      <circle cx="7" cy="5" r="1.5" fill="white"/>
+    </svg>
+  );
+}
 
 function Modal({ photo, onClose }) {
   return (
@@ -193,10 +277,10 @@ function Modal({ photo, onClose }) {
       onClick={onClose}
       style={{
         position: "fixed", inset: 0, zIndex: 999,
-        background: "rgba(0,0,0,0.6)",
+        background: "rgba(0,0,0,0.65)",
         display: "flex", alignItems: "center", justifyContent: "center",
         padding: 24,
-        backdropFilter: "blur(4px)",
+        backdropFilter: "blur(6px)",
       }}
     >
       <div
@@ -205,71 +289,73 @@ function Modal({ photo, onClose }) {
           background: WHITE, borderRadius: 20,
           width: "100%", maxWidth: 540,
           overflow: "hidden",
-          boxShadow: "0 32px 80px rgba(0,0,0,0.25)",
+          boxShadow: "0 32px 80px rgba(0,0,0,0.3)",
         }}
       >
-        <div style={{
-          height: 220, background: photo.placeholderBg,
-          display: "flex", alignItems: "center", justifyContent: "center",
-          position: "relative",
-        }}>
+        <div style={{ height: 260, position: "relative", overflow: "hidden" }}>
+          <img
+            src={photo.image}
+            alt={photo.title}
+            style={{
+              width: "100%", height: "100%",
+              objectFit: "cover", objectPosition: "center top",
+              display: "block",
+            }}
+          />
           <div style={{
-            width: 72, height: 72, borderRadius: "50%",
-            background: "rgba(255,255,255,0.45)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            backdropFilter: "blur(4px)",
-          }}>
-            <svg width="32" height="32" viewBox="0 0 28 28" fill="none">
-              <rect x="11" y="3" width="6" height="22" rx="2" fill={photo.accent} opacity="0.8"/>
-              <rect x="3" y="11" width="22" height="6" rx="2" fill={photo.accent} opacity="0.8"/>
-            </svg>
-          </div>
-
+            position: "absolute", inset: 0,
+            background: "linear-gradient(to bottom, rgba(0,0,0,0.08) 0%, rgba(0,0,0,0.6) 100%)",
+          }}/>
           <div style={{
-            position: "absolute", top: 12, left: 12,
+            position: "absolute", inset: 0,
+            background: photo.accent, opacity: 0.12,
+          }}/>
+          <div style={{
+            position: "absolute", top: 14, left: 14,
             background: "rgba(255,255,255,0.92)",
             border: `1px solid ${photo.accent}33`,
             color: photo.accent,
             fontSize: 9, fontWeight: 700, letterSpacing: "0.07em",
             padding: "4px 10px", borderRadius: 100, textTransform: "uppercase",
+            backdropFilter: "blur(4px)",
           }}>
             Philippine Red Cross
           </div>
-
           <div style={{
-            position: "absolute", bottom: 12, right: 12,
-            background: photo.tagBg, color: photo.tagColor,
-            fontSize: 10, fontWeight: 600, letterSpacing: "0.05em",
-            padding: "4px 10px", borderRadius: 100, textTransform: "uppercase",
-            border: `1px solid ${photo.tagColor}22`,
+            position: "absolute", bottom: 14, right: 48,
+            background: photo.accent, color: "#fff",
+            fontSize: 10, fontWeight: 700, letterSpacing: "0.08em",
+            padding: "4px 12px", borderRadius: 100, textTransform: "uppercase",
           }}>
             {photo.tagLabel}
           </div>
-
+          <div style={{
+            position: "absolute", bottom: 14, left: 14,
+            color: WHITE, fontSize: 20, fontWeight: 800,
+            letterSpacing: "-0.02em",
+            textShadow: "0 1px 8px rgba(0,0,0,0.4)",
+          }}>
+            {photo.title}
+          </div>
           <button
             onClick={onClose}
             style={{
               position: "absolute", top: 12, right: 12,
               width: 32, height: 32, borderRadius: "50%",
-              background: "rgba(0,0,0,0.35)", border: "none",
+              background: "rgba(0,0,0,0.45)", border: "none",
               color: WHITE, fontSize: 18, cursor: "pointer",
               display: "flex", alignItems: "center", justifyContent: "center",
-              lineHeight: 1,
+              lineHeight: 1, backdropFilter: "blur(4px)",
             }}
           >×</button>
         </div>
 
-        <div style={{ padding: "24px 28px 28px" }}>
-          <div style={{ width: 32, height: 3, borderRadius: 2, background: photo.accent, marginBottom: 14 }}/>
-          <div style={{ fontSize: 20, fontWeight: 800, color: DARK, marginBottom: 6 }}>{photo.title}</div>
+        <div style={{ padding: "20px 28px 28px" }}>
           <div style={{
             display: "inline-flex", alignItems: "center", gap: 4,
-            fontSize: 12, color: photo.accent, fontWeight: 600, marginBottom: 16,
+            fontSize: 12, color: photo.accent, fontWeight: 600, marginBottom: 14,
           }}>
-            <svg width="11" height="11" viewBox="0 0 14 14" fill="none">
-              <path d="M7 1C4.79 1 3 2.79 3 5c0 3.25 4 8 4 8s4-4.75 4-8c0-2.21-1.79-4-4-4z" fill={photo.accent}/>
-              <circle cx="7" cy="5" r="1.5" fill="white"/>
-            </svg>
+            <LocationIcon color={photo.accent}/>
             {photo.location}
           </div>
           <p style={{ fontSize: 14, color: MUTED, lineHeight: 1.8, margin: "0 0 24px" }}>
@@ -311,54 +397,57 @@ function PhotoCard({ photo, onOpen }) {
         cursor: "pointer",
       }}
     >
-      <div style={{
-        height: 200, background: photo.placeholderBg,
-        display: "flex", alignItems: "center", justifyContent: "center",
-        position: "relative", overflow: "hidden",
-      }}>
+      <div style={{ height: 200, position: "relative", overflow: "hidden" }}>
+        <img
+          src={photo.image}
+          alt={photo.title}
+          style={{
+            width: "100%", height: "100%",
+            objectFit: "cover", objectPosition: "center top",
+            display: "block",
+            transition: "transform 0.4s ease",
+            transform: hovered ? "scale(1.06)" : "scale(1)",
+          }}
+        />
         <div style={{
-          width: 64, height: 64, borderRadius: "50%",
-          background: "rgba(255,255,255,0.45)",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          backdropFilter: "blur(4px)",
-        }}>
-          <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-            <rect x="11" y="3" width="6" height="22" rx="2" fill={photo.accent} opacity="0.8"/>
-            <rect x="3" y="11" width="22" height="6" rx="2" fill={photo.accent} opacity="0.8"/>
-          </svg>
-        </div>
-
+          position: "absolute", inset: 0,
+          background: "linear-gradient(to bottom, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.45) 100%)",
+        }}/>
+        <div style={{
+          position: "absolute", inset: 0,
+          background: photo.accent,
+          opacity: hovered ? 0.18 : 0.08,
+          transition: "opacity 0.3s ease",
+        }}/>
         <div style={{
           position: "absolute", top: 12, left: 12,
           background: "rgba(255,255,255,0.92)",
           border: `1px solid ${photo.accent}33`,
-          color: photo.accent, fontSize: 9, fontWeight: 700,
-          letterSpacing: "0.07em", padding: "4px 10px",
-          borderRadius: 100, textTransform: "uppercase",
+          color: photo.accent,
+          fontSize: 9, fontWeight: 700, letterSpacing: "0.07em",
+          padding: "4px 10px", borderRadius: 100, textTransform: "uppercase",
+          backdropFilter: "blur(4px)",
         }}>
           Philippine Red Cross
         </div>
-
         <div style={{
           position: "absolute", bottom: 12, right: 12,
-          background: photo.tagBg, color: photo.tagColor,
-          fontSize: 10, fontWeight: 600, letterSpacing: "0.05em",
-          padding: "4px 10px", borderRadius: 100, textTransform: "uppercase",
-          border: `1px solid ${photo.tagColor}22`,
+          background: photo.accent, color: "#fff",
+          fontSize: 10, fontWeight: 700, letterSpacing: "0.08em",
+          padding: "4px 12px", borderRadius: 100, textTransform: "uppercase",
         }}>
           {photo.tagLabel}
         </div>
-
         {hovered && (
           <div style={{
             position: "absolute", inset: 0,
-            background: "rgba(0,0,0,0.18)",
             display: "flex", alignItems: "center", justifyContent: "center",
           }}>
             <div style={{
               background: WHITE, color: photo.accent,
-              fontSize: 12, fontWeight: 700, padding: "8px 18px",
+              fontSize: 12, fontWeight: 700, padding: "8px 20px",
               borderRadius: 100, letterSpacing: "0.05em",
+              boxShadow: "0 4px 16px rgba(0,0,0,0.15)",
             }}>View Details</div>
           </div>
         )}
@@ -373,10 +462,7 @@ function PhotoCard({ photo, onOpen }) {
           display: "inline-flex", alignItems: "center", gap: 4,
           fontSize: 11, color: photo.accent, fontWeight: 600, marginBottom: 10,
         }}>
-          <svg width="11" height="11" viewBox="0 0 14 14" fill="none">
-            <path d="M7 1C4.79 1 3 2.79 3 5c0 3.25 4 8 4 8s4-4.75 4-8c0-2.21-1.79-4-4-4z" fill={photo.accent}/>
-            <circle cx="7" cy="5" r="1.5" fill="white"/>
-          </svg>
+          <LocationIcon color={photo.accent}/>
           {photo.location}
         </div>
         <div style={{ fontSize: 13, color: MUTED, lineHeight: 1.7 }}>{photo.desc}</div>

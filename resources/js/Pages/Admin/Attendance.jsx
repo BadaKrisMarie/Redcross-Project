@@ -22,7 +22,16 @@ export default function AdminAttendance({ attendances, volunteers, activities, f
         router.get(route('admin.attendance.index'));
     };
 
-    
+    // ✅ FIXED: window.open para ma-download ang PDF nang tama
+    const exportPdf = () => {
+        const params = new URLSearchParams({
+            volunteer_id: volunteerFilter,
+            activity_id: activityFilter,
+            date: dateFilter,
+        }).toString();
+
+        window.open(route('admin.attendance.export.pdf') + '?' + params, '_blank');
+    };
 
     const formatTime = (datetime) => {
         if (!datetime) return '-';
@@ -39,12 +48,6 @@ export default function AdminAttendance({ attendances, volunteers, activities, f
     };
 
     const totalHours = attendances.reduce((sum, a) => sum + parseFloat(a.hours_rendered || 0), 0);
-
-    const exportUrl = route('admin.attendance.export.pdf') + '?' + new URLSearchParams({
-        volunteer_id: volunteerFilter,
-        activity_id: activityFilter,
-        date: dateFilter,
-    }).toString();
 
     return (
         <div>
@@ -119,9 +122,21 @@ export default function AdminAttendance({ attendances, volunteers, activities, f
                             <div style={{ fontFamily: 'Oswald, sans-serif', fontSize: '16px', color: '#111', fontWeight: '600', textTransform: 'uppercase' }}>
                                 All Attendance Records ({attendances.length})
                             </div>
-                            <a href={exportUrl} target="_blank" rel="noreferrer" style={{ background: '#DC2626', color: 'white', padding: '8px 18px', borderRadius: '6px', fontSize: '13px', fontWeight: '600', textDecoration: 'none' }}>
+                            <button
+                                onClick={exportPdf}
+                                style={{
+                                    background: '#DC2626',
+                                    color: 'white',
+                                    padding: '8px 18px',
+                                    borderRadius: '6px',
+                                    fontSize: '13px',
+                                    fontWeight: '600',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                }}
+                            >
                                 Export PDF
-                            </a>
+                            </button>
                         </div>
                         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                             <thead>

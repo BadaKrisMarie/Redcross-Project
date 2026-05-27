@@ -91,7 +91,7 @@ class AdminController extends Controller
                 'user_id'   => $doc->user_id,
                 'name'      => $doc->user->name,
                 'type'      => strtoupper($doc->type),
-                'file_url'  => $doc->file_path ? asset('storage/' . $doc->file_path) : null,
+                'file_url'  => $doc->file_path ? route('admin.documents.file', $doc->id) : null, // ← BINAGO
                 'photo'     => $doc->user->photo ? asset('storage/' . $doc->user->photo) : null,
                 'initials'  => collect(explode(' ', $doc->user->name))
                                 ->map(fn($w) => strtoupper($w[0] ?? ''))

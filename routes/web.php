@@ -14,6 +14,7 @@ use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\Admin\AdminProfileController;
 use App\Http\Controllers\Admin\AttendanceController as AdminAttendanceController;
 use App\Http\Controllers\Admin\CommunicationController as AdminCommunicationController;
+use App\Http\Controllers\Admin\DocumentController as AdminDocumentController;
 use Illuminate\Foundation\Application;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -92,6 +93,9 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
 
     Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard');
 
+    // Schedule (calendar view of all activities)
+    Route::get('/schedule', [ActivityController::class, 'schedule'])->name('schedule');
+
     // Volunteers
     Route::get('/volunteers', [VolunteerController::class, 'index'])->name('volunteers');
     Route::get('/volunteers/{id}', [VolunteerController::class, 'show'])->name('volunteers.show');
@@ -115,6 +119,12 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::post('/communication/reply/{sentEmail}', [AdminCommunicationController::class, 'reply'])->name('communication.reply');
     Route::post('/communication/announce', [AdminCommunicationController::class, 'announce'])->name('communication.announce');
     Route::delete('/communication/announcement/{announcement}', [AdminCommunicationController::class, 'deleteAnnouncement'])->name('communication.announcement.delete');
+
+    // 201 Files (Documents)
+    Route::get('/documents', [AdminDocumentController::class, 'index'])->name('documents.index');
+    Route::get('/documents/{id}/file', [AdminDocumentController::class, 'serveFile'])->name('documents.file'); // ← BAGO
+    Route::patch('/documents/{id}/approve', [AdminDocumentController::class, 'approve'])->name('documents.approve');
+    Route::patch('/documents/{id}/reject', [AdminDocumentController::class, 'reject'])->name('documents.reject');
 
     // Profile & Password
     Route::get('/profile',           [AdminProfileController::class, 'edit'])->name('profile');

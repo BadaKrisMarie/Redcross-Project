@@ -114,97 +114,101 @@ export default function Welcome({ auth }) {
                     </ul>
                 </nav>
 
-                {/* HERO */}
-                <section style={{
-                    position: 'relative', minHeight: '600px', overflow: 'hidden',
-                    background: '#1a1a1a', display: 'flex', alignItems: 'center'
+               {/* HERO */}
+<section style={{
+    position: 'relative', minHeight: '600px', overflow: 'hidden',
+    background: '#1a1a1a', display: 'flex', alignItems: 'center'
+}}>
+    <div style={{
+        position: 'absolute', inset: 0,
+        backgroundImage: "url('https://scontent.fmnl8-1.fna.fbcdn.net/v/t39.30808-6/486253255_122117910200759224_1850104524729330657_n.jpg?_nc_cat=108&ccb=1-7&_nc_sid=127cfc&_nc_eui2=AeEw-GcRpW6cF5CDYZ9ZRKZCzVUqOFhpoWXNVSo4WGmhZdHvRS7hLlmRZAbBesLg5GtZF2pP5w207rnDSsD4mH7B&_nc_ohc=eVZESyEoYO4Q7kNvwEBArtn&_nc_oc=Ado0XUsrxF7BC6HChAYWkzAqIXZ-DonRNp8s9hd5dKnQXNTXCNQPLK2MvFg8S8wQFaQueWEYEymxkLTcW5RCws-Y&_nc_zt=23&_nc_ht=scontent.fmnl8-1.fna&_nc_gid=0wJy12mi8ditc1tsAhoFkw&_nc_ss=782a8&oh=00_Af4XeMez1nXhvjGANkLOhozhl2igOmv-c8KFBIfhOlLVmw&oe=6A1AC1F7')",
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+    }}></div>
+    <div style={{
+        position: 'absolute', inset: 0,
+        background: 'linear-gradient(135deg, rgba(127,29,29,0.88) 0%, rgba(26,26,26,0.88) 60%)',
+    }}></div>
+    <div style={{
+        position: 'absolute', inset: 0, opacity: 0.05,
+        backgroundImage: 'repeating-linear-gradient(0deg, #fff 0, #fff 1px, transparent 1px, transparent 40px), repeating-linear-gradient(90deg, #fff 0, #fff 1px, transparent 1px, transparent 40px)'
+    }}></div>
+    <div style={{
+        position: 'absolute', right: '-40px', top: '50%',
+        transform: 'translateY(-50%)', width: '500px', height: '500px',
+        border: '60px solid rgba(220,38,38,0.12)', borderRadius: '50%'
+    }}></div>
+    <div style={{
+        position: 'absolute', right: '60px', top: '50%',
+        transform: 'translateY(-50%)', width: '320px', height: '320px',
+        border: '1.5px solid rgba(220,38,38,0.25)', borderRadius: '50%'
+    }}></div>
+
+    <div style={{ position: 'relative', zIndex: 2, padding: '120px 48px 80px', maxWidth: '640px' }}>
+        <div style={{
+            display: 'inline-flex', alignItems: 'center', gap: '8px',
+            background: 'rgba(220,38,38,0.15)', border: '1px solid rgba(220,38,38,0.35)',
+            color: '#fca5a5', fontSize: '11px', fontWeight: '600',
+            letterSpacing: '2px', textTransform: 'uppercase',
+            padding: '6px 14px', borderRadius: '100px', marginBottom: '28px',
+        }}>
+            <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#DC2626', display: 'inline-block' }}></span>
+            Volunteer Program 2026
+        </div>
+        <h1 style={{
+            fontFamily: 'Oswald, sans-serif',
+            fontSize: '76px', lineHeight: '0.95', color: 'white',
+            letterSpacing: '1px', margin: '0 0 8px 0',
+            fontWeight: '700', textTransform: 'uppercase'
+        }}>
+            <span style={{ color: '#DC2626' }}>Red Cross</span><br />
+            Volunteer<br />
+            Needed
+        </h1>
+        <p style={{
+            fontSize: '16px', color: 'rgba(255,255,255,0.6)', lineHeight: '1.75',
+            maxWidth: '460px', fontWeight: '300',
+            margin: '24px 0 40px 0', fontStyle: 'italic'
+        }}>
+            Join the Philippine Red Cross – Muntinlupa City Branch and make a difference in your community through disaster response, blood services, and emergency care.
+        </p>
+        <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+            <Link href="/about" style={{
+                background: '#DC2626', color: 'white', padding: '13px 30px',
+                borderRadius: '4px', fontSize: '14px', fontWeight: '600',
+                textDecoration: 'none', letterSpacing: '0.5px'
+            }}>Read More</Link>
+            <Link href={route('register')} style={{
+                color: 'rgba(255,255,255,0.75)', fontSize: '14px',
+                textDecoration: 'none',
+                borderBottom: '1px solid rgba(255,255,255,0.25)', paddingBottom: '2px',
+                letterSpacing: '0.3px'
+            }}>Register Now →</Link>
+        </div>
+    </div>
+
+    <div style={{
+        position: 'absolute', bottom: '40px', right: '48px',
+        display: 'flex', gap: '40px', zIndex: 2
+    }}>
+        {[['500+', 'Volunteers'], ['24/7', 'Response'], ['10+', 'Programs']].map(([num, label]) => (
+            <div key={label} style={{ textAlign: 'center' }}>
+                <div style={{
+                    fontFamily: 'Oswald, sans-serif',
+                    fontSize: '38px', color: 'white',
+                    lineHeight: '1', fontWeight: '600'
                 }}>
-                    <div style={{
-                        position: 'absolute', inset: 0,
-                        background: 'linear-gradient(135deg, #7f1d1d 0%, #1a1a1a 60%)',
-                        opacity: 0.9
-                    }}></div>
-                    <div style={{
-                        position: 'absolute', inset: 0, opacity: 0.05,
-                        backgroundImage: 'repeating-linear-gradient(0deg, #fff 0, #fff 1px, transparent 1px, transparent 40px), repeating-linear-gradient(90deg, #fff 0, #fff 1px, transparent 1px, transparent 40px)'
-                    }}></div>
-                    <div style={{
-                        position: 'absolute', right: '-40px', top: '50%',
-                        transform: 'translateY(-50%)', width: '500px', height: '500px',
-                        border: '60px solid rgba(220,38,38,0.12)', borderRadius: '50%'
-                    }}></div>
-                    <div style={{
-                        position: 'absolute', right: '60px', top: '50%',
-                        transform: 'translateY(-50%)', width: '320px', height: '320px',
-                        border: '1.5px solid rgba(220,38,38,0.25)', borderRadius: '50%'
-                    }}></div>
-
-                    <div style={{ position: 'relative', zIndex: 2, padding: '120px 48px 80px', maxWidth: '640px' }}>
-                        <div style={{
-                            display: 'inline-flex', alignItems: 'center', gap: '8px',
-                            background: 'rgba(220,38,38,0.15)', border: '1px solid rgba(220,38,38,0.35)',
-                            color: '#fca5a5', fontSize: '11px', fontWeight: '600',
-                            letterSpacing: '2px', textTransform: 'uppercase',
-                            padding: '6px 14px', borderRadius: '100px', marginBottom: '28px',
-                        }}>
-                            <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#DC2626', display: 'inline-block' }}></span>
-                            Volunteer Program 2026
-                        </div>
-                        <h1 style={{
-                            fontFamily: 'Oswald, sans-serif',
-                            fontSize: '76px', lineHeight: '0.95', color: 'white',
-                            letterSpacing: '1px', margin: '0 0 8px 0',
-                            fontWeight: '700', textTransform: 'uppercase'
-                        }}>
-                            <span style={{ color: '#DC2626' }}>Red Cross</span><br />
-                            Volunteer<br />
-                            Needed
-                        </h1>
-                        <p style={{
-                            fontSize: '16px', color: 'rgba(255,255,255,0.6)', lineHeight: '1.75',
-                            maxWidth: '460px', fontWeight: '300',
-                            margin: '24px 0 40px 0', fontStyle: 'italic'
-                        }}>
-                            Join the Philippine Red Cross – Muntinlupa City Branch and make a difference in your community through disaster response, blood services, and emergency care.
-                        </p>
-                        <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-                            <Link href="/about" style={{
-                                background: '#DC2626', color: 'white', padding: '13px 30px',
-                                borderRadius: '4px', fontSize: '14px', fontWeight: '600',
-                                textDecoration: 'none', letterSpacing: '0.5px'
-                            }}>Read More</Link>
-                            <Link href={route('register')} style={{
-                                color: 'rgba(255,255,255,0.75)', fontSize: '14px',
-                                textDecoration: 'none',
-                                borderBottom: '1px solid rgba(255,255,255,0.25)', paddingBottom: '2px',
-                                letterSpacing: '0.3px'
-                            }}>Register Now →</Link>
-                        </div>
-                    </div>
-
-                    <div style={{
-                        position: 'absolute', bottom: '40px', right: '48px',
-                        display: 'flex', gap: '40px', zIndex: 2
-                    }}>
-                        {[['500+', 'Volunteers'], ['24/7', 'Response'], ['10+', 'Programs']].map(([num, label]) => (
-                            <div key={label} style={{ textAlign: 'center' }}>
-                                <div style={{
-                                    fontFamily: 'Oswald, sans-serif',
-                                    fontSize: '38px', color: 'white',
-                                    lineHeight: '1', fontWeight: '600'
-                                }}>
-                                    {num.includes('/') ? num : <>{num.replace('+', '')}<span style={{ color: '#DC2626' }}>+</span></>}
-                                </div>
-                                <div style={{
-                                    fontSize: '11px', color: 'rgba(255,255,255,0.4)',
-                                    marginTop: '6px', letterSpacing: '1px',
-                                    textTransform: 'uppercase'
-                                }}>{label}</div>
-                            </div>
-                        ))}
-                    </div>
-                </section>
-
+                    {num.includes('/') ? num : <>{num.replace('+', '')}<span style={{ color: '#DC2626' }}>+</span></>}
+                </div>
+                <div style={{
+                    fontSize: '11px', color: 'rgba(255,255,255,0.4)',
+                    marginTop: '6px', letterSpacing: '1px',
+                    textTransform: 'uppercase'
+                }}>{label}</div>
+            </div>
+        ))}
+    </div>
+</section>
                 {/* JOIN BANNER */}
                 <div style={{ padding: '48px 0' }}>
                     <JoinBanner />
