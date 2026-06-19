@@ -17,7 +17,6 @@ export default function AdminDocumentsIndex({ auth, documents = [] }) {
         ['#dcfce7', '#166534'], ['#ede9fe', '#5b21b6'], ['#fef3c7', '#92400e'],
     ];
 
-    // ← BINAGO: gumagana na kahit /documents/{id}/file ang URL (walang extension)
     const isImage = (url) => url && /\.(jpg|jpeg|png|gif|webp)(\?.*)?$/i.test(url);
     const isPdf   = (url) => url && (/\.pdf(\?.*)?$/i.test(url) || /\/documents\/\d+\/file/.test(url));
 
@@ -73,7 +72,6 @@ export default function AdminDocumentsIndex({ auth, documents = [] }) {
         { label: 'Activities',    route: 'admin.activities.index' },
         { label: '201 Files',     route: 'admin.documents.index', active: true },
         { label: 'Communication', route: 'admin.communication' },
-       
     ];
 
     return (
@@ -86,7 +84,7 @@ export default function AdminDocumentsIndex({ auth, documents = [] }) {
                 :root { --red: #C8102E; --red-dark: #9B0B22; --ink: #1A1A1A; --muted: #6B6B6B; --border: #EDEDED; --surface: #F7F7F5; --white: #FFFFFF; }
                 body { font-family: 'DM Sans', sans-serif; font-size: 13px; background: var(--surface); }
                 .wrap { display: flex; min-height: 100vh; }
-                .sidebar { width: 220px; background: var(--red); display: flex; flex-direction: column; position: fixed; top: 0; left: 0; height: 100vh; z-index: 100; transition: transform 0.2s; }
+                .sidebar { width: 220px; background: #CC0000; display: flex; flex-direction: column; position: fixed; top: 0; left: 0; height: 100vh; z-index: 100; transition: transform 0.2s; }
                 .sidebar.closed { transform: translateX(-220px); }
                 .main { margin-left: 220px; flex: 1; display: flex; flex-direction: column; min-height: 100vh; transition: margin-left 0.2s; }
                 .main.full { margin-left: 0; }
@@ -100,9 +98,9 @@ export default function AdminDocumentsIndex({ auth, documents = [] }) {
                 .sb-uname span { display: block; color: rgba(255,255,255,0.7); font-size: 11px; }
                 .sb-nav { padding: 10px 0; flex: 1; overflow-y: auto; }
                 .nav-label { font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: rgba(255,255,255,0.6); padding: 10px 20px 4px; font-weight: 600; }
-                .nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 20px; color: #fff; font-size: 13px; font-weight: 500; cursor: pointer; transition: all .15s; border-left: 2px solid transparent; text-decoration: none; }
-                .nav-item:hover { background: rgba(0,0,0,0.15); }
-                .nav-item.active { background: rgba(0,0,0,0.2); border-left-color: #fff; }
+                .nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 20px; color: rgba(255,255,255,0.85); font-size: 13px; font-weight: 500; cursor: pointer; transition: all .15s; border-left: 2px solid transparent; text-decoration: none; }
+                .nav-item:hover { background: rgba(0,0,0,0.12); color: #fff; }
+                .nav-item.active { background: rgba(255,255,255,0.2); border-left-color: #fff; color: #fff; }
                 .nav-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
                 .sb-footer { padding: 14px 20px; border-top: 1px solid rgba(255,255,255,0.15); }
                 .logout-btn { display: flex; align-items: center; gap: 8px; color: rgba(255,255,255,0.8); font-size: 12px; cursor: pointer; background: none; border: none; width: 100%; font-family: 'DM Sans', sans-serif; }
@@ -128,6 +126,7 @@ export default function AdminDocumentsIndex({ auth, documents = [] }) {
                 .btn-reject { background: #fee2e2; color: #991b1b; border: none; padding: 5px 10px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer; transition: opacity .15s; }
                 .btn-reject:hover { opacity: .8; }
                 .empty { text-align: center; padding: 48px; color: var(--muted); font-size: 13px; }
+                .doc-type { font-size: 13px; color: #C8102E; font-weight: 600; text-transform: uppercase; }
             `}</style>
 
             {/* PREVIEW MODAL */}
@@ -143,7 +142,7 @@ export default function AdminDocumentsIndex({ auth, documents = [] }) {
                                 }
                                 <div>
                                     <div style={{ fontFamily: 'Barlow Condensed', fontSize: 16, fontWeight: 700, textTransform: 'uppercase' }}>{previewDoc.name}</div>
-                                    <div style={{ fontSize: 12, color: '#C8102E', fontWeight: 600 }}>{previewDoc.type}</div>
+                                    <div className="doc-type">{previewDoc.type}</div>
                                 </div>
                             </div>
                             <button onClick={() => setPreviewDoc(null)} style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: '#888' }}>✕</button>
@@ -162,7 +161,7 @@ export default function AdminDocumentsIndex({ auth, documents = [] }) {
                                 </div>
                                 <div style={{ marginTop: 8 }}>
                                     <div style={{ fontSize: 11, fontWeight: 600, color: '#888', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 4 }}>Document Type</div>
-                                    <div style={{ fontSize: 13, color: '#C8102E', fontWeight: 600 }}>{previewDoc.type}</div>
+                                    <div className="doc-type">{previewDoc.type}</div>
                                 </div>
                                 <div>
                                     <div style={{ fontSize: 11, fontWeight: 600, color: '#888', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 4 }}>Status</div>
@@ -182,7 +181,7 @@ export default function AdminDocumentsIndex({ auth, documents = [] }) {
                                             : <div style={{ textAlign: 'center', color: '#888' }}>
                                                 <div style={{ fontSize: 48, marginBottom: 12 }}>📄</div>
                                                 <div style={{ fontSize: 13, marginBottom: 8 }}>Hindi ma-preview ang file.</div>
-                                                <button onClick={() => handleDownload(previewDoc)} style={{ background: 'none', border: 'none', color: '#C8102E', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>I-download →</button>
+                                                <button onClick={() => handleDownload(previewDoc)} style={{ background: 'none', border: 'none', color: '#C8102E', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>download →</button>
                                             </div>
                                 ) : (
                                     <div style={{ textAlign: 'center', color: '#aaa', fontSize: 13 }}>Walang file na naka-attach.</div>
@@ -202,7 +201,7 @@ export default function AdminDocumentsIndex({ auth, documents = [] }) {
                             </div>
                             <div style={{ display: 'flex', gap: 8 }}>
                                 {previewDoc.file_url && (
-                                    <button onClick={() => handleDownload(previewDoc)} style={{ background: '#f5f5f5', border: '1px solid #e8e8e8', padding: '7px 14px', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>I-download</button>
+                                    <button onClick={() => handleDownload(previewDoc)} style={{ background: '#f5f5f5', border: '1px solid #e8e8e8', padding: '7px 14px', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>download</button>
                                 )}
                                 <button onClick={() => setPreviewDoc(null)} style={{ background: '#f5f5f5', border: '1px solid #e8e8e8', padding: '7px 14px', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Close</button>
                             </div>
@@ -323,7 +322,7 @@ export default function AdminDocumentsIndex({ auth, documents = [] }) {
                                                 <div style={{ fontSize: 11, color: '#6B6B6B' }}>Muntinlupa City Branch</div>
                                             </div>
                                         </div>
-                                        <div style={{ fontSize: 13, color: '#C8102E', fontWeight: 600 }}>{doc.type}</div>
+                                        <div className="doc-type">{doc.type}</div>
                                         <div style={{ fontSize: 12, color: '#6B6B6B' }}>{doc.uploaded_at}</div>
                                         <span className="badge" style={statusStyle(doc.status)}>{doc.status}</span>
                                         <div className="action-btns" onClick={e => e.stopPropagation()}>

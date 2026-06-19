@@ -122,7 +122,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
 
     // 201 Files (Documents)
     Route::get('/documents', [AdminDocumentController::class, 'index'])->name('documents.index');
-    Route::get('/documents/{id}/file', [AdminDocumentController::class, 'serveFile'])->name('documents.file'); // ← BAGO
+    Route::get('/documents/{id}/file', [AdminDocumentController::class, 'serveFile'])->name('documents.file');
     Route::patch('/documents/{id}/approve', [AdminDocumentController::class, 'approve'])->name('documents.approve');
     Route::patch('/documents/{id}/reject', [AdminDocumentController::class, 'reject'])->name('documents.reject');
 
@@ -189,6 +189,25 @@ Route::middleware(['auth', 'role:volunteer'])->prefix('volunteer')->name('volunt
 
     Route::get('/profile', [VolunteerProfileController::class, 'edit'])->name('profile');
     Route::patch('/profile', [VolunteerProfileController::class, 'update'])->name('profile.update');
+
+    // ─── Password Change ───────────────────────────────────────────────────────
+    Route::get('/password', function () {
+        return Inertia::render('Volunteer/ChangePassword');
+    })->name('password');
+
+    Route::put('/password', function (Request $request) {
+        $request->validate([
+            'current_password' => ['required', 'current_password'],
+            'password'         => ['required', 'min:8', 'confirmed'],
+        ]);
+
+        $request->user()->update([
+            'password' => bcrypt($request->password),
+        ]);
+
+        return back()->with('success', 'Password updated successfully.');
+    })->name('password.update');
+    // ──────────────────────────────────────────────────────────────────────────
 
     Route::get('/attendance', [AttendanceController::class, 'index'])->name('attendance');
     Route::post('/attendance/time-in', [AttendanceController::class, 'timeIn'])->name('attendance.timein');

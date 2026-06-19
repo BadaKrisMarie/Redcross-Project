@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import axios from 'axios';
 
@@ -7,7 +7,7 @@ axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
 const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
 if (csrfToken) axios.defaults.headers.common['X-CSRF-TOKEN'] = csrfToken;
 
-// ── localStorage helpers for persisting read activity IDs ──────────────────
+// -- localStorage helpers for persisting read activity IDs ------------------
 const LS_KEY = 'volunteer_read_notif_ids';
 function getReadIds() {
     try { return new Set(JSON.parse(localStorage.getItem(LS_KEY) || '[]')); }
@@ -21,7 +21,7 @@ function markIdsRead(ids) {
     ids.forEach(id => s.add(String(id)));
     saveReadIds(s);
 }
-// ───────────────────────────────────────────────────────────────────────────
+// ---------------------------------------------------------------------------
 
 export default function VolunteerDashboard({ auth, totalHours, totalDays, monthDays, assignedActivities, recentAttendance }) {
     const volunteer = auth.user;
@@ -42,7 +42,7 @@ export default function VolunteerDashboard({ auth, totalHours, totalDays, monthD
     }, []);
 
     const fetchNotifications = useCallback(async () => {
-        const readIds = getReadIds(); // persisted across page navigations
+        const readIds = getReadIds();
 
         const activityNotifs = (assignedActivities || [])
             .filter(a => new Date(a.date) >= new Date())
@@ -51,7 +51,6 @@ export default function VolunteerDashboard({ auth, totalHours, totalDays, monthD
                 id: `activity-${a.id}`,
                 message: `Upcoming: ${a.name}`,
                 created_at: new Date(a.date).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' }),
-                // already read if ID was saved in localStorage
                 is_read: readIds.has(`activity-${a.id}`),
                 type: 'activity',
                 activity: a,
@@ -62,12 +61,10 @@ export default function VolunteerDashboard({ auth, totalHours, totalDays, monthD
             const apiNotifs = (res.data.notifications || []).map(n => ({
                 ...n,
                 type: n.type || 'general',
-                // server already tracks read; also check local cache as fallback
                 is_read: n.is_read || readIds.has(String(n.id)),
             }));
             const allNotifs = [...activityNotifs, ...apiNotifs];
             setNotifications(allNotifs);
-            // unread = those not yet marked read in localStorage AND not read on server
             const unread = allNotifs.filter(n => !n.is_read).length;
             setUnreadCount(unread);
         } catch {
@@ -78,7 +75,6 @@ export default function VolunteerDashboard({ auth, totalHours, totalDays, monthD
 
     useEffect(() => { fetchNotifications(); }, [fetchNotifications]);
 
-    // Close dropdowns when clicking outside
     useEffect(() => {
         const handler = (e) => {
             if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
@@ -94,7 +90,6 @@ export default function VolunteerDashboard({ auth, totalHours, totalDays, monthD
         return () => document.removeEventListener('mousedown', handler);
     }, []);
 
-    // Auto-mark all as read when bell panel opens
     const handleBellToggle = () => {
         const willOpen = !showBellNotifs;
         setShowBellNotifs(willOpen);
@@ -104,7 +99,6 @@ export default function VolunteerDashboard({ auth, totalHours, totalDays, monthD
 
         if (willOpen && unreadCount > 0) {
             setNotifications(prev => {
-                // Persist every notification ID to localStorage
                 markIdsRead(prev.map(n => n.id));
                 return prev.map(n => ({ ...n, is_read: true }));
             });
@@ -122,7 +116,6 @@ export default function VolunteerDashboard({ auth, totalHours, totalDays, monthD
         try { await axios.patch('/volunteer/notifications/read-all'); } catch {}
     };
 
-    // Click a notification: expand/collapse it (already read since bell was opened)
     const handleNotifClick = (id) => {
         setExpandedId(prev => prev === id ? null : id);
     };
@@ -157,7 +150,6 @@ export default function VolunteerDashboard({ auth, totalHours, totalDays, monthD
 
     const bellTaskNotifs    = notifications.filter(n => n.type === 'activity');
     const bellGeneralNotifs = notifications.filter(n => n.type !== 'activity');
-    // Badge only shows unread count; after opening bell it becomes 0
     const bellUnreadCount = unreadCount;
 
     const sidebarLinks = [
@@ -217,7 +209,7 @@ export default function VolunteerDashboard({ auth, totalHours, totalDays, monthD
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
 
-                            {/* ── BELL ICON ── */}
+                            {/* -- BELL ICON -- */}
                             <div style={{ position: 'relative' }} ref={bellRef}>
                                 <button
                                     onClick={handleBellToggle}
@@ -232,18 +224,14 @@ export default function VolunteerDashboard({ auth, totalHours, totalDays, monthD
                                     )}
                                 </button>
 
-                                {/* Bell Notifications Panel */}
                                 {showBellNotifs && (
                                     <div style={{ position: 'absolute', right: 0, top: 42, width: 340, background: 'white', border: '1px solid #E5E7EB', borderRadius: '12px', zIndex: 200, boxShadow: '0 4px 16px rgba(0,0,0,0.1)', overflow: 'hidden' }}>
-                                        {/* Header */}
                                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', borderBottom: '1px solid #F3F4F6' }}>
                                             <span style={{ fontSize: '13px', fontWeight: '600', color: '#111' }}>Notifications</span>
                                             <span style={{ fontSize: '11px', color: '#9CA3AF' }}>Click to expand</span>
                                         </div>
 
                                         <div style={{ maxHeight: '480px', overflowY: 'auto' }}>
-
-                                            {/* ── TASKS ── */}
                                             <div style={{ padding: '10px 16px 4px', fontSize: '10px', fontWeight: '700', color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Tasks</div>
                                             {bellTaskNotifs.length === 0 ? (
                                                 <div style={{ padding: '10px 16px 14px', fontSize: '12px', color: '#D1D5DB', textAlign: 'center' }}>No tasks assigned</div>
@@ -252,68 +240,24 @@ export default function VolunteerDashboard({ auth, totalHours, totalDays, monthD
                                                 const act = n.activity || {};
                                                 return (
                                                     <div key={n.id} style={{ borderBottom: '1px solid #F9FAFB' }}>
-                                                        {/* Row — always visible, clickable */}
-                                                        <div
-                                                            onClick={() => handleNotifClick(n.id)}
-                                                            style={{
-                                                                display: 'flex', gap: '10px', padding: '10px 16px',
-                                                                background: isExpanded ? '#FFF5F5' : 'white',
-                                                                cursor: 'pointer',
-                                                                transition: 'background 0.15s',
-                                                            }}
-                                                        >
+                                                        <div onClick={() => handleNotifClick(n.id)} style={{ display: 'flex', gap: '10px', padding: '10px 16px', background: isExpanded ? '#FFF5F5' : 'white', cursor: 'pointer', transition: 'background 0.15s' }}>
                                                             <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#CC0000', flexShrink: 0, marginTop: '5px' }} />
                                                             <div style={{ flex: 1, minWidth: 0 }}>
                                                                 <div style={{ fontSize: '12px', fontWeight: '600', color: '#111' }}>{n.message}</div>
                                                                 <div style={{ fontSize: '11px', color: '#9CA3AF', marginTop: '2px' }}>{n.created_at}</div>
                                                             </div>
-                                                            {/* Chevron */}
-                                                            <span style={{ color: '#9CA3AF', fontSize: '12px', alignSelf: 'center', transform: isExpanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', flexShrink: 0 }}>▼</span>
+                                                            <span style={{ color: '#9CA3AF', fontSize: '12px', alignSelf: 'center', transform: isExpanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', flexShrink: 0 }}>▾</span>
                                                         </div>
-
-                                                        {/* Expanded details */}
                                                         {isExpanded && (
                                                             <div style={{ padding: '0 16px 14px 33px', background: '#FAFAFA', borderTop: '1px solid #F3F4F6' }}>
-                                                                {act.name && (
-                                                                    <div style={{ fontSize: '13px', fontWeight: '700', color: '#111', marginBottom: '8px', paddingTop: '10px' }}>{act.name}</div>
-                                                                )}
+                                                                {act.name && <div style={{ fontSize: '13px', fontWeight: '700', color: '#111', marginBottom: '8px', paddingTop: '10px' }}>{act.name}</div>}
                                                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                                                                    {act.date && (
-                                                                        <div style={{ display: 'flex', gap: '8px', fontSize: '12px' }}>
-                                                                            <span style={{ color: '#9CA3AF', width: '60px', flexShrink: 0 }}>Date</span>
-                                                                            <span style={{ color: '#374151', fontWeight: '500' }}>
-                                                                                {new Date(act.date).toLocaleDateString('en-PH', { weekday: 'short', month: 'long', day: 'numeric', year: 'numeric' })}
-                                                                            </span>
-                                                                        </div>
-                                                                    )}
-                                                                    {act.start_time && (
-                                                                        <div style={{ display: 'flex', gap: '8px', fontSize: '12px' }}>
-                                                                            <span style={{ color: '#9CA3AF', width: '60px', flexShrink: 0 }}>Time</span>
-                                                                            <span style={{ color: '#374151', fontWeight: '500' }}>
-                                                                                {act.start_time.substring(0, 5)}{act.end_time ? ` – ${act.end_time.substring(0, 5)}` : ''}
-                                                                            </span>
-                                                                        </div>
-                                                                    )}
-                                                                    {act.location_name && (
-                                                                        <div style={{ display: 'flex', gap: '8px', fontSize: '12px' }}>
-                                                                            <span style={{ color: '#9CA3AF', width: '60px', flexShrink: 0 }}>Location</span>
-                                                                            <span style={{ color: '#374151', fontWeight: '500' }}>{act.location_name}</span>
-                                                                        </div>
-                                                                    )}
-                                                                    {act.description && (
-                                                                        <div style={{ display: 'flex', gap: '8px', fontSize: '12px', marginTop: '2px' }}>
-                                                                            <span style={{ color: '#9CA3AF', width: '60px', flexShrink: 0 }}>Details</span>
-                                                                            <span style={{ color: '#6B7280', lineHeight: '1.5' }}>{act.description}</span>
-                                                                        </div>
-                                                                    )}
+                                                                    {act.date && <div style={{ display: 'flex', gap: '8px', fontSize: '12px' }}><span style={{ color: '#9CA3AF', width: '60px', flexShrink: 0 }}>Date</span><span style={{ color: '#374151', fontWeight: '500' }}>{new Date(act.date).toLocaleDateString('en-PH', { weekday: 'short', month: 'long', day: 'numeric', year: 'numeric' })}</span></div>}
+                                                                    {act.start_time && <div style={{ display: 'flex', gap: '8px', fontSize: '12px' }}><span style={{ color: '#9CA3AF', width: '60px', flexShrink: 0 }}>Time</span><span style={{ color: '#374151', fontWeight: '500' }}>{act.start_time.substring(0, 5)}{act.end_time ? ` – ${act.end_time.substring(0, 5)}` : ''}</span></div>}
+                                                                    {act.location_name && <div style={{ display: 'flex', gap: '8px', fontSize: '12px' }}><span style={{ color: '#9CA3AF', width: '60px', flexShrink: 0 }}>Location</span><span style={{ color: '#374151', fontWeight: '500' }}>{act.location_name}</span></div>}
+                                                                    {act.description && <div style={{ display: 'flex', gap: '8px', fontSize: '12px', marginTop: '2px' }}><span style={{ color: '#9CA3AF', width: '60px', flexShrink: 0 }}>Details</span><span style={{ color: '#6B7280', lineHeight: '1.5' }}>{act.description}</span></div>}
                                                                 </div>
-                                                                <Link
-                                                                    href={route('volunteer.schedule')}
-                                                                    onClick={() => setShowBellNotifs(false)}
-                                                                    style={{ display: 'inline-block', marginTop: '10px', fontSize: '11px', fontWeight: '600', color: '#CC0000', textDecoration: 'none' }}
-                                                                >
-                                                                    View in Schedule →
-                                                                </Link>
+                                                                <Link href={route('volunteer.schedule')} onClick={() => setShowBellNotifs(false)} style={{ display: 'inline-block', marginTop: '10px', fontSize: '11px', fontWeight: '600', color: '#CC0000', textDecoration: 'none' }}>View in Schedule →</Link>
                                                             </div>
                                                         )}
                                                     </div>
@@ -322,7 +266,6 @@ export default function VolunteerDashboard({ auth, totalHours, totalDays, monthD
 
                                             <div style={{ height: '1px', background: '#E5E7EB', margin: '4px 0' }} />
 
-                                            {/* ── ANNOUNCEMENTS ── */}
                                             <div style={{ padding: '10px 16px 4px', fontSize: '10px', fontWeight: '700', color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Announcements</div>
                                             {bellGeneralNotifs.length === 0 ? (
                                                 <div style={{ padding: '10px 16px 18px', fontSize: '12px', color: '#D1D5DB', textAlign: 'center' }}>No announcements yet</div>
@@ -330,30 +273,17 @@ export default function VolunteerDashboard({ auth, totalHours, totalDays, monthD
                                                 const isExpanded = expandedId === n.id;
                                                 return (
                                                     <div key={n.id} style={{ borderBottom: '1px solid #F9FAFB' }}>
-                                                        {/* Row */}
-                                                        <div
-                                                            onClick={() => handleNotifClick(n.id)}
-                                                            style={{
-                                                                display: 'flex', gap: '10px', padding: '10px 16px',
-                                                                background: isExpanded ? '#F9FAFB' : 'white',
-                                                                cursor: 'pointer',
-                                                                transition: 'background 0.15s',
-                                                            }}
-                                                        >
+                                                        <div onClick={() => handleNotifClick(n.id)} style={{ display: 'flex', gap: '10px', padding: '10px 16px', background: isExpanded ? '#F9FAFB' : 'white', cursor: 'pointer', transition: 'background 0.15s' }}>
                                                             <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#D1D5DB', flexShrink: 0, marginTop: '5px' }} />
                                                             <div style={{ flex: 1, minWidth: 0 }}>
                                                                 <div style={{ fontSize: '12px', fontWeight: '600', color: '#111', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{n.title || n.message}</div>
                                                                 <div style={{ fontSize: '11px', color: '#9CA3AF', marginTop: '2px' }}>{n.created_at}</div>
                                                             </div>
-                                                            <span style={{ color: '#9CA3AF', fontSize: '12px', alignSelf: 'center', transform: isExpanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', flexShrink: 0 }}>▼</span>
+                                                            <span style={{ color: '#9CA3AF', fontSize: '12px', alignSelf: 'center', transform: isExpanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', flexShrink: 0 }}>▾</span>
                                                         </div>
-
-                                                        {/* Expanded */}
                                                         {isExpanded && (
                                                             <div style={{ padding: '0 16px 14px 33px', background: '#FAFAFA', borderTop: '1px solid #F3F4F6' }}>
-                                                                {n.title && (
-                                                                    <div style={{ fontSize: '13px', fontWeight: '700', color: '#111', marginBottom: '6px', paddingTop: '10px' }}>{n.title}</div>
-                                                                )}
+                                                                {n.title && <div style={{ fontSize: '13px', fontWeight: '700', color: '#111', marginBottom: '6px', paddingTop: '10px' }}>{n.title}</div>}
                                                                 <div style={{ fontSize: '12px', color: '#374151', lineHeight: '1.6', paddingTop: n.title ? 0 : '10px' }}>{n.message}</div>
                                                                 <div style={{ fontSize: '11px', color: '#9CA3AF', marginTop: '6px' }}>{n.created_at}</div>
                                                             </div>
@@ -361,13 +291,12 @@ export default function VolunteerDashboard({ auth, totalHours, totalDays, monthD
                                                     </div>
                                                 );
                                             })}
-
                                         </div>
                                     </div>
                                 )}
                             </div>
 
-                            {/* ── AVATAR / PROFILE DROPDOWN ── */}
+                            {/* -- AVATAR / PROFILE DROPDOWN -- */}
                             <div style={{ position: 'relative' }} ref={dropdownRef}>
                                 <button
                                     onClick={() => { setDropdownOpen(o => !o); setShowNotifs(false); setShowBellNotifs(false); }}
@@ -387,12 +316,28 @@ export default function VolunteerDashboard({ auth, totalHours, totalDays, monthD
                                                 </div>
                                             </div>
                                         </div>
-                                        <Link href={route('volunteer.profile')} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '11px 16px', fontSize: '13px', color: '#374151', textDecoration: 'none', borderBottom: '1px solid #F3F4F6' }}
+
+                                        {/* Edit Profile */}
+                                        <Link
+                                            href={route('volunteer.profile')}
+                                            style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '11px 16px', fontSize: '13px', color: '#374151', textDecoration: 'none', borderBottom: '1px solid #F3F4F6' }}
                                             onMouseEnter={e => e.currentTarget.style.background = '#F9FAFB'}
-                                            onMouseLeave={e => e.currentTarget.style.background = 'none'}>
+                                            onMouseLeave={e => e.currentTarget.style.background = 'none'}
+                                        >
+                                            <UserIcon />
                                             Edit Profile
                                         </Link>
-                                        
+
+                                        {/* Change Password */}
+                                        <Link
+                                            href={route('volunteer.password')}
+                                            style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '11px 16px', fontSize: '13px', color: '#374151', textDecoration: 'none', borderBottom: '1px solid #F3F4F6' }}
+                                            onMouseEnter={e => e.currentTarget.style.background = '#F9FAFB'}
+                                            onMouseLeave={e => e.currentTarget.style.background = 'none'}
+                                        >
+                                            <LockIcon />
+                                            Change Password
+                                        </Link>
                                     </div>
                                 )}
                             </div>
@@ -446,3 +391,5 @@ function CalIcon() { return <svg width="15" height="15" viewBox="0 0 24 24" fill
 function ChatIcon() { return <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>; }
 function CheckIcon() { return <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>; }
 function FolderIcon() { return <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>; }
+function UserIcon() { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6B7280" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>; }
+function LockIcon() { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6B7280" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>; }

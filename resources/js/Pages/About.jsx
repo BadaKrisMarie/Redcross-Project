@@ -151,7 +151,7 @@ function Nav() {
 function Hero() {
   return (
     <div style={{
-      backgroundImage: "linear-gradient(to right, rgba(107,10,10,0.92) 0%, rgba(58,8,8,0.88) 40%, rgba(26,3,3,0.85) 70%, rgba(0,0,0,0.88) 100%), url('https://scontent.fmnl8-1.fna.fbcdn.net/v/t39.30808-6/486253255_122117910200759224_1850104524729330657_n.jpg?_nc_cat=108&ccb=1-7&_nc_sid=127cfc&_nc_eui2=AeEw-GcRpW6cF5CDYZ9ZRKZCzVUqOFhpoWXNVSo4WGmhZdHvRS7hLlmRZAbBesLg5GtZF2pP5w207rnDSsD4mH7B&_nc_ohc=eVZESyEoYO4Q7kNvwEBArtn&_nc_oc=Ado0XUsrxF7BC6HChAYWkzAqIXZ-DonRNp8s9hd5dKnQXNTXCNQPLK2MvFg8S8wQFaQueWEYEymxkLTcW5RCws-Y&_nc_zt=23&_nc_ht=scontent.fmnl8-1.fna&_nc_gid=0wJy12mi8ditc1tsAhoFkw&_nc_ss=782a8&oh=00_Af4XeMez1nXhvjGANkLOhozhl2igOmv-c8KFBIfhOlLVmw&oe=6A1AC1F7')",
+      backgroundImage: "linear-gradient(to right, rgba(107,10,10,0.92) 0%, rgba(58,8,8,0.88) 40%, rgba(26,3,3,0.85) 70%, rgba(0,0,0,0.88) 100%), url('/images/hero-bg.jpg')",
       backgroundSize: "cover",
       backgroundPosition: "center",
       padding: "56px 48px 48px",
@@ -240,7 +240,7 @@ const photos = [
     fullDesc: "Our Community Outreach program reaches the most vulnerable sectors of Muntinlupa City. Volunteers regularly visit barangays to provide basic health consultations, distribute relief goods, and conduct community education sessions. This program has touched thousands of lives across the 9 barangays we serve, ensuring that no family is left behind during times of need.",
     accent: "#C8102E",
     tagLabel: "Outreach",
-    image: "https://scontent.fmnl9-3.fna.fbcdn.net/v/t39.30808-6/579912457_122161425698759224_5026736243262263116_n.jpg?_nc_cat=100&ccb=1-7&_nc_sid=127cfc&_nc_eui2=AeGhOEnRV-eh6mXSLEAdZ8L94OVOzjvE3c3g5U7OO8TdzZPUF3iITgkM93516fqpXaq3RyLi9EmyjdkWO50RfDsT&_nc_ohc=KP2a6Z3VHAMQ7kNvwH4yWOP&_nc_oc=AdqK7J_EzW7mqAmEesRsSzJusT1EVjHofgo-g1osQmBeIOnM990-IktlXAZ2gMVQtJA&_nc_zt=23&_nc_ht=scontent.fmnl9-3.fna&_nc_gid=pCiwzN-BEIZtMURihogm5A&_nc_ss=7a2a8&oh=00_Af5EMqKQ6VcWU26OrrvKlmlk8eLjj6uOtB3VPwPkttWxKQ&oe=6A1AA184",
+    image: "/images/outreach.jpg",
   },
   {
     title: "Relief Distribution",
@@ -249,7 +249,7 @@ const photos = [
     fullDesc: "During disasters and calamities, our Relief Distribution team mobilizes rapidly to deliver food packs, water, hygiene kits, and other essential supplies to affected families. Our logistics network ensures that aid reaches even the most hard-to-reach areas of Muntinlupa within hours of a disaster declaration. We coordinate closely with local government units for maximum efficiency.",
     accent: "#1A1464",
     tagLabel: "Relief",
-    image: "https://scontent.fmnl9-1.fna.fbcdn.net/v/t39.30808-6/525541462_122144559482759224_7305491659323059505_n.jpg?_nc_cat=110&ccb=1-7&_nc_sid=833d8c&_nc_eui2=AeGd-2hqIPnTydhWQTiCxdcpskBCB6y-7jSyQEIHrL7uNLEGjI5Vn4kzpvuuKI9lFf6K2lWDgPj7VC4ZGRIsyLdq&_nc_ohc=aUnmDE865UcQ7kNvwHmyfAV&_nc_oc=Adqt_1wumq-qM3WRFIbzhv-KoOLHmAwlUyLtHigroieYUbkipD9zVz8lswtQHHtpsfM&_nc_zt=23&_nc_ht=scontent.fmnl9-1.fna&_nc_gid=NZxX_aRFwd9YrAinJWef7A&_nc_ss=7a2a8&oh=00_Af78MVUODKUNApl8rzyQ-NzlncZzxnIXrq-AlHF6B8e-1g&oe=6A1A9E6B",
+    image: "/images/relief.jpg",
   },
   {
     title: "Community Assistance",
@@ -258,7 +258,7 @@ const photos = [
     fullDesc: "Our Community Assistance program provides ongoing support to marginalized communities in Muntinlupa. Volunteers conduct regular welfare checks, provide psychosocial support, and connect residents with government services and other humanitarian organizations. Special attention is given to elderly residents, persons with disabilities, and families affected by poverty or displacement.",
     accent: "#0A6E3A",
     tagLabel: "Assistance",
-    image: "https://scontent.fmnl8-1.fna.fbcdn.net/v/t39.30808-6/518412380_122142059048759224_7797772017153258644_n.jpg?_nc_cat=106&ccb=1-7&_nc_sid=127cfc&_nc_eui2=AeHK7K4qe-W4MlWbpf6EKiLsgYc2IzPTZpmBhzYjM9NmmTdEFo7l68QRWxMji-85Jm_JnX0LBT3jPmXiLkpmaY5m&_nc_ohc=_rU2p01_i1QQ7kNvwFhtdmo&_nc_oc=AdonxDN-Up1mY8kKth9Qy74totFIWV9FLtmmt71HXz7rKSFZxo3ld7IWbqE5ERxW2dl7HBbDfYloeOTfj8vHIn3o&_nc_zt=23&_nc_ht=scontent.fmnl8-1.fna&_nc_gid=2grovV96CwF0416-95tfyA&_nc_ss=782a8&oh=00_Af6voPoPD_6-AAouCa8U1RhO8wrjXp6Gqyv0s1GLi7xzcA&oe=6A1AB59E",
+    image: "/images/assistance.jpg",
   },
 ];
 

@@ -73,7 +73,7 @@ export default function AdminSchedule({ auth, activities = [] }) {
                 :root { --red: #C8102E; --ink: #1A1A1A; --muted: #6B6B6B; --border: #EDEDED; --surface: #F7F7F5; --white: #FFFFFF; }
                 body { font-family: 'DM Sans', sans-serif; font-size: 13px; background: var(--surface); }
                 .wrap { display: flex; min-height: 100vh; }
-                .sidebar { width: 220px; background: var(--red); display: flex; flex-direction: column; position: fixed; top: 0; left: 0; height: 100vh; z-index: 100; transition: transform 0.2s; }
+                .sidebar { width: 220px; background: #CC0000; display: flex; flex-direction: column; position: fixed; top: 0; left: 0; height: 100vh; z-index: 100; transition: transform 0.2s; }
                 .sidebar.closed { transform: translateX(-220px); }
                 .main { margin-left: 220px; flex: 1; display: flex; flex-direction: column; min-height: 100vh; transition: margin-left 0.2s; }
                 .main.full { margin-left: 0; }
@@ -87,9 +87,9 @@ export default function AdminSchedule({ auth, activities = [] }) {
                 .sb-uname span { display: block; color: rgba(255,255,255,0.7); font-size: 11px; }
                 .sb-nav { padding: 10px 0; flex: 1; overflow-y: auto; }
                 .nav-label { font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: rgba(255,255,255,0.6); padding: 10px 20px 4px; font-weight: 600; }
-                .nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 20px; color: #fff; font-size: 13px; font-weight: 500; cursor: pointer; transition: all .15s; border-left: 2px solid transparent; text-decoration: none; }
-                .nav-item:hover { background: rgba(0,0,0,0.15); }
-                .nav-item.active { background: rgba(0,0,0,0.2); border-left-color: #fff; }
+                .nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 20px; color: rgba(255,255,255,0.85); font-size: 13px; font-weight: 500; cursor: pointer; transition: all .15s; border-left: 2px solid transparent; text-decoration: none; }
+                .nav-item:hover { background: rgba(0,0,0,0.12); color: #fff; }
+                .nav-item.active { background: rgba(255,255,255,0.2); border-left-color: #fff; color: #fff; }
                 .nav-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
                 .sb-footer { padding: 14px 20px; border-top: 1px solid rgba(255,255,255,0.15); }
                 .logout-btn { display: flex; align-items: center; gap: 8px; color: rgba(255,255,255,0.8); font-size: 12px; cursor: pointer; background: none; border: none; width: 100%; font-family: 'DM Sans', sans-serif; }

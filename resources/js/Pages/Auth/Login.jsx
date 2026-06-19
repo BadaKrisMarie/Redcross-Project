@@ -1,9 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Head, Link, useForm } from '@inertiajs/react';
-import { useState } from 'react';
 
 export default function Login({ status, canResetPassword }) {
     const [userType, setUserType] = useState('volunteer');
+    const [showPassword, setShowPassword] = useState(false);
 
     const { data, setData, post, processing, errors, reset } = useForm({
         email: '',
@@ -22,6 +22,8 @@ export default function Login({ status, canResetPassword }) {
     const handleToggle = (type) => {
         setUserType(type);
         setData('user_type', type);
+        setShowPassword(false);
+        reset('password');
     };
 
     return (
@@ -99,6 +101,7 @@ export default function Login({ status, canResetPassword }) {
                             >Admin</button>
                         </div>
 
+                       
                         {/* Status */}
                         {status && (
                             <div style={{
@@ -137,25 +140,60 @@ export default function Login({ status, canResetPassword }) {
                                 )}
                             </div>
 
-                            {/* Password */}
+                            {/* Password with show/hide toggle */}
                             <div style={{ marginBottom: '18px' }}>
                                 <label style={{
                                     display: 'block', fontSize: '12px',
                                     fontWeight: '500', color: '#444', marginBottom: '7px'
                                 }}>Password</label>
-                                <input
-                                    type="password"
-                                    value={data.password}
-                                    onChange={(e) => setData('password', e.target.value)}
-                                    placeholder="Enter your password"
-                                    style={{
-                                        width: '100%', padding: '11px 14px',
-                                        border: errors.password ? '1px solid #DC2626' : '1px solid #e5e5e5',
-                                        borderRadius: '8px', fontSize: '13px',
-                                        outline: 'none', color: '#111',
-                                        background: '#fafafa', boxSizing: 'border-box'
-                                    }}
-                                />
+                                <div style={{ position: 'relative' }}>
+                                    <input
+                                        type={showPassword ? 'text' : 'password'}
+                                        value={data.password}
+                                        onChange={(e) => setData('password', e.target.value)}
+                                        placeholder="Enter your password"
+                                        style={{
+                                            width: '100%', padding: '11px 42px 11px 14px',
+                                            border: errors.password ? '1px solid #DC2626' : '1px solid #e5e5e5',
+                                            borderRadius: '8px', fontSize: '13px',
+                                            outline: 'none', color: '#111',
+                                            background: '#fafafa', boxSizing: 'border-box'
+                                        }}
+                                    />
+                                    {/* Show/Hide password button */}
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        aria-label={showPassword ? 'Hide password' : 'Show password'}
+                                        style={{
+                                            position: 'absolute', right: '12px', top: '50%',
+                                            transform: 'translateY(-50%)',
+                                            background: 'none', border: 'none',
+                                            cursor: 'pointer', padding: '0',
+                                            display: 'flex', alignItems: 'center',
+                                            color: '#999',
+                                        }}
+                                    >
+                                        {showPassword ? (
+                                            /* Eye OPEN — password is visible, click to HIDE */
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
+                                                fill="none" stroke="currentColor" strokeWidth="2"
+                                                strokeLinecap="round" strokeLinejoin="round">
+                                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                                                <circle cx="12" cy="12" r="3" />
+                                            </svg>
+                                        ) : (
+                                            /* Eye CLOSED — password is hidden, click to SHOW */
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24"
+                                                fill="none" stroke="currentColor" strokeWidth="2"
+                                                strokeLinecap="round" strokeLinejoin="round">
+                                                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
+                                                <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
+                                                <line x1="1" y1="1" x2="23" y2="23" />
+                                            </svg>
+                                        )}
+                                    </button>
+                                </div>
                                 {errors.password && (
                                     <p style={{ fontSize: '11px', color: '#DC2626', marginTop: '5px' }}>{errors.password}</p>
                                 )}
@@ -225,20 +263,17 @@ export default function Login({ status, canResetPassword }) {
                     background: '#1a1a1a', overflow: 'hidden',
                     display: 'flex', alignItems: 'center', justifyContent: 'center'
                 }}>
-                    {/* Background image */}
                     <div style={{
                         position: 'absolute', inset: 0,
                         backgroundImage: "url('https://scontent.fmnl8-1.fna.fbcdn.net/v/t39.30808-6/486253255_122117910200759224_1850104524729330657_n.jpg?_nc_cat=108&ccb=1-7&_nc_sid=127cfc&_nc_ohc=s3qPx72vL0QQ7kNvwEIiHPI&_nc_oc=AdqRmmyhVTdlpQ1ucKr3gwtRZUjigQziyUGexQspH0zfnd9XfILoSqGTRbOsO1TXLSzdeB3CaaEb3y_yR-Ejs5Rk&_nc_zt=23&_nc_ht=scontent.fmnl8-1.fna&_nc_gid=OEftzlaHV_BR3OPDU5Gs0g&_nc_ss=7b289&oh=00_Af5Y55emzOdxd-X1_8lK2G_kTNILcyfRuukztDwxOLT0bw&oe=6A1CBC37')",
                         backgroundSize: 'cover',
                         backgroundPosition: 'center',
                     }} />
-                    {/* Dark overlay */}
                     <div style={{
                         position: 'absolute', inset: 0,
                         background: 'linear-gradient(135deg, rgba(127,29,29,0.82) 0%, rgba(26,26,26,0.82) 100%)',
                     }} />
 
-                    {/* Bottom text */}
                     <div style={{
                         position: 'absolute', bottom: '60px', left: '48px', right: '48px',
                         zIndex: 2

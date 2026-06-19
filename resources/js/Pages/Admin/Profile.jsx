@@ -11,6 +11,11 @@ export default function AdminProfile({ auth, activityLogs = [] }) {
         admin.photo ? asset('storage/' + admin.photo) : null
     );
 
+    // Show/hide states for each password field
+    const [showCurrent, setShowCurrent] = useState(false);
+    const [showNew, setShowNew] = useState(false);
+    const [showConfirm, setShowConfirm] = useState(false);
+
     const profileForm = useForm({
         _method: 'PATCH',
         name:    admin.name  ?? '',
@@ -52,7 +57,12 @@ export default function AdminProfile({ auth, activityLogs = [] }) {
     function handlePasswordSubmit(e) {
         e.preventDefault();
         passwordForm.post(route('admin.profile.password'), {
-            onSuccess: () => passwordForm.reset(),
+            onSuccess: () => {
+                passwordForm.reset();
+                setShowCurrent(false);
+                setShowNew(false);
+                setShowConfirm(false);
+            },
         });
     }
 
@@ -65,6 +75,41 @@ export default function AdminProfile({ auth, activityLogs = [] }) {
         { key: 'password', label: 'Change Password' },
         { key: 'logs',     label: 'Activity Logs' },
     ];
+
+    // Reusable eye toggle button
+    const EyeButton = ({ show, onToggle }) => (
+        <button
+            type="button"
+            onClick={onToggle}
+            aria-label={show ? 'Hide password' : 'Show password'}
+            style={{
+                position: 'absolute', right: '10px', top: '50%',
+                transform: 'translateY(-50%)',
+                background: 'none', border: 'none', cursor: 'pointer',
+                padding: '0', display: 'flex', alignItems: 'center',
+                color: '#9CA3AF',
+            }}
+        >
+            {show ? (
+                // Eye open — click to hide
+                <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24"
+                    fill="none" stroke="currentColor" strokeWidth="2"
+                    strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                    <circle cx="12" cy="12" r="3" />
+                </svg>
+            ) : (
+                // Eye closed — click to show
+                <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24"
+                    fill="none" stroke="currentColor" strokeWidth="2"
+                    strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
+                    <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
+                    <line x1="1" y1="1" x2="23" y2="23" />
+                </svg>
+            )}
+        </button>
+    );
 
     return (
         <>
@@ -81,7 +126,6 @@ export default function AdminProfile({ auth, activityLogs = [] }) {
                     </div>
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                        {/* Back to Dashboard link */}
                         <Link
                             href={route('admin.dashboard')}
                             style={{ color: 'rgba(255,255,255,0.5)', fontSize: '13px', textDecoration: 'none' }}
@@ -91,7 +135,6 @@ export default function AdminProfile({ auth, activityLogs = [] }) {
                             ← Back to Dashboard
                         </Link>
 
-                        {/* Avatar Dropdown */}
                         <div style={{ position: 'relative' }} ref={dropdownRef}>
                             <button
                                 onClick={() => setDropdownOpen(o => !o)}
@@ -115,19 +158,14 @@ export default function AdminProfile({ auth, activityLogs = [] }) {
                                         : initials
                                     }
                                 </div>
-                                <span style={{ color: 'white', fontSize: '13px', fontWeight: '500' }}>
-                                    {admin.name}
-                                </span>
-                                <svg
-                                    width="12" height="12" viewBox="0 0 24 24" fill="none"
+                                <span style={{ color: 'white', fontSize: '13px', fontWeight: '500' }}>{admin.name}</span>
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none"
                                     stroke="rgba(255,255,255,0.6)" strokeWidth="2.5"
-                                    style={{ transition: 'transform 0.2s', transform: dropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}
-                                >
+                                    style={{ transition: 'transform 0.2s', transform: dropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}>
                                     <polyline points="6 9 12 15 18 9" />
                                 </svg>
                             </button>
 
-                            {/* Dropdown Menu */}
                             {dropdownOpen && (
                                 <div style={{
                                     position: 'absolute', right: 0, top: 'calc(100% + 8px)',
@@ -137,7 +175,6 @@ export default function AdminProfile({ auth, activityLogs = [] }) {
                                     boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
                                     overflow: 'hidden',
                                 }}>
-                                    {/* Header */}
                                     <div style={{ padding: '14px 16px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                                             <div style={{
@@ -157,50 +194,19 @@ export default function AdminProfile({ auth, activityLogs = [] }) {
                                             </div>
                                         </div>
                                     </div>
-
-                                    {/* Edit Profile */}
-                                    <Link
-                                        href={route('admin.profile')}
-                                        style={{
-                                            display: 'flex', alignItems: 'center', gap: '10px',
-                                            padding: '11px 16px', fontSize: '13px',
-                                            color: 'rgba(255,255,255,0.75)', textDecoration: 'none',
-                                            borderBottom: '1px solid rgba(255,255,255,0.06)',
-                                            background: 'rgba(255,255,255,0.06)',
-                                        }}
-                                    >
+                                    <Link href={route('admin.profile')} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '11px 16px', fontSize: '13px', color: 'rgba(255,255,255,0.75)', textDecoration: 'none', borderBottom: '1px solid rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.06)' }}>
                                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                                         Edit Profile
                                     </Link>
-
-                                    {/* Settings */}
-                                    <Link
-                                        href={route('admin.profile')}
-                                        style={{
-                                            display: 'flex', alignItems: 'center', gap: '10px',
-                                            padding: '11px 16px', fontSize: '13px',
-                                            color: 'rgba(255,255,255,0.75)', textDecoration: 'none',
-                                            borderBottom: '1px solid rgba(255,255,255,0.06)',
-                                        }}
+                                    <Link href={route('admin.profile')} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '11px 16px', fontSize: '13px', color: 'rgba(255,255,255,0.75)', textDecoration: 'none', borderBottom: '1px solid rgba(255,255,255,0.06)' }}
                                         onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.06)'}
-                                        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                                    >
+                                        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
                                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
                                         Settings
                                     </Link>
-
-                                    {/* Log Out */}
-                                    <button
-                                        onClick={handleLogout}
-                                        style={{
-                                            display: 'flex', alignItems: 'center', gap: '10px',
-                                            width: '100%', padding: '11px 16px',
-                                            background: 'none', border: 'none',
-                                            fontSize: '13px', color: '#f87171', cursor: 'pointer', textAlign: 'left',
-                                        }}
+                                    <button onClick={handleLogout} style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%', padding: '11px 16px', background: 'none', border: 'none', fontSize: '13px', color: '#f87171', cursor: 'pointer', textAlign: 'left' }}
                                         onMouseEnter={e => e.currentTarget.style.background = 'rgba(220,38,38,0.12)'}
-                                        onMouseLeave={e => e.currentTarget.style.background = 'none'}
-                                    >
+                                        onMouseLeave={e => e.currentTarget.style.background = 'none'}>
                                         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
                                         Log Out
                                     </button>
@@ -209,11 +215,9 @@ export default function AdminProfile({ auth, activityLogs = [] }) {
                         </div>
                     </div>
                 </nav>
-                {/* ─────────────────────────────────────────────────────────── */}
 
                 <div style={{ padding: '40px 32px', maxWidth: '900px', margin: '0 auto' }}>
 
-                    {/* Page Title */}
                     <div style={{ marginBottom: '32px' }}>
                         <div style={{ fontSize: '11px', fontWeight: '600', letterSpacing: '2px', textTransform: 'uppercase', color: '#DC2626', marginBottom: '8px' }}>Admin Panel</div>
                         <h1 style={{ fontFamily: 'Oswald, sans-serif', fontSize: '36px', color: '#111', fontWeight: '600', letterSpacing: '0.5px', textTransform: 'uppercase', margin: 0 }}>My Profile</h1>
@@ -224,24 +228,17 @@ export default function AdminProfile({ auth, activityLogs = [] }) {
                         <div style={{ background: '#DC2626', height: '80px', position: 'relative' }} />
                         <div style={{ padding: '0 28px 24px', position: 'relative' }}>
                             <div style={{ position: 'relative', display: 'inline-block', marginTop: '-44px', marginBottom: '12px' }}>
-                                <div
-                                    onClick={() => fileRef.current.click()}
-                                    title="Click to change photo"
-                                    style={{ width: 88, height: 88, borderRadius: '50%', border: '4px solid white', overflow: 'hidden', cursor: 'pointer', background: '#fee2e2', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '28px', fontWeight: '700', color: '#991b1b', boxShadow: '0 2px 8px rgba(0,0,0,0.12)' }}
-                                >
+                                <div onClick={() => fileRef.current.click()} title="Click to change photo"
+                                    style={{ width: 88, height: 88, borderRadius: '50%', border: '4px solid white', overflow: 'hidden', cursor: 'pointer', background: '#fee2e2', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '28px', fontWeight: '700', color: '#991b1b', boxShadow: '0 2px 8px rgba(0,0,0,0.12)' }}>
                                     {preview
                                         ? <img src={preview} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
                                         : initials
                                     }
                                 </div>
-                                <div
-                                    onClick={() => fileRef.current.click()}
-                                    style={{ position: 'absolute', bottom: 2, right: 2, width: 26, height: 26, borderRadius: '50%', background: '#111', border: '2px solid white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', cursor: 'pointer' }}
-                                >📷</div>
+                                <div onClick={() => fileRef.current.click()}
+                                    style={{ position: 'absolute', bottom: 2, right: 2, width: 26, height: 26, borderRadius: '50%', background: '#111', border: '2px solid white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', cursor: 'pointer' }}>📷</div>
                             </div>
-
                             <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handlePhotoChange} />
-
                             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
                                 <div>
                                     <div style={{ fontFamily: 'Oswald, sans-serif', fontSize: '24px', fontWeight: '600', color: '#111' }}>{admin.name}</div>
@@ -261,17 +258,14 @@ export default function AdminProfile({ auth, activityLogs = [] }) {
                     <div style={{ background: 'white', borderRadius: '8px', border: '1px solid #e8e8e8', overflow: 'hidden' }}>
                         <div style={{ display: 'flex', borderBottom: '1px solid #f0f0f0' }}>
                             {tabs.map(tab => (
-                                <button
-                                    key={tab.key}
-                                    onClick={() => setActiveTab(tab.key)}
+                                <button key={tab.key} onClick={() => setActiveTab(tab.key)}
                                     style={{
                                         padding: '14px 24px', fontSize: '13px', fontWeight: '600',
                                         border: 'none', background: 'none', cursor: 'pointer',
                                         color: activeTab === tab.key ? '#DC2626' : '#888',
                                         borderBottom: activeTab === tab.key ? '2px solid #DC2626' : '2px solid transparent',
                                         marginBottom: '-1px', letterSpacing: '0.3px',
-                                    }}
-                                >
+                                    }}>
                                     {tab.label}
                                 </button>
                             ))}
@@ -314,21 +308,55 @@ export default function AdminProfile({ auth, activityLogs = [] }) {
                                     </div>
                                 )}
                                 <div style={{ maxWidth: '420px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+
+                                    {/* Current Password */}
                                     <div>
                                         <label style={labelStyle}>Current Password</label>
-                                        <input type="password" value={passwordForm.data.current_password} onChange={e => passwordForm.setData('current_password', e.target.value)} style={inputStyle} placeholder="Enter current password" />
+                                        <div style={{ position: 'relative' }}>
+                                            <input
+                                                type={showCurrent ? 'text' : 'password'}
+                                                value={passwordForm.data.current_password}
+                                                onChange={e => passwordForm.setData('current_password', e.target.value)}
+                                                style={inputWithIconStyle}
+                                                placeholder="Enter current password"
+                                            />
+                                            <EyeButton show={showCurrent} onToggle={() => setShowCurrent(v => !v)} />
+                                        </div>
                                         {passwordForm.errors.current_password && <span style={errStyle}>{passwordForm.errors.current_password}</span>}
                                     </div>
+
+                                    {/* New Password */}
                                     <div>
                                         <label style={labelStyle}>New Password</label>
-                                        <input type="password" value={passwordForm.data.password} onChange={e => passwordForm.setData('password', e.target.value)} style={inputStyle} placeholder="Enter new password" />
+                                        <div style={{ position: 'relative' }}>
+                                            <input
+                                                type={showNew ? 'text' : 'password'}
+                                                value={passwordForm.data.password}
+                                                onChange={e => passwordForm.setData('password', e.target.value)}
+                                                style={inputWithIconStyle}
+                                                placeholder="Enter new password"
+                                            />
+                                            <EyeButton show={showNew} onToggle={() => setShowNew(v => !v)} />
+                                        </div>
                                         {passwordForm.errors.password && <span style={errStyle}>{passwordForm.errors.password}</span>}
                                     </div>
+
+                                    {/* Confirm New Password */}
                                     <div>
                                         <label style={labelStyle}>Confirm New Password</label>
-                                        <input type="password" value={passwordForm.data.password_confirmation} onChange={e => passwordForm.setData('password_confirmation', e.target.value)} style={inputStyle} placeholder="Repeat new password" />
+                                        <div style={{ position: 'relative' }}>
+                                            <input
+                                                type={showConfirm ? 'text' : 'password'}
+                                                value={passwordForm.data.password_confirmation}
+                                                onChange={e => passwordForm.setData('password_confirmation', e.target.value)}
+                                                style={inputWithIconStyle}
+                                                placeholder="Repeat new password"
+                                            />
+                                            <EyeButton show={showConfirm} onToggle={() => setShowConfirm(v => !v)} />
+                                        </div>
                                         {passwordForm.errors.password_confirmation && <span style={errStyle}>{passwordForm.errors.password_confirmation}</span>}
                                     </div>
+
                                 </div>
                                 <div style={{ marginTop: '24px' }}>
                                     <button type="submit" disabled={passwordForm.processing} style={btnRedStyle}>
@@ -392,6 +420,11 @@ const labelStyle = { display: 'block', fontSize: '12px', color: '#6B7280', margi
 const inputStyle = {
     width: '100%', boxSizing: 'border-box', border: '1px solid #E5E7EB',
     borderRadius: '6px', padding: '9px 12px', fontSize: '13px', outline: 'none',
+    fontFamily: 'inherit', color: '#111', background: 'white',
+};
+const inputWithIconStyle = {
+    width: '100%', boxSizing: 'border-box', border: '1px solid #E5E7EB',
+    borderRadius: '6px', padding: '9px 38px 9px 12px', fontSize: '13px', outline: 'none',
     fontFamily: 'inherit', color: '#111', background: 'white',
 };
 const btnRedStyle = {

@@ -27,7 +27,6 @@ function formatUser(object $user): array
         'email'      => $user->email,
         'branch'     => $user->branch ?? null,
         'role'       => $user->role ?? 'volunteer',
-        // FIX: column name is `photo`, not `avatar`
         'avatar_url' => avatarUrl($user->photo ?? null),
     ];
 }
@@ -36,12 +35,10 @@ Route::middleware('auth')->group(function () {
 
     // ── Profile ──────────────────────────────────────────────────────
 
-    // GET /api/profile — ibalik ang profile ng current user
     Route::get('profile', function (Request $request) {
         return response()->json(formatUser($request->user()));
     });
 
-    // POST /api/profile/avatar — i-upload ang bagong avatar/photo
     Route::post('profile/avatar', function (Request $request) {
         $request->validate([
             'avatar' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
@@ -49,12 +46,10 @@ Route::middleware('auth')->group(function () {
 
         $user = $request->user();
 
-        // Burahin ang lumang photo kung mayroon
         if ($user->photo && Storage::disk('public')->exists($user->photo)) {
             Storage::disk('public')->delete($user->photo);
         }
 
-        // I-save ang bagong photo
         $path = $request->file('avatar')->store('avatars', 'public');
         $user->update(['photo' => $path]);
 
@@ -64,7 +59,6 @@ Route::middleware('auth')->group(function () {
         ]);
     });
 
-    // PUT /api/profile/password — palitan ang password
     Route::put('profile/password', function (Request $request) {
         $request->validate([
             'current_password' => ['required', 'string'],
@@ -131,5 +125,6 @@ Route::middleware('auth')->group(function () {
 
         return response()->json(['message' => 'Notification marked as read.']);
     });
+
 
 });

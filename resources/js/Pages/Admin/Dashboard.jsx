@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 
 export default function AdminDashboard({
@@ -58,8 +58,11 @@ export default function AdminDashboard({
         return { background: '#f5f5f5', color: '#555' };
     };
 
-    const isImage = (url) => url && /\.(jpg|jpeg|png|gif|webp)(\?.*)?$/i.test(url);
-    const isPdf   = (url) => url && (/\.pdf(\?.*)?$/i.test(url) || /\/documents\/\d+\/file/.test(url));
+    // ✅ NEW: availability badge style
+    const availabilityBadgeStyle = { background: '#dbeafe', color: '#1e40af' };
+
+    const isImage = (url) => url && /\.(jpg|jpeg|png|gif|webp)$/i.test(url);
+    const isPdf   = (url) => url && /\.pdf$/i.test(url);
 
     const handleDownload = async (doc) => {
         if (!doc.file_url) return;
@@ -187,7 +190,7 @@ export default function AdminDashboard({
                                     ) : (
                                         <div style={{ textAlign: 'center', color: '#888' }}>
                                             <div style={{ fontSize: '48px', marginBottom: '12px' }}>📄</div>
-                                            <button onClick={() => handleDownload(previewDoc)} style={{ background: 'none', border: 'none', color: '#C8102E', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}>I-download →</button>
+                                            <button onClick={() => handleDownload(previewDoc)} style={{ background: 'none', border: 'none', color: '#C8102E', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}>Download →</button>
                                         </div>
                                     )
                                 ) : (
@@ -196,7 +199,7 @@ export default function AdminDashboard({
                             </div>
                         </div>
                         <div style={{ padding: '12px 20px', borderTop: '1px solid #f0f0f0', display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
-                            {previewDoc.file_url && <button onClick={() => handleDownload(previewDoc)} style={{ background: '#f5f5f5', border: '1px solid #e8e8e8', padding: '7px 14px', borderRadius: '4px', fontSize: '12px', fontWeight: '600', cursor: 'pointer' }}>I-download</button>}
+                            {previewDoc.file_url && <button onClick={() => handleDownload(previewDoc)} style={{ background: '#f5f5f5', border: '1px solid #e8e8e8', padding: '7px 14px', borderRadius: '4px', fontSize: '12px', fontWeight: '600', cursor: 'pointer' }}>Download</button>}
                             <button onClick={() => setPreviewDoc(null)} style={{ background: '#f5f5f5', border: '1px solid #e8e8e8', padding: '7px 14px', borderRadius: '4px', fontSize: '12px', fontWeight: '600', cursor: 'pointer' }}>Close</button>
                         </div>
                     </div>
@@ -231,7 +234,6 @@ export default function AdminDashboard({
                                 {badge && <span className="nav-badge">{badge}</span>}
                             </Link>
                         ))}
-                        {/* Reports nav item removed */}
                     </nav>
                     <div className="sb-footer">
                         <button className="logout-btn" onClick={handleLogout}>
@@ -303,7 +305,15 @@ export default function AdminDashboard({
                                                 <div className="vol-name">{vol.name}</div>
                                                 <div className="vol-sub">{vol.branch}</div>
                                             </div>
-                                            <span className="badge" style={statusBadge(vol.status)}>{vol.status}</span>
+                                            {/* ✅ UPDATED: Show availability badge + status badge */}
+                                            <div style={{ display: 'flex', gap: 4, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                                                {vol.is_available ? (
+                                                    <span className="badge" style={availabilityBadgeStyle}>● Available</span>
+                                                ) : (
+                                                    <span className="badge" style={{ background: '#f5f5f5', color: '#999' }}>○ Not Available</span>
+                                                )}
+                                                <span className="badge" style={statusBadge(vol.status)}>{vol.status}</span>
+                                            </div>
                                         </Link>
                                     );
                                 })}
@@ -312,7 +322,7 @@ export default function AdminDashboard({
                             <div className="card">
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
                                     <div className="card-title">Pending Documents</div>
-                                    <Link href={route('admin.documents.index')} className="view-all">View all →</Link>
+                                    <Link href={route('admin.volunteers')} className="view-all">View all →</Link>
                                 </div>
                                 {pendingDocuments.length === 0 ? (
                                     <div style={{ textAlign: 'center', color: '#aaa', fontSize: '13px', padding: '20px 0' }}>No pending documents</div>
@@ -342,10 +352,12 @@ export default function AdminDashboard({
                         <div className="card">
                             <div className="card-title">Quick Actions</div>
                             <div className="quick-actions">
-                                <Link href={route('admin.volunteers')}        className="btn-red">Manage Volunteers</Link>
-                                <Link href={route('admin.activities.index')}  className="btn-blue">Manage Activities</Link>
-                                <Link href={route('admin.activities.create')} className="btn-green">+ New Activity</Link>
-                                <Link href={route('admin.attendance.index')}  className="btn-gray">View Attendance</Link>
+                                <Link href={route('admin.volunteers')}           className="btn-red">Manage Volunteers</Link>
+                                <Link href={route('admin.activities.index')}     className="btn-blue">Manage Activities</Link>
+                                <Link href={route('admin.activities.create')}    className="btn-green">+ New Activity</Link>
+                                <Link href={route('admin.attendance.index')}     className="btn-gray">View Attendance</Link>
+                                <Link href={route('admin.attendance.export.pdf')} className="btn-gray">Export PDF</Link>
+                                <Link href={route('admin.communication')}        className="btn-gray">Communication</Link>
                             </div>
                         </div>
                     </div>
