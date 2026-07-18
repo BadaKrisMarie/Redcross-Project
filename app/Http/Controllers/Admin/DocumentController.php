@@ -32,6 +32,15 @@ class DocumentController extends Controller
                     ->take(2)
                     ->join('');
 
+                // ✅ Detect mime_type from actual file on disk
+                $mimeType = null;
+                if ($doc->file_path) {
+                    $path = storage_path('app/public/' . $doc->file_path);
+                    if (file_exists($path)) {
+                        $mimeType = mime_content_type($path);
+                    }
+                }
+
                 return [
                     'id'          => $doc->id,
                     'name'        => $doc->name,
@@ -39,7 +48,8 @@ class DocumentController extends Controller
                     'photo'       => $doc->photo ? '/storage/' . $doc->photo : null,
                     'type'        => $doc->type,
                     'status'      => $doc->status ?? 'pending',
-                    'file_url'    => $doc->file_path ? route('admin.documents.file', $doc->id) : null, // ← BINAGO
+                    'file_url'    => $doc->file_path ? route('admin.documents.file', $doc->id) : null,
+                    'mime_type'   => $mimeType, // ✅ BAGO
                     'color_id'    => $doc->user_id % 5,
                     'uploaded_at' => \Carbon\Carbon::parse($doc->created_at)->format('M d, Y'),
                 ];
@@ -51,7 +61,6 @@ class DocumentController extends Controller
         ]);
     }
 
-    // ← BAGONG METHOD
     public function serveFile($id)
     {
         $doc = DB::table('documents')->where('id', $id)->first();

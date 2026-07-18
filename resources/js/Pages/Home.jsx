@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Head, Link } from '@inertiajs/react';
 
-const RED = "#C8102E";
+const RED = "#ff0000";
 const NAVY = "#1A1464";
 const WHITE = "#FFFFFF";
 
@@ -91,7 +91,7 @@ export default function Welcome({ auth }) {
                 }}>
                     <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none' }}>
                         <div style={{
-                            width: '34px', height: '34px', background: '#DC2626',
+                            width: '34px', height: '34px', background: '#ff0000',
                             borderRadius: '4px', display: 'flex', alignItems: 'center',
                             justifyContent: 'center', color: 'white', fontSize: '20px', fontWeight: '900'
                         }}>+</div>
@@ -106,7 +106,7 @@ export default function Welcome({ auth }) {
                         <li><Link href="/contact" style={{ color: '#555', textDecoration: 'none', fontSize: '13px' }}>Contact</Link></li>
                         <li>
                             <Link href={route('login')} style={{
-                                background: '#DC2626', color: 'white', padding: '8px 18px',
+                                background: '#ff0000', color: 'white', padding: '8px 18px',
                                 borderRadius: '6px', fontSize: '12px', fontWeight: '600',
                                 textDecoration: 'none'
                             }}>Log In</Link>
@@ -152,7 +152,7 @@ export default function Welcome({ auth }) {
             letterSpacing: '2px', textTransform: 'uppercase',
             padding: '6px 14px', borderRadius: '100px', marginBottom: '28px',
         }}>
-            <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#DC2626', display: 'inline-block' }}></span>
+            <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#ff0000', display: 'inline-block' }}></span>
             Volunteer Program 2026
         </div>
         <h1 style={{
@@ -161,7 +161,7 @@ export default function Welcome({ auth }) {
             letterSpacing: '1px', margin: '0 0 8px 0',
             fontWeight: '700', textTransform: 'uppercase'
         }}>
-            <span style={{ color: '#DC2626' }}>Red Cross</span><br />
+            <span style={{ color: '#ff0000' }}>Red Cross</span><br />
             Volunteer<br />
             Needed
         </h1>
@@ -174,7 +174,7 @@ export default function Welcome({ auth }) {
         </p>
         <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
             <Link href="/about" style={{
-                background: '#DC2626', color: 'white', padding: '13px 30px',
+                background: '#ff0000', color: 'white', padding: '13px 30px',
                 borderRadius: '4px', fontSize: '14px', fontWeight: '600',
                 textDecoration: 'none', letterSpacing: '0.5px'
             }}>Read More</Link>
@@ -198,7 +198,7 @@ export default function Welcome({ auth }) {
                     fontSize: '38px', color: 'white',
                     lineHeight: '1', fontWeight: '600'
                 }}>
-                    {num.includes('/') ? num : <>{num.replace('+', '')}<span style={{ color: '#DC2626' }}>+</span></>}
+                    {num.includes('/') ? num : <>{num.replace('+', '')}<span style={{ color: '#ff0000' }}>+</span></>}
                 </div>
                 <div style={{
                     fontSize: '11px', color: 'rgba(255,255,255,0.4)',
@@ -214,13 +214,9 @@ export default function Welcome({ auth }) {
                     <JoinBanner />
                 </div>
 
-                {/* FOOTER */}
-                <div style={{
-                    background: '#0a0a0a', padding: '18px 48px',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    borderTop: '1px solid rgba(255,255,255,0.06)'
-                }}>
-                    <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.3)', letterSpacing: '0.3px' }}>
+                 {/* FOOTER */}
+                <div style={{ background: '#1e3a8a', padding: '18px 80px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                    <span style={{ fontSize: '13px', color: '#ffffff', fontWeight: 700, letterSpacing: '0.3px' }}>
                         © 2026 Philippine Red Cross – Muntinlupa City Branch. All rights reserved.
                     </span>
                 </div>

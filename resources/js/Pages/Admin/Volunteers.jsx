@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { Head, Link, router, usePage } from '@inertiajs/react';
+import { Head, router, usePage } from '@inertiajs/react';
+import AdminLayout from '@/Layouts/AdminLayout';
 
-export default function Volunteers({ volunteers }) {
+function Volunteers({ volunteers }) {
     const { flash } = usePage().props;
     const [search, setSearch] = useState('');
     const [selectedVolunteer, setSelectedVolunteer] = useState(null);
+    const [toDelete, setToDelete] = useState(null);
 
     const approve = (e, id) => {
         e.stopPropagation();
@@ -20,11 +22,16 @@ export default function Volunteers({ volunteers }) {
         router.visit(route('admin.volunteers.show', id));
     };
 
+    const deleteVolunteer = () => {
+        router.delete(route('admin.volunteers.destroy', toDelete.id), {
+            onSuccess: () => setToDelete(null),
+        });
+    };
+
     const pending  = volunteers.filter(v => v.status === 'pending');
     const approved = volunteers.filter(v => v.status === 'approved');
     const rejected = volunteers.filter(v => v.status === 'rejected');
 
-    // Recent = last 7 volunteers sorted by created_at desc, optionally filtered by search
     const recent = [...volunteers]
         .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
         .filter(v =>
@@ -46,7 +53,7 @@ export default function Volunteers({ volunteers }) {
         const styles = {
             pending:  { background: '#fef3c7', color: '#92400e' },
             approved: { background: '#dcfce7', color: '#166534' },
-            rejected: { background: '#fee2e2', color: '#991b1b' },
+            rejected: { background: '#fee2e2', color: '#ff0000' },
         };
         const s = styles[status] || styles.pending;
         return (
@@ -67,6 +74,18 @@ export default function Volunteers({ volunteers }) {
         borderRadius: '4px', fontSize: '12px',
         fontWeight: '600', cursor: 'pointer',
     };
+
+    const btnDelete = (v) => (
+        <button
+            onClick={e => { e.stopPropagation(); setToDelete(v); }}
+            style={{
+                background: 'white', color: '#ff0000',
+                border: '1px solid #fca5a5', padding: '7px 16px',
+                borderRadius: '4px', fontSize: '12px',
+                fontWeight: '600', cursor: 'pointer',
+            }}
+        >Delete</button>
+    );
 
     const clickableRow = {
         borderTop: '1px solid #f0f0f0',
@@ -121,6 +140,58 @@ export default function Volunteers({ volunteers }) {
             <Head title="Manage Volunteers" />
             <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Source+Sans+3:wght@300;400;600&display=swap" rel="stylesheet" />
 
+            <style>{`
+                * { box-sizing: border-box; }
+            `}</style>
+
+            {/* ── DELETE CONFIRMATION MODAL ── */}
+            {toDelete && (
+                <div
+                    onClick={() => setToDelete(null)}
+                    style={{
+                        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        zIndex: 1100,
+                    }}
+                >
+                    <div
+                        onClick={e => e.stopPropagation()}
+                        style={{
+                            background: 'white', borderRadius: '12px',
+                            width: '380px', maxWidth: '90vw',
+                            padding: '28px 32px',
+                            boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
+                        }}
+                    >
+                        <h3 style={{
+                            fontFamily: 'Oswald, sans-serif', fontSize: '20px',
+                            color: '#111', marginBottom: '10px'
+                        }}>Delete Volunteer?</h3>
+                        <p style={{ fontSize: '14px', color: '#666', marginBottom: '24px' }}>
+                            Are you sure you want to delete <strong>{toDelete.name}</strong>? This action cannot be undone.
+                        </p>
+                        <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                            <button
+                                onClick={() => setToDelete(null)}
+                                style={{
+                                    background: 'white', border: '1px solid #ddd',
+                                    padding: '8px 20px', borderRadius: '6px',
+                                    fontSize: '13px', cursor: 'pointer', color: '#444'
+                                }}
+                            >Cancel</button>
+                            <button
+                                onClick={deleteVolunteer}
+                                style={{
+                                    background: '#ff0000', color: 'white', border: 'none',
+                                    padding: '8px 20px', borderRadius: '6px',
+                                    fontSize: '13px', fontWeight: '600', cursor: 'pointer'
+                                }}
+                            >Delete</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* ── VOLUNTEER MODAL ── */}
             {selectedVolunteer && (
                 <div
@@ -140,7 +211,6 @@ export default function Volunteers({ volunteers }) {
                             overflow: 'hidden',
                         }}
                     >
-                        {/* Modal header */}
                         <div style={{ padding: '20px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #f0f0f0' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
                                 <div style={{
@@ -156,7 +226,7 @@ export default function Volunteers({ volunteers }) {
                                 </div>
                                 <div>
                                     <div style={{ fontFamily: 'Oswald, sans-serif', fontSize: '18px', fontWeight: '600', color: '#111', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{selectedVolunteer.name}</div>
-                                    <div style={{ fontSize: '12px', color: '#DC2626', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px', marginTop: '2px' }}>
+                                    <div style={{ fontSize: '12px', color: '#ff0000', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px', marginTop: '2px' }}>
                                         {selectedVolunteer.branch || 'Muntinlupa City Branch'}
                                     </div>
                                 </div>
@@ -164,10 +234,7 @@ export default function Volunteers({ volunteers }) {
                             <button onClick={() => setSelectedVolunteer(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '20px', color: '#aaa', lineHeight: 1 }}>✕</button>
                         </div>
 
-                        {/* Modal body */}
                         <div style={{ padding: '24px' }}>
-
-                            {/* Big profile photo */}
                             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
                                 <div style={{
                                     width: '110px', height: '110px', borderRadius: '50%',
@@ -187,7 +254,6 @@ export default function Volunteers({ volunteers }) {
                                 <div style={{ fontSize: '13px', color: '#999', marginTop: '2px' }}>{selectedVolunteer.branch || 'Muntinlupa City Branch'}</div>
                             </div>
 
-                            {/* Info grid */}
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '20px' }}>
                                 {[
                                     { label: 'Email',      value: selectedVolunteer.email },
@@ -204,7 +270,6 @@ export default function Volunteers({ volunteers }) {
                                 ))}
                             </div>
 
-                            {/* Actions */}
                             <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
                                 <button onClick={() => setSelectedVolunteer(null)} style={{ padding: '9px 20px', background: 'white', border: '1px solid #e0e0e0', borderRadius: '6px', fontSize: '13px', cursor: 'pointer', color: '#555' }}>Close</button>
                                 <button onClick={() => { setSelectedVolunteer(null); viewProfile(selectedVolunteer.id); }} style={{ padding: '9px 20px', background: '#1d4ed8', color: 'white', border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}>View Full Profile →</button>
@@ -214,221 +279,204 @@ export default function Volunteers({ volunteers }) {
                 </div>
             )}
 
-            <div style={{ minHeight: '100vh', background: '#f5f5f5', fontFamily: "'Source Sans 3', sans-serif" }}>
+            <div style={{ fontFamily: "'Source Sans 3', sans-serif" }}>
 
-                {/* TOP NAV */}
-                <nav style={{
-                    background: '#111', padding: '14px 32px',
-                    display: 'flex', alignItems: 'center', justifyContent: 'space-between'
-                }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <div style={{
-                            width: '32px', height: '32px', background: '#DC2626',
-                            borderRadius: '4px', display: 'flex', alignItems: 'center',
-                            justifyContent: 'center', color: 'white', fontSize: '18px', fontWeight: '900'
-                        }}>+</div>
-                        <span style={{
-                            fontFamily: 'Oswald, sans-serif',
-                            color: 'white', fontSize: '16px', fontWeight: '600', letterSpacing: '1px'
-                        }}>RED CROSS — Admin Panel</span>
-                    </div>
-                    <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                        <Link href={route('admin.dashboard')} style={{
-                            color: 'rgba(255,255,255,0.6)', fontSize: '13px', textDecoration: 'none'
-                        }}>← Back to Dashboard</Link>
-                        <Link
-                            href={route('logout')}
-                            method="post"
-                            as="button"
-                            style={{
-                                background: 'transparent', border: '1px solid rgba(255,255,255,0.2)',
-                                color: 'rgba(255,255,255,0.7)', padding: '7px 18px',
-                                borderRadius: '4px', fontSize: '12px', cursor: 'pointer'
-                            }}
-                        >Log Out</Link>
-                    </div>
-                </nav>
-
-                <div style={{ padding: '40px 32px' }}>
-
-                    {/* Header */}
-                    <div style={{ marginBottom: '32px' }}>
-                        <div style={{
-                            fontSize: '11px', fontWeight: '600', letterSpacing: '2px',
-                            textTransform: 'uppercase', color: '#DC2626', marginBottom: '8px'
-                        }}>Admin Panel</div>
-                        <h1 style={{
-                            fontFamily: 'Oswald, sans-serif',
-                            fontSize: '36px', color: '#111', fontWeight: '600',
-                            letterSpacing: '0.5px', textTransform: 'uppercase'
-                        }}>Manage Volunteers</h1>
-                    </div>
-
-                    {/* Flash message */}
-                    {flash?.success && (
-                        <div style={{
-                            marginBottom: '24px', padding: '12px 16px',
-                            background: '#f0fdf4', border: '1px solid #bbf7d0',
-                            borderRadius: '8px', fontSize: '13px', color: '#16a34a'
-                        }}>{flash.success}</div>
-                    )}
-
-                    {/* Stats */}
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginBottom: '32px' }}>
-                        {[
-                            { label: 'Pending Approval', value: pending.length,  color: '#f59e0b' },
-                            { label: 'Approved',         value: approved.length, color: '#16a34a' },
-                            { label: 'Rejected',         value: rejected.length, color: '#DC2626' },
-                        ].map(({ label, value, color }) => (
-                            <div key={label} style={{
-                                background: 'white', padding: '24px',
-                                borderRadius: '8px', border: '1px solid #e8e8e8'
-                            }}>
-                                <div style={{ fontFamily: 'Oswald, sans-serif', fontSize: '36px', color, fontWeight: '600' }}>{value}</div>
-                                <div style={{ fontSize: '13px', color: '#888', marginTop: '4px' }}>{label}</div>
-                            </div>
-                        ))}
-                    </div>
-
-                    {/* ── RECENT VOLUNTEERS ── */}
+                {/* Header */}
+                <div style={{ marginBottom: '32px' }}>
                     <div style={{
-                        background: 'white', borderRadius: '8px',
-                        border: '1px solid #e8e8e8', marginBottom: '32px'
-                    }}>
-                        {/* Section header */}
-                        <div style={{
-                            padding: '20px 24px', borderBottom: '1px solid #f0f0f0',
-                            display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+                        fontSize: '11px', fontWeight: '600', letterSpacing: '2px',
+                        textTransform: 'uppercase', color: '#ff0000', marginBottom: '8px'
+                    }}>Admin Panel</div>
+                    <h1 style={{
+                        fontFamily: 'Oswald, sans-serif',
+                        fontSize: '36px', color: '#111', fontWeight: '600',
+                        letterSpacing: '0.5px', textTransform: 'uppercase'
+                    }}>Manage Volunteers</h1>
+                </div>
+
+                {/* Flash */}
+                {flash?.success && (
+                    <div style={{
+                        marginBottom: '24px', padding: '12px 16px',
+                        background: '#f0fdf4', border: '1px solid #bbf7d0',
+                        borderRadius: '8px', fontSize: '13px', color: '#16a34a'
+                    }}>{flash.success}</div>
+                )}
+
+                {/* Stats */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginBottom: '32px' }}>
+                    {[
+                        { label: 'Pending Approval', value: pending.length,  color: '#f59e0b' },
+                        { label: 'Approved',         value: approved.length, color: '#16a34a' },
+                        { label: 'Rejected',         value: rejected.length, color: '#ff0000' },
+                    ].map(({ label, value, color }) => (
+                        <div key={label} style={{
+                            background: 'white', padding: '24px',
+                            borderRadius: '8px', border: '1px solid #e8e8e8'
                         }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#DC2626' }}></div>
-                                <span style={{
-                                    fontFamily: 'Oswald, sans-serif', fontSize: '16px',
-                                    fontWeight: '600', color: '#111', textTransform: 'uppercase'
-                                }}>Recent Volunteers</span>
-                            </div>
-                            {/* Search */}
-                            <div style={{ position: 'relative' }}>
-                                <svg style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', width: '14px', height: '14px', color: '#aaa' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
-                                </svg>
-                                <input
-                                    type="text"
-                                    placeholder="Search volunteers..."
-                                    value={search}
-                                    onChange={e => setSearch(e.target.value)}
-                                    style={{
-                                        paddingLeft: '30px', paddingRight: '12px',
-                                        paddingTop: '7px', paddingBottom: '7px',
-                                        fontSize: '13px', border: '1px solid #e8e8e8',
-                                        borderRadius: '6px', outline: 'none',
-                                        width: '220px', color: '#111',
-                                        background: '#fafafa',
-                                    }}
-                                />
-                            </div>
+                            <div style={{ fontFamily: 'Oswald, sans-serif', fontSize: '36px', color, fontWeight: '600' }}>{value}</div>
+                            <div style={{ fontSize: '13px', color: '#888', marginTop: '4px' }}>{label}</div>
                         </div>
+                    ))}
+                </div>
 
-                        {/* Volunteer rows */}
-                        {recent.length === 0 ? (
-                            <div style={{ padding: '32px', textAlign: 'center', color: '#aaa', fontSize: '13px' }}>
-                                No volunteers match your search.
-                            </div>
-                        ) : (
-                            recent.map((v, i) => (
-                                <div
-                                    key={v.id}
-                                    onClick={() => setSelectedVolunteer(v)}
-                                    style={{
-                                        display: 'flex', alignItems: 'center',
-                                        justifyContent: 'space-between',
-                                        padding: '14px 24px',
-                                        borderTop: i === 0 ? 'none' : '1px solid #f5f5f5',
-                                        cursor: 'pointer',
-                                        transition: 'background 0.15s',
-                                    }}
-                                    onMouseEnter={e => e.currentTarget.style.background = '#fafafa'}
-                                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                                >
-                                    {/* Avatar + name */}
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0, flex: 1 }}>
-                                        <div style={{
-                                            width: '38px', height: '38px', borderRadius: '50%',
-                                            background: getAvatarColor(v.name),
-                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                            fontSize: '13px', fontWeight: '600', color: 'white',
-                                            flexShrink: 0, overflow: 'hidden',
-                                        }}>
-                                            {v.profile_photo_url || v.avatar || v.photo ? (
-                                                <img src={v.profile_photo_url || v.avatar || v.photo} alt={v.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} onError={e => { e.target.style.display = 'none'; }} />
-                                            ) : getInitials(v.name)}
-                                        </div>
-                                        <div>
-                                            <div style={{ fontSize: '14px', fontWeight: '500', color: '#111' }}>{v.name}</div>
-                                            <div style={{ fontSize: '12px', color: '#999', marginTop: '1px' }}>{v.email}</div>
-                                        </div>
+                {/* ── RECENT VOLUNTEERS ── */}
+                <div style={{ background: 'white', borderRadius: '8px', border: '1px solid #e8e8e8', marginBottom: '32px' }}>
+                    <div style={{
+                        padding: '20px 24px', borderBottom: '1px solid #f0f0f0',
+                        display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+                    }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#ff0000' }}></div>
+                            <span style={{ fontFamily: 'Oswald, sans-serif', fontSize: '16px', fontWeight: '600', color: '#111', textTransform: 'uppercase' }}>Recent Volunteers</span>
+                        </div>
+                        <div style={{ position: 'relative' }}>
+                            <svg style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', width: '14px', height: '14px', color: '#aaa' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
+                            </svg>
+                            <input
+                                type="text"
+                                placeholder="Search volunteers..."
+                                value={search}
+                                onChange={e => setSearch(e.target.value)}
+                                style={{
+                                    paddingLeft: '30px', paddingRight: '12px',
+                                    paddingTop: '7px', paddingBottom: '7px',
+                                    fontSize: '13px', border: '1px solid #e8e8e8',
+                                    borderRadius: '6px', outline: 'none',
+                                    width: '220px', color: '#111', background: '#fafafa',
+                                }}
+                            />
+                        </div>
+                    </div>
+
+                    {recent.length === 0 ? (
+                        <div style={{ padding: '32px', textAlign: 'center', color: '#aaa', fontSize: '13px' }}>No volunteers match your search.</div>
+                    ) : (
+                        recent.map((v, i) => (
+                            <div
+                                key={v.id}
+                                style={{
+                                    display: 'flex', alignItems: 'center',
+                                    justifyContent: 'space-between',
+                                    padding: '14px 24px',
+                                    borderTop: i === 0 ? 'none' : '1px solid #f5f5f5',
+                                    cursor: 'pointer', transition: 'background 0.15s',
+                                }}
+                                onClick={() => setSelectedVolunteer(v)}
+                                onMouseEnter={e => e.currentTarget.style.background = '#fafafa'}
+                                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                            >
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0, flex: 1 }}>
+                                    <div style={{
+                                        width: '38px', height: '38px', borderRadius: '50%',
+                                        background: getAvatarColor(v.name),
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        fontSize: '13px', fontWeight: '600', color: 'white',
+                                        flexShrink: 0, overflow: 'hidden',
+                                    }}>
+                                        {v.profile_photo_url || v.avatar || v.photo ? (
+                                            <img src={v.profile_photo_url || v.avatar || v.photo} alt={v.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} onError={e => { e.target.style.display = 'none'; }} />
+                                        ) : getInitials(v.name)}
                                     </div>
-
-                                    {/* Right: date + status + arrow */}
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexShrink: 0 }}>
-                                        <span style={{ fontSize: '12px', color: '#bbb' }}>
-                                            {new Date(v.created_at).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}
-                                        </span>
-                                        {statusBadge(v.status)}
-                                        <svg style={{ width: '14px', height: '14px', color: '#ccc' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 18l6-6-6-6" />
-                                        </svg>
+                                    <div>
+                                        <div style={{ fontSize: '14px', fontWeight: '500', color: '#111' }}>{v.name}</div>
+                                        <div style={{ fontSize: '12px', color: '#999', marginTop: '1px' }}>{v.email}</div>
                                     </div>
                                 </div>
-                            ))
-                        )}
-                    </div>
-
-                    {/* ── PENDING TABLE ── */}
-                    <div style={{ background: 'white', borderRadius: '8px', border: '1px solid #e8e8e8', marginBottom: '24px' }}>
-                        <div style={{ padding: '20px 24px', borderBottom: '1px solid #f0f0f0', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#f59e0b' }}></div>
-                            <span style={{ fontFamily: 'Oswald, sans-serif', fontSize: '16px', fontWeight: '600', color: '#111', textTransform: 'uppercase' }}>
-                                Pending Approval ({pending.length})
-                            </span>
-                        </div>
-                        <TableShell headers={['Name', 'Email', 'Registered', 'Actions']} children={pending} emptyMsg="No pending volunteers">
-                            {pending.map(v => (
-                                <VolunteerRow key={v.id} v={v} actions={v => (
-                                    <>
-                                        <button onClick={e => { e.stopPropagation(); viewProfile(v.id); }} style={btnView}>View Profile</button>
-                                        <button onClick={e => approve(e, v.id)} style={{ background: '#16a34a', color: 'white', border: 'none', padding: '7px 16px', borderRadius: '4px', fontSize: '12px', fontWeight: '600', cursor: 'pointer' }}>Approve</button>
-                                        <button onClick={e => reject(e, v.id)}  style={{ background: 'white', color: '#DC2626', border: '1px solid #DC2626', padding: '7px 16px', borderRadius: '4px', fontSize: '12px', fontWeight: '600', cursor: 'pointer' }}>Reject</button>
-                                    </>
-                                )} />
-                            ))}
-                        </TableShell>
-                    </div>
-
-                   
-
-                    {/* ── REJECTED TABLE ── */}
-                    <div style={{ background: 'white', borderRadius: '8px', border: '1px solid #e8e8e8' }}>
-                        <div style={{ padding: '20px 24px', borderBottom: '1px solid #f0f0f0', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#DC2626' }}></div>
-                            <span style={{ fontFamily: 'Oswald, sans-serif', fontSize: '16px', fontWeight: '600', color: '#111', textTransform: 'uppercase' }}>
-                                Rejected Volunteers ({rejected.length})
-                            </span>
-                        </div>
-                        <TableShell headers={['Name', 'Email', 'Registered', 'Actions']} children={rejected} emptyMsg="No rejected volunteers">
-                            {rejected.map(v => (
-                                <VolunteerRow key={v.id} v={v} actions={v => (
-                                    <>
-                                        <button onClick={e => { e.stopPropagation(); viewProfile(v.id); }} style={btnView}>View Profile</button>
-                                        <button onClick={e => approve(e, v.id)} style={{ background: '#16a34a', color: 'white', border: 'none', padding: '7px 16px', borderRadius: '4px', fontSize: '12px', fontWeight: '600', cursor: 'pointer' }}>Re-approve</button>
-                                    </>
-                                )} />
-                            ))}
-                        </TableShell>
-                    </div>
-
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexShrink: 0 }}>
+                                    <span style={{ fontSize: '12px', color: '#bbb' }}>
+                                        {new Date(v.created_at).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                    </span>
+                                    {statusBadge(v.status)}
+                                    <button
+                                        onClick={e => { e.stopPropagation(); setToDelete(v); }}
+                                        style={{
+                                            background: 'white', color: '#991b1b',
+                                            border: '1px solid #fca5a5', padding: '4px 12px',
+                                            borderRadius: '4px', fontSize: '11px',
+                                            fontWeight: '600', cursor: 'pointer',
+                                        }}
+                                    >Delete</button>
+                                    <svg style={{ width: '14px', height: '14px', color: '#ccc' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 18l6-6-6-6" />
+                                    </svg>
+                                </div>
+                            </div>
+                        ))
+                    )}
                 </div>
+
+                {/* ── PENDING TABLE ── */}
+                <div style={{ background: 'white', borderRadius: '8px', border: '1px solid #e8e8e8', marginBottom: '24px' }}>
+                    <div style={{ padding: '20px 24px', borderBottom: '1px solid #f0f0f0', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#f59e0b' }}></div>
+                        <span style={{ fontFamily: 'Oswald, sans-serif', fontSize: '16px', fontWeight: '600', color: '#111', textTransform: 'uppercase' }}>
+                            Pending Approval ({pending.length})
+                        </span>
+                    </div>
+                    <TableShell headers={['Name', 'Email', 'Registered', 'Actions']} children={pending} emptyMsg="No pending volunteers">
+                        {pending.map(v => (
+                            <VolunteerRow key={v.id} v={v} actions={v => (
+                                <>
+                                    <button onClick={e => { e.stopPropagation(); viewProfile(v.id); }} style={btnView}>View Profile</button>
+                                    <button onClick={e => approve(e, v.id)} style={{ background: '#16a34a', color: 'white', border: 'none', padding: '7px 16px', borderRadius: '4px', fontSize: '12px', fontWeight: '600', cursor: 'pointer' }}>Approve</button>
+                                    <button onClick={e => reject(e, v.id)} style={{ background: 'white', color: '#ff0000', border: '1px solid #ff0000', padding: '7px 16px', borderRadius: '4px', fontSize: '12px', fontWeight: '600', cursor: 'pointer' }}>Reject</button>
+                                    {btnDelete(v)}
+                                </>
+                            )} />
+                        ))}
+                    </TableShell>
+                </div>
+
+                {/* ── APPROVED TABLE ── */}
+                <div style={{ background: 'white', borderRadius: '8px', border: '1px solid #e8e8e8', marginBottom: '24px' }}>
+                    <div style={{ padding: '20px 24px', borderBottom: '1px solid #f0f0f0', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#16a34a' }}></div>
+                        <span style={{ fontFamily: 'Oswald, sans-serif', fontSize: '16px', fontWeight: '600', color: '#111', textTransform: 'uppercase' }}>
+                            Approved Volunteers ({approved.length})
+                        </span>
+                    </div>
+                    <TableShell headers={['Name', 'Email', 'Registered', 'Actions']} children={approved} emptyMsg="No approved volunteers yet">
+                        {approved.map(v => (
+                            <VolunteerRow key={v.id} v={v} actions={v => (
+                                <>
+                                    <button onClick={e => { e.stopPropagation(); viewProfile(v.id); }} style={btnView}>View Profile</button>
+                                    <button onClick={e => reject(e, v.id)} style={{ background: 'white', color: '#ff0000', border: '1px solid #ff0000', padding: '7px 16px', borderRadius: '4px', fontSize: '12px', fontWeight: '600', cursor: 'pointer' }}>Revoke</button>
+                                    {btnDelete(v)}
+                                </>
+                            )} />
+                        ))}
+                    </TableShell>
+                </div>
+
+                {/* ── REJECTED TABLE ── */}
+                <div style={{ background: 'white', borderRadius: '8px', border: '1px solid #e8e8e8' }}>
+                    <div style={{ padding: '20px 24px', borderBottom: '1px solid #f0f0f0', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#ff0000' }}></div>
+                        <span style={{ fontFamily: 'Oswald, sans-serif', fontSize: '16px', fontWeight: '600', color: '#111', textTransform: 'uppercase' }}>
+                            Rejected Volunteers ({rejected.length})
+                        </span>
+                    </div>
+                    <TableShell headers={['Name', 'Email', 'Registered', 'Actions']} children={rejected} emptyMsg="No rejected volunteers">
+                        {rejected.map(v => (
+                            <VolunteerRow key={v.id} v={v} actions={v => (
+                                <>
+                                    <button onClick={e => { e.stopPropagation(); viewProfile(v.id); }} style={btnView}>View Profile</button>
+                                    <button onClick={e => approve(e, v.id)} style={{ background: '#16a34a', color: 'white', border: 'none', padding: '7px 16px', borderRadius: '4px', fontSize: '12px', fontWeight: '600', cursor: 'pointer' }}>Re-approve</button>
+                                    {btnDelete(v)}
+                                </>
+                            )} />
+                        ))}
+                    </TableShell>
+                </div>
+
             </div>
         </>
     );
 }
+
+// ✅ Persistent layout — sidebar hindi na mawawala
+Volunteers.layout = (page) => <AdminLayout title="Volunteers">{page}</AdminLayout>;
+
+export default Volunteers;

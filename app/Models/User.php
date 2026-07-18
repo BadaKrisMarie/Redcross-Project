@@ -26,7 +26,10 @@ class User extends Authenticatable
         'address',
         'emergency_contact_name',
         'emergency_contact_phone',
-        'status', // ✅ Added
+        'status',
+        'face_descriptor',
+        'skills',        // ✅ NEW — array of trainings e.g. First Aid, CPR
+        'skills_notes',  // ✅ NEW — free-text notes about skills/trainings
     ];
 
     protected $hidden = [
@@ -37,6 +40,9 @@ class User extends Authenticatable
     protected $casts = [
         'email_verified_at' => 'datetime',
         'password'          => 'hashed',
+        'face_descriptor'   => 'array',
+        'skills'            => 'array', // ✅ NEW — auto encode/decode as JSON array
+        'birthdate'         => 'date',  // ✅ NEW — lets us format/compute age cleanly
     ];
 
     protected $appends = ['avatar_url'];

@@ -96,7 +96,7 @@ export default function Edit({ activity, volunteers }) {
     };
 
     const errorStyle = {
-        color: '#dc2626',
+        color: '#ff0000',
         fontSize: '12px',
         marginTop: '4px',
     };
@@ -340,7 +340,7 @@ export default function Edit({ activity, volunteers }) {
                                 type="submit"
                                 disabled={processing}
                                 style={{
-                                    padding: '10px 24px', background: '#dc2626', color: 'white',
+                                    padding: '10px 24px', background: '#ff0000', color: 'white',
                                     border: 'none', borderRadius: '8px', fontWeight: '600',
                                     cursor: processing ? 'not-allowed' : 'pointer',
                                 }}

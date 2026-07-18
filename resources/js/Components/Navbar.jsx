@@ -13,7 +13,7 @@ export default function Navbar() {
         }}>
             <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none' }}>
                 <div style={{
-                    width: '34px', height: '34px', background: '#DC2626',
+                    width: '34px', height: '34px', background: '#ff0000',
                     borderRadius: '4px', display: 'flex', alignItems: 'center',
                     justifyContent: 'center', color: 'white', fontSize: '20px', fontWeight: '900'
                 }}>+</div>
@@ -29,7 +29,7 @@ export default function Navbar() {
                 <li><a href="#contact" style={{ color: '#555', textDecoration: 'none', fontSize: '13px' }}>Contact</a></li>
                 <li>
                     <Link href={route('login')} style={{
-                        background: '#DC2626', color: 'white', padding: '8px 18px',
+                        background: '#ff0000', color: 'white', padding: '8px 18px',
                         borderRadius: '6px', fontSize: '12px', fontWeight: '600',
                         textDecoration: 'none'
                     }}>Log In</Link>

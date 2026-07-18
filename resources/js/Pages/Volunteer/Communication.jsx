@@ -43,8 +43,8 @@ export default function VolunteerCommunication({ auth, sentEmails, announcements
 
     const tabStyle = (key) => ({
         padding: '8px 16px', fontSize: '13px', fontWeight: activeTab === key ? '600' : '400',
-        color: activeTab === key ? '#CC0000' : '#6B7280',
-        borderBottom: activeTab === key ? '2px solid #CC0000' : '2px solid transparent',
+        color: activeTab === key ? '#ff0000' : '#6B7280',
+        borderBottom: activeTab === key ? '2px solid #ff0000' : '2px solid transparent',
         background: 'none', border: 'none', cursor: 'pointer', whiteSpace: 'nowrap',
     });
 
@@ -114,7 +114,7 @@ export default function VolunteerCommunication({ auth, sentEmails, announcements
 
                         {/* Admin reply */}
                         <div style={{ padding: '0 24px 24px' }}>
-                            <div style={{ fontSize: '11px', fontWeight: '600', color: '#CC0000', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px' }}>Admin Reply</div>
+                            <div style={{ fontSize: '11px', fontWeight: '600', color: '#ff0000', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px' }}>Admin Reply</div>
                             <div style={{
                                 background: '#FEF2F2', border: '1px solid #FECACA',
                                 borderRadius: '10px', padding: '14px 16px',
@@ -122,11 +122,11 @@ export default function VolunteerCommunication({ auth, sentEmails, announcements
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
                                     <div style={{
                                         width: '28px', height: '28px', borderRadius: '50%',
-                                        background: '#CC0000', display: 'flex', alignItems: 'center',
+                                        background: '#ff0000', display: 'flex', alignItems: 'center',
                                         justifyContent: 'center', color: 'white', fontSize: '11px', fontWeight: '700',
                                     }}>A</div>
                                     <div>
-                                        <div style={{ fontSize: '12px', fontWeight: '600', color: '#CC0000' }}>Admin</div>
+                                        <div style={{ fontSize: '12px', fontWeight: '600', color: '#ff0000' }}>Admin</div>
                                         <div style={{ fontSize: '11px', color: '#9CA3AF' }}>Rizal Chapter · Muntinlupa</div>
                                     </div>
                                 </div>
@@ -165,7 +165,7 @@ export default function VolunteerCommunication({ auth, sentEmails, announcements
                         }}>
                             <div>
                                 <span style={{
-                                    background: '#FEF2F2', color: '#CC0000',
+                                    background: '#FEF2F2', color: '#ff0000',
                                     fontSize: '10px', fontWeight: '700',
                                     padding: '2px 8px', borderRadius: '10px',
                                     display: 'inline-block', marginBottom: '8px',
@@ -203,7 +203,7 @@ export default function VolunteerCommunication({ auth, sentEmails, announcements
 
                 {/* SIDEBAR */}
                 <aside style={{
-                    width: '160px', minHeight: '100vh', background: '#CC0000',
+                    width: '160px', minHeight: '100vh', background: '#ff0000',
                     display: 'flex', flexDirection: 'column', flexShrink: 0,
                     position: 'fixed', left: 0, top: 0, bottom: 0, zIndex: 100,
                 }}>
@@ -255,7 +255,7 @@ export default function VolunteerCommunication({ auth, sentEmails, announcements
                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                             <div title={volunteer?.name} style={{
                                 width: '30px', height: '30px', borderRadius: '50%',
-                                background: avatarUrl ? 'transparent' : '#CC0000',
+                                background: avatarUrl ? 'transparent' : '#ff0000',
                                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                                 color: 'white', fontSize: '12px', fontWeight: '700',
                                 flexShrink: 0, overflow: 'hidden',
@@ -272,7 +272,7 @@ export default function VolunteerCommunication({ auth, sentEmails, announcements
                     <div style={{ background: 'white', borderBottom: '1px solid #E5E7EB', padding: '0 28px', display: 'flex', gap: '4px' }}>
                         <button style={tabStyle('compose')} onClick={() => setActiveTab('compose')}>✏️ Compose</button>
                         <button style={tabStyle('inbox')} onClick={() => setActiveTab('inbox')}>
-                            📥 Inbox {unreadReplies > 0 && <span style={{ background: '#CC0000', color: 'white', borderRadius: '10px', padding: '1px 6px', fontSize: '10px', marginLeft: '4px' }}>{unreadReplies}</span>}
+                            📥 Inbox {unreadReplies > 0 && <span style={{ background: '#ff0000', color: 'white', borderRadius: '10px', padding: '1px 6px', fontSize: '10px', marginLeft: '4px' }}>{unreadReplies}</span>}
                         </button>
                         <button style={tabStyle('announcements')} onClick={() => setActiveTab('announcements')}>
                             📢 Announcements {announces.length > 0 && <span style={{ background: '#F59E0B', color: 'white', borderRadius: '10px', padding: '1px 6px', fontSize: '10px', marginLeft: '4px' }}>{announces.length}</span>}
@@ -291,24 +291,24 @@ export default function VolunteerCommunication({ auth, sentEmails, announcements
                                             <label style={{ fontSize: '13px', fontWeight: '500', color: '#374151', display: 'block', marginBottom: '6px' }}>To:</label>
                                             <input type="text" value={data.to} onChange={e => setData('to', e.target.value)}
                                                 style={{ width: '100%', padding: '10px 14px', border: '1px solid #E5E7EB', borderRadius: '8px', fontSize: '13px', outline: 'none', boxSizing: 'border-box', background: '#FAFAFA' }} />
-                                            {errors.to && <div style={{ fontSize: '11px', color: '#CC0000', marginTop: '4px' }}>{errors.to}</div>}
+                                            {errors.to && <div style={{ fontSize: '11px', color: '#ff0000', marginTop: '4px' }}>{errors.to}</div>}
                                         </div>
                                         <div style={{ marginBottom: '16px' }}>
                                             <label style={{ fontSize: '13px', fontWeight: '500', color: '#374151', display: 'block', marginBottom: '6px' }}>Subject</label>
                                             <input type="text" value={data.subject} onChange={e => setData('subject', e.target.value)}
                                                 placeholder="e.g. Schedule Conflict"
                                                 style={{ width: '100%', padding: '10px 14px', border: '1px solid #E5E7EB', borderRadius: '8px', fontSize: '13px', outline: 'none', boxSizing: 'border-box' }} />
-                                            {errors.subject && <div style={{ fontSize: '11px', color: '#CC0000', marginTop: '4px' }}>{errors.subject}</div>}
+                                            {errors.subject && <div style={{ fontSize: '11px', color: '#ff0000', marginTop: '4px' }}>{errors.subject}</div>}
                                         </div>
                                         <div style={{ marginBottom: '20px' }}>
                                             <label style={{ fontSize: '13px', fontWeight: '500', color: '#374151', display: 'block', marginBottom: '6px' }}>Message</label>
                                             <textarea value={data.message} onChange={e => setData('message', e.target.value)}
                                                 placeholder="Type your message here..." rows={6}
                                                 style={{ width: '100%', padding: '10px 14px', border: '1px solid #E5E7EB', borderRadius: '8px', fontSize: '13px', outline: 'none', resize: 'vertical', boxSizing: 'border-box', fontFamily: 'inherit' }} />
-                                            {errors.message && <div style={{ fontSize: '11px', color: '#CC0000', marginTop: '4px' }}>{errors.message}</div>}
+                                            {errors.message && <div style={{ fontSize: '11px', color: '#ff0000', marginTop: '4px' }}>{errors.message}</div>}
                                         </div>
                                         <button type="submit" disabled={processing}
-                                            style={{ background: '#CC0000', color: 'white', border: 'none', borderRadius: '8px', padding: '10px 24px', fontSize: '13px', fontWeight: '600', cursor: processing ? 'not-allowed' : 'pointer', opacity: processing ? 0.7 : 1 }}>
+                                            style={{ background: '#ff0000', color: 'white', border: 'none', borderRadius: '8px', padding: '10px 24px', fontSize: '13px', fontWeight: '600', cursor: processing ? 'not-allowed' : 'pointer', opacity: processing ? 0.7 : 1 }}>
                                             {processing ? 'Sending...' : 'Send Message'}
                                         </button>
                                     </form>
@@ -347,7 +347,7 @@ export default function VolunteerCommunication({ auth, sentEmails, announcements
                                                     <div style={{
                                                         width: '36px', height: '36px', borderRadius: '50%',
                                                         background: '#FEF2F2', display: 'flex', alignItems: 'center',
-                                                        justifyContent: 'center', color: '#CC0000', fontSize: '14px',
+                                                        justifyContent: 'center', color: '#ff0000', fontSize: '14px',
                                                         fontWeight: '700', flexShrink: 0,
                                                     }}>A</div>
                                                     <div style={{ flex: 1, minWidth: 0 }}>

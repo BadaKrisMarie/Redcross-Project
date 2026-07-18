@@ -1,8 +1,8 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Head, Link, router } from '@inertiajs/react';
+import React, { useState } from 'react';
+import { Head, Link } from '@inertiajs/react';
+import AdminLayout from '@/Layouts/AdminLayout';
 
-export default function AdminDashboard({
-    auth,
+function AdminDashboard({
     pendingCount,
     totalVolunteers,
     activeToday,
@@ -11,33 +11,16 @@ export default function AdminDashboard({
     volunteerStats = { active: 0, incompleteDocs: 0, inactive: 0 },
     upcomingEvents = [],
     quickStats = {},
+    // shape: { "2026": [{ month: 'Jan', attended: 62, missed: 10 }, ...], "2025": [...] }
+    // Awtomatikong galing sa backend (Attendance table) — walang naka-hardcode na dummy data.
+    activityStatsByYear = {},
 }) {
     const [previewDoc, setPreviewDoc] = useState(null);
-    const [sidebarOpen, setSidebarOpen] = useState(true);
-
-    const admin = auth?.user;
-    const initials = admin?.name
-        ? admin.name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
-        : 'AD';
-    const photoUrl = admin?.photo ? `/storage/${admin.photo}` : null;
-
-    const handleLogout = () => router.post(route('logout'));
-
-    const navLinks = [
-        { label: 'Dashboard',     route: 'admin.dashboard', active: true },
-        { label: 'Volunteers',    route: 'admin.volunteers' },
-        { label: 'Schedule',      route: 'admin.schedule' },
-        { label: 'Attendance',    route: 'admin.attendance.index' },
-        { label: 'Activities',    route: 'admin.activities.index' },
-        { label: '201 Files',     route: 'admin.documents.index' },
-        { label: 'Communication', route: 'admin.communication' },
-    ];
-
-    const NavAvatar = ({ size = 32, fontSize = 12 }) => (
-        <div style={{ width: size, height: size, borderRadius: '50%', background: '#C8102E', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize, fontWeight: '700', overflow: 'hidden', flexShrink: 0 }}>
-            {photoUrl ? <img src={photoUrl} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : initials}
-        </div>
-    );
+    const thisYear = new Date().getFullYear();
+    const availableYears = Object.keys(activityStatsByYear).map(Number).sort((a, b) => b - a);
+    const yearOptions = availableYears.includes(thisYear) ? availableYears : [thisYear, ...availableYears];
+    const [selectedYear, setSelectedYear] = useState(thisYear);
+    const activityStats = activityStatsByYear[selectedYear] ?? [];
 
     const avatarColors = [
         ['#fee2e2', '#991b1b'], ['#dbeafe', '#1e40af'],
@@ -58,7 +41,6 @@ export default function AdminDashboard({
         return { background: '#f5f5f5', color: '#555' };
     };
 
-    // ✅ NEW: availability badge style
     const availabilityBadgeStyle = { background: '#dbeafe', color: '#1e40af' };
 
     const isImage = (url) => url && /\.(jpg|jpeg|png|gif|webp)$/i.test(url);
@@ -83,6 +65,46 @@ export default function AdminDashboard({
         }
     };
 
+    const AnalyticsChart = ({ data }) => {
+        const W = 340, H = 190, padL = 28, padB = 22, padT = 8;
+        const chartW = W - padL - 8;
+        const chartH = H - padT - padB;
+        const maxVal = Math.max(...data.map(d => d.attended + d.missed), 1);
+        const barGroupW = chartW / data.length;
+        const barW = Math.min(20, barGroupW * 0.45);
+        const yTicks = Math.max(1, Math.min(4, maxVal));
+
+        return (
+            <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 'auto', display: 'block' }}>
+                {Array.from({ length: yTicks + 1 }).map((_, i) => {
+                    const y = padT + (chartH / yTicks) * i;
+                    const val = Math.round(maxVal - (maxVal / yTicks) * i);
+                    return (
+                        <g key={i}>
+                            <line x1={padL} y1={y} x2={W - 4} y2={y} stroke="#F0F0F0" strokeWidth="1" />
+                            <text x={padL - 6} y={y + 3} textAnchor="end" fontSize="9" fill="#999" fontFamily="'DM Sans', sans-serif">{val}</text>
+                        </g>
+                    );
+                })}
+                {data.map((d, i) => {
+                    const total = d.attended + d.missed;
+                    const barH = (total / maxVal) * chartH;
+                    const attendedH = (d.attended / maxVal) * chartH;
+                    const missedH = (d.missed / maxVal) * chartH;
+                    const x = padL + barGroupW * i + (barGroupW - barW) / 2;
+                    const yBottom = padT + chartH;
+                    return (
+                        <g key={i}>
+                            <rect x={x} y={yBottom - attendedH} width={barW} height={Math.max(attendedH, 0)} rx="3" fill="#FF0000" />
+                            <rect x={x} y={yBottom - barH} width={barW} height={Math.max(missedH - 2, 0)} rx="3" fill="#F0C7CC" />
+                            <text x={x + barW / 2} y={H - 6} textAnchor="middle" fontSize="10" fill="#6B6B6B" fontFamily="'DM Sans', sans-serif">{d.month}</text>
+                        </g>
+                    );
+                })}
+            </svg>
+        );
+    };
+
     const ProfileAvatar = ({ doc, size = 64 }) => {
         const [bg, color] = avatarColors[doc.color_id ?? 0];
         return doc.photo ? (
@@ -97,40 +119,8 @@ export default function AdminDashboard({
     return (
         <>
             <Head title="Admin Dashboard" />
-            <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
 
             <style>{`
-                * { box-sizing: border-box; margin: 0; padding: 0; }
-                :root { --red: #C8102E; --red-dark: #9B0B22; --ink: #1A1A1A; --muted: #6B6B6B; --border: #EDEDED; --surface: #F7F7F5; --white: #FFFFFF; }
-                body { font-family: 'DM Sans', sans-serif; background: var(--surface); }
-                .wrap { display: flex; min-height: 100vh; }
-                .sidebar { width: 220px; background: #CC0000; display: flex; flex-direction: column; position: fixed; top: 0; left: 0; height: 100vh; z-index: 100; transition: transform 0.2s; }
-                .sidebar.closed { transform: translateX(-220px); }
-                .main { margin-left: 220px; flex: 1; display: flex; flex-direction: column; min-height: 100vh; transition: margin-left 0.2s; }
-                .main.full { margin-left: 0; }
-                .sb-brand { padding: 18px 20px 14px; border-bottom: 1px solid rgba(255,255,255,0.15); }
-                .sb-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
-                .sb-cross { width: 32px; height: 32px; background: rgba(0,0,0,0.2); border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #fff; font-family: 'Barlow Condensed', sans-serif; font-size: 20px; font-weight: 700; flex-shrink: 0; }
-                .sb-name { font-family: 'Barlow Condensed', sans-serif; color: #fff; font-size: 13px; font-weight: 600; letter-spacing: .5px; line-height: 1.3; }
-                .sb-name span { display: block; color: rgba(255,255,255,0.7); font-size: 11px; font-weight: 400; letter-spacing: 1px; text-transform: uppercase; }
-                .sb-user { padding: 14px 20px; border-bottom: 1px solid rgba(255,255,255,0.15); display: flex; align-items: center; gap: 10px; text-decoration: none; transition: background 0.15s; }
-                .sb-user:hover { background: rgba(0,0,0,0.1); }
-                .sb-uname { color: #fff; font-size: 12px; font-weight: 500; line-height: 1.3; }
-                .sb-uname span { display: block; color: rgba(255,255,255,0.7); font-size: 11px; font-weight: 400; }
-                .sb-nav { padding: 10px 0; flex: 1; overflow-y: auto; }
-                .nav-section-label { font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: rgba(255,255,255,0.6); padding: 10px 20px 4px; font-weight: 600; }
-                .nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 20px; color: rgba(255,255,255,0.85); font-size: 13px; font-weight: 500; cursor: pointer; transition: all .15s; border-left: 2px solid transparent; text-decoration: none; }
-                .nav-item:hover { background: rgba(0,0,0,0.12); color: #fff; }
-                .nav-item.active { background: rgba(255,255,255,0.2); border-left-color: #fff; color: #fff; }
-                .nav-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
-                .nav-badge { margin-left: auto; background: #fff; color: var(--red); font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 10px; }
-                .sb-footer { padding: 14px 20px; border-top: 1px solid rgba(255,255,255,0.15); }
-                .logout-btn { display: flex; align-items: center; gap: 8px; color: rgba(255,255,255,0.7); font-size: 12px; cursor: pointer; transition: color .15s; background: none; border: none; width: 100%; font-family: 'DM Sans', sans-serif; }
-                .logout-btn:hover { color: #fff; }
-                .topbar { background: var(--white); border-bottom: 1px solid var(--border); padding: 0 28px; height: 56px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; position: sticky; top: 0; z-index: 50; }
-                .menu-btn { background: none; border: none; cursor: pointer; color: var(--ink); display: flex; align-items: center; padding: 4px; }
-                .page-title { font-family: 'Barlow Condensed', sans-serif; font-size: 20px; font-weight: 700; color: var(--ink); letter-spacing: .3px; text-transform: uppercase; line-height: 1; }
-                .content { flex: 1; padding: 28px; }
                 .metrics-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
                 .metric-card { background: var(--white); padding: 20px; border-radius: 10px; border: 1px solid var(--border); text-decoration: none; display: block; transition: border-color 0.15s; }
                 .metric-card:hover { border-color: #ccc; }
@@ -138,6 +128,7 @@ export default function AdminDashboard({
                 .metric-val.highlight { color: #f59e0b; }
                 .metric-label { font-size: 12px; color: var(--muted); margin-top: 4px; }
                 .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+                .full-card { margin-bottom: 16px; }
                 .card { background: var(--white); border: 1px solid var(--border); border-radius: 10px; padding: 20px; }
                 .card-title { font-family: 'Barlow Condensed', sans-serif; font-size: 15px; font-weight: 700; color: var(--ink); text-transform: uppercase; letter-spacing: .3px; margin-bottom: 14px; }
                 .vol-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid #f0f0f0; text-decoration: none; }
@@ -164,7 +155,7 @@ export default function AdminDashboard({
                                 <ProfileAvatar doc={previewDoc} size={36} />
                                 <div>
                                     <div style={{ fontFamily: 'Barlow Condensed', fontSize: '16px', fontWeight: '700', textTransform: 'uppercase' }}>{previewDoc.name}</div>
-                                    <div style={{ fontSize: '12px', color: '#C8102E', fontWeight: '600', marginTop: '2px' }}>{previewDoc.type}</div>
+                                    <div style={{ fontSize: '12px', color: '#ff0000', fontWeight: '600', marginTop: '2px' }}>{previewDoc.type}</div>
                                 </div>
                             </div>
                             <button onClick={() => setPreviewDoc(null)} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#888' }}>✕</button>
@@ -178,7 +169,7 @@ export default function AdminDashboard({
                                 </div>
                                 <div style={{ width: '100%', marginTop: '8px' }}>
                                     <div style={{ fontSize: '11px', fontWeight: '600', color: '#888', textTransform: 'uppercase', marginBottom: '4px' }}>Document</div>
-                                    <div style={{ fontSize: '13px', color: '#C8102E', fontWeight: '600' }}>{previewDoc.type}</div>
+                                    <div style={{ fontSize: '13px', color: '#ff0000', fontWeight: '600' }}>{previewDoc.type}</div>
                                 </div>
                             </div>
                             <div style={{ background: '#f5f5f5', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '400px', overflow: 'hidden' }}>
@@ -190,7 +181,7 @@ export default function AdminDashboard({
                                     ) : (
                                         <div style={{ textAlign: 'center', color: '#888' }}>
                                             <div style={{ fontSize: '48px', marginBottom: '12px' }}>📄</div>
-                                            <button onClick={() => handleDownload(previewDoc)} style={{ background: 'none', border: 'none', color: '#C8102E', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}>Download →</button>
+                                            <button onClick={() => handleDownload(previewDoc)} style={{ background: 'none', border: 'none', color: '#FF0000', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}>Download →</button>
                                         </div>
                                     )
                                 ) : (
@@ -206,163 +197,144 @@ export default function AdminDashboard({
                 </div>
             )}
 
-            <div className="wrap">
-                {/* SIDEBAR */}
-                <aside className={`sidebar ${sidebarOpen ? '' : 'closed'}`}>
-                    <div className="sb-brand">
-                        <Link href={route('admin.dashboard')} className="sb-logo">
-                            <div className="sb-cross">+</div>
-                            <div className="sb-name">Philippine Red Cross<span>Rizal · Muntinlupa</span></div>
-                        </Link>
-                    </div>
-                    <Link href={route('admin.profile')} className="sb-user">
-                        <NavAvatar size={34} fontSize={12} />
-                        <div className="sb-uname">{admin?.name ?? 'Admin'}<span>Administrator</span></div>
+            {/* METRICS */}
+            <div className="metrics-grid">
+                {[
+                    { label: 'Total Volunteers', value: totalVolunteers ?? 0, href: route('admin.volunteers') },
+                    { label: 'Active Today',     value: activeToday ?? 0,     href: route('admin.attendance.index') },
+                    { label: 'Pending Approval', value: pendingCount ?? 0, highlight: true, href: route('admin.volunteers') },
+                    { label: 'Total Activities', value: qs.totalActivities,  href: route('admin.activities.index') },
+                ].map(({ label, value, highlight, href }) => (
+                    <Link key={label} href={href} className="metric-card">
+                        <div className={`metric-val ${highlight && value > 0 ? 'highlight' : ''}`}>{value}</div>
+                        <div className="metric-label">{label}</div>
                     </Link>
-                    <nav className="sb-nav">
-                        <div className="nav-section-label">Main</div>
-                        {navLinks.slice(0, 4).map(({ label, route: r, active, badge }) => (
-                            <Link key={label} href={route(r)} className={`nav-item ${active ? 'active' : ''}`}>
-                                <div className="nav-dot" />{label}
-                                {badge && <span className="nav-badge">{badge}</span>}
-                            </Link>
-                        ))}
-                        <div className="nav-section-label">Manage</div>
-                        {navLinks.slice(4).map(({ label, route: r, active, badge }) => (
-                            <Link key={label} href={route(r)} className={`nav-item ${active ? 'active' : ''}`}>
-                                <div className="nav-dot" />{label}
-                                {badge && <span className="nav-badge">{badge}</span>}
-                            </Link>
-                        ))}
-                    </nav>
-                    <div className="sb-footer">
-                        <button className="logout-btn" onClick={handleLogout}>
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-                            Log out
-                        </button>
-                    </div>
-                </aside>
+                ))}
+            </div>
 
-                {/* MAIN */}
-                <main className={`main ${sidebarOpen ? '' : 'full'}`}>
-                    <div className="topbar">
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                            <button className="menu-btn" onClick={() => setSidebarOpen(o => !o)}>
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-                            </button>
-                            <span className="page-title">Dashboard</span>
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                            <NavAvatar size={28} fontSize={10} />
-                            <span style={{ fontSize: '12px', fontWeight: '500', color: 'var(--ink)' }}>{admin?.name ?? 'Admin'}</span>
+            {/* ALERT */}
+            {pendingCount > 0 && (
+                <div className="alert">
+                    <span style={{ fontSize: '14px', color: '#92400e', fontWeight: '500' }}>
+                        You have <strong>{pendingCount}</strong> volunteer{pendingCount > 1 ? 's' : ''} waiting for approval.
+                    </span>
+                    <Link href={route('admin.volunteers')} style={{ background: '#f59e0b', color: 'white', padding: '7px 16px', borderRadius: '4px', fontSize: '12px', fontWeight: '600', textDecoration: 'none' }}>Review Now →</Link>
+                </div>
+            )}
+
+            {/* RECENT VOLUNTEERS + ANALYTICS CHART */}
+            <div className="grid2">
+                <div className="card">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                        <div className="card-title">Recent Volunteers</div>
+                        <Link href={route('admin.volunteers')} className="view-all">View all →</Link>
+                    </div>
+                    {recentVolunteers.length === 0 ? (
+                        <div style={{ textAlign: 'center', color: '#aaa', fontSize: '13px', padding: '20px 0' }}>No volunteers yet</div>
+                    ) : recentVolunteers.map((vol, i) => {
+                        const [bg, color] = avatarColors[i % avatarColors.length];
+                        return (
+                            <Link key={i} href={route('admin.volunteers')} className="vol-row">
+                                {vol.photo
+                                    ? <img src={vol.photo} alt={vol.name} style={{ width: 34, height: 34, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
+                                    : <div style={{ width: 34, height: 34, borderRadius: '50%', background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: '600', color, flexShrink: 0 }}>{vol.initials}</div>
+                                }
+                                <div style={{ flex: 1 }}>
+                                    <div className="vol-name">{vol.name}</div>
+                                    <div className="vol-sub">{vol.branch}</div>
+                                </div>
+                                <div style={{ display: 'flex', gap: 4, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                                    {vol.is_available ? (
+                                        <span className="badge" style={availabilityBadgeStyle}>● Available</span>
+                                    ) : (
+                                        <span className="badge" style={{ background: '#f5f5f5', color: '#999' }}>○ Offline</span>
+                                    )}
+                                    <span className="badge" style={statusBadge(vol.status)}>{vol.status}</span>
+                                </div>
+                            </Link>
+                        );
+                    })}
+                </div>
+
+                <div className="card">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                        <div className="card-title" style={{ marginBottom: 0 }}>Volunteer Activity</div>
+                        <div style={{ display: 'flex', gap: 12, fontSize: '11px', color: '#6B6B6B' }}>
+                            <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                <span style={{ width: 8, height: 8, borderRadius: 2, background: '#ff0000', display: 'inline-block' }} />Attended
+                            </span>
+                            <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                <span style={{ width: 8, height: 8, borderRadius: 2, background: '#F0C7CC', display: 'inline-block' }} />Missed
+                            </span>
                         </div>
                     </div>
-
-                    <div className="content">
-                        {/* METRICS */}
-                        <div className="metrics-grid">
-                            {[
-                                { label: 'Total Volunteers', value: totalVolunteers ?? 0, href: route('admin.volunteers') },
-                                { label: 'Active Today',     value: activeToday ?? 0,     href: route('admin.attendance.index') },
-                                { label: 'Pending Approval', value: pendingCount ?? 0, highlight: true, href: route('admin.volunteers') },
-                                { label: 'Total Activities', value: qs.totalActivities,  href: route('admin.activities.index') },
-                            ].map(({ label, value, highlight, href }) => (
-                                <Link key={label} href={href} className="metric-card">
-                                    <div className={`metric-val ${highlight && value > 0 ? 'highlight' : ''}`}>{value}</div>
-                                    <div className="metric-label">{label}</div>
-                                </Link>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                        <span style={{ fontSize: '11px', color: '#999' }}>Monthly totals</span>
+                        <select
+                            value={selectedYear}
+                            onChange={e => setSelectedYear(Number(e.target.value))}
+                            style={{ fontSize: '12px', fontWeight: '600', color: '#1A1A1A', border: '1px solid #EDEDED', borderRadius: '6px', padding: '4px 8px', background: '#fff', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}
+                        >
+                            {yearOptions.map(year => (
+                                <option key={year} value={year}>{year}</option>
                             ))}
-                        </div>
-
-                        {/* ALERT */}
-                        {pendingCount > 0 && (
-                            <div className="alert">
-                                <span style={{ fontSize: '14px', color: '#92400e', fontWeight: '500' }}>
-                                    You have <strong>{pendingCount}</strong> volunteer{pendingCount > 1 ? 's' : ''} waiting for approval.
-                                </span>
-                                <Link href={route('admin.volunteers')} style={{ background: '#f59e0b', color: 'white', padding: '7px 16px', borderRadius: '4px', fontSize: '12px', fontWeight: '600', textDecoration: 'none' }}>Review Now →</Link>
-                            </div>
-                        )}
-
-                        {/* RECENT VOLUNTEERS + PENDING DOCS */}
-                        <div className="grid2">
-                            <div className="card">
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-                                    <div className="card-title">Recent Volunteers</div>
-                                    <Link href={route('admin.volunteers')} className="view-all">View all →</Link>
-                                </div>
-                                {recentVolunteers.length === 0 ? (
-                                    <div style={{ textAlign: 'center', color: '#aaa', fontSize: '13px', padding: '20px 0' }}>No volunteers yet</div>
-                                ) : recentVolunteers.map((vol, i) => {
-                                    const [bg, color] = avatarColors[i % avatarColors.length];
-                                    return (
-                                        <Link key={i} href={route('admin.volunteers')} className="vol-row">
-                                            {vol.photo
-                                                ? <img src={vol.photo} alt={vol.name} style={{ width: 34, height: 34, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
-                                                : <div style={{ width: 34, height: 34, borderRadius: '50%', background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: '600', color, flexShrink: 0 }}>{vol.initials}</div>
-                                            }
-                                            <div style={{ flex: 1 }}>
-                                                <div className="vol-name">{vol.name}</div>
-                                                <div className="vol-sub">{vol.branch}</div>
-                                            </div>
-                                            {/* ✅ UPDATED: Show availability badge + status badge */}
-                                            <div style={{ display: 'flex', gap: 4, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-                                                {vol.is_available ? (
-                                                    <span className="badge" style={availabilityBadgeStyle}>● Available</span>
-                                                ) : (
-                                                    <span className="badge" style={{ background: '#f5f5f5', color: '#999' }}>○ Not Available</span>
-                                                )}
-                                                <span className="badge" style={statusBadge(vol.status)}>{vol.status}</span>
-                                            </div>
-                                        </Link>
-                                    );
-                                })}
-                            </div>
-
-                            <div className="card">
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-                                    <div className="card-title">Pending Documents</div>
-                                    <Link href={route('admin.volunteers')} className="view-all">View all →</Link>
-                                </div>
-                                {pendingDocuments.length === 0 ? (
-                                    <div style={{ textAlign: 'center', color: '#aaa', fontSize: '13px', padding: '20px 0' }}>No pending documents</div>
-                                ) : pendingDocuments.map((doc, i) => {
-                                    const [bg, color] = avatarColors[doc.color_id ?? i % avatarColors.length];
-                                    return (
-                                        <div key={i} onClick={() => setPreviewDoc(doc)} className="vol-row" style={{ cursor: 'pointer' }}
-                                            onMouseEnter={e => e.currentTarget.style.background = '#fafafa'}
-                                            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                                        >
-                                            {doc.photo
-                                                ? <img src={doc.photo} alt={doc.name} style={{ width: 34, height: 34, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
-                                                : <div style={{ width: 34, height: 34, borderRadius: '50%', background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: '600', color, flexShrink: 0 }}>{doc.initials}</div>
-                                            }
-                                            <div style={{ flex: 1 }}>
-                                                <div className="vol-name">{doc.name}</div>
-                                                <div className="vol-sub">{doc.type}</div>
-                                            </div>
-                                            <span style={{ fontSize: '11px', color: '#C8102E', fontWeight: '600' }}>View →</span>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        </div>
-
-                        {/* QUICK ACTIONS */}
-                        <div className="card">
-                            <div className="card-title">Quick Actions</div>
-                            <div className="quick-actions">
-                                <Link href={route('admin.volunteers')}           className="btn-red">Manage Volunteers</Link>
-                                <Link href={route('admin.activities.index')}     className="btn-blue">Manage Activities</Link>
-                                <Link href={route('admin.activities.create')}    className="btn-green">+ New Activity</Link>
-                                <Link href={route('admin.attendance.index')}     className="btn-gray">View Attendance</Link>
-                                <Link href={route('admin.attendance.export.pdf')} className="btn-gray">Export PDF</Link>
-                                <Link href={route('admin.communication')}        className="btn-gray">Communication</Link>
-                            </div>
-                        </div>
+                        </select>
                     </div>
-                </main>
+                    {activityStats.length === 0 ? (
+                        <div style={{ textAlign: 'center', color: '#aaa', fontSize: '13px', padding: '50px 0' }}>Wala pang attendance record ngayong {selectedYear}</div>
+                    ) : (
+                        <AnalyticsChart data={activityStats} />
+                    )}
+                </div>
+            </div>
+
+            {/* PENDING DOCUMENTS */}
+            <div className="card full-card">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                    <div className="card-title" style={{ marginBottom: 0 }}>Pending Documents</div>
+                    <Link href={route('admin.volunteers')} className="view-all">View all →</Link>
+                </div>
+                {pendingDocuments.length === 0 ? (
+                    <div style={{ textAlign: 'center', color: '#aaa', fontSize: '13px', padding: '20px 0' }}>No pending documents</div>
+                ) : pendingDocuments.map((doc, i) => {
+                    const [bg, color] = avatarColors[doc.color_id ?? i % avatarColors.length];
+                    return (
+                        <div key={i} onClick={() => setPreviewDoc(doc)} className="vol-row" style={{ cursor: 'pointer' }}
+                            onMouseEnter={e => e.currentTarget.style.background = '#fafafa'}
+                            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                        >
+                            {doc.photo
+                                ? <img src={doc.photo} alt={doc.name} style={{ width: 34, height: 34, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
+                                : <div style={{ width: 34, height: 34, borderRadius: '50%', background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: '600', color, flexShrink: 0 }}>{doc.initials}</div>
+                            }
+                            <div style={{ flex: 1 }}>
+                                <div className="vol-name">{doc.name}</div>
+                                <div className="vol-sub">{doc.type}</div>
+                            </div>
+                            <span style={{ fontSize: '11px', color: '#ff0000', fontWeight: '600' }}>View →</span>
+                        </div>
+                    );
+                })}
+            </div>
+
+            {/* QUICK ACTIONS */}
+            <div className="card">
+                <div className="card-title">Quick Actions</div>
+                <div className="quick-actions">
+                    <Link href={route('admin.volunteers')}           className="btn-red">Manage Volunteers</Link>
+                    <Link href={route('admin.activities.index')}     className="btn-blue">Manage Activities</Link>
+                    <Link href={route('admin.activities.create')}    className="btn-green">+ New Activity</Link>
+                    <Link href={route('admin.attendance.index')}     className="btn-gray">View Attendance</Link>
+                    <Link href={route('admin.attendance.export.pdf')} className="btn-gray">Export PDF</Link>
+                    <Link href={route('admin.communication')}        className="btn-gray">Communication</Link>
+                </div>
             </div>
         </>
     );
 }
+
+// ✅ ITO ANG SUSI: sinasabi sa Inertia na gamitin ang AdminLayout bilang persistent wrapper.
+// Hindi na nire-render ulit ang sidebar sa tuwing magpapalit ng page.
+AdminDashboard.layout = (page) => <AdminLayout title="Dashboard">{page}</AdminLayout>;
+
+export default AdminDashboard;

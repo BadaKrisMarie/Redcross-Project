@@ -2,6 +2,41 @@ import React, { useState } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import axios from 'axios';
 
+const inputStyle = (hasError) => ({
+    width: '100%', padding: '10px 40px 10px 12px', fontSize: '13px',
+    border: `1px solid ${hasError ? '#EF4444' : '#E5E7EB'}`,
+    borderRadius: '8px', outline: 'none', boxSizing: 'border-box',
+    color: '#111', background: 'white',
+});
+
+const PasswordField = ({ label, name, value, show, onToggle, onChange, errors }) => (
+    <div style={{ marginBottom: '18px' }}>
+        <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#374151', marginBottom: '6px' }}>{label}</label>
+        <div style={{ position: 'relative' }}>
+            <input
+                type={show ? 'text' : 'password'}
+                name={name}
+                value={value}
+                onChange={onChange}
+                style={inputStyle(!!errors?.[name])}
+                autoComplete="off"
+            />
+            <button
+                type="button"
+                onClick={onToggle}
+                style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: '#9CA3AF', display: 'flex', alignItems: 'center' }}
+            >
+                {show ? <EyeOffIcon /> : <EyeIcon />}
+            </button>
+        </div>
+        {errors?.[name] && (
+            <div style={{ fontSize: '11px', color: '#EF4444', marginTop: '4px' }}>
+                {Array.isArray(errors[name]) ? errors[name][0] : errors[name]}
+            </div>
+        )}
+    </div>
+);
+
 export default function ChangePassword({ auth }) {
     const volunteer = auth.user;
     const [form, setForm] = useState({
@@ -28,8 +63,17 @@ export default function ChangePassword({ auth }) {
         setErrors({});
         setSuccess(false);
 
+        // ✅ Get CSRF token from meta tag (required by Laravel)
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+
         try {
-            await axios.put('/volunteer/password', form);
+            await axios.put(route('volunteer.password.update'), form, {
+                headers: {
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                },
+            });
             setSuccess(true);
             setForm({ current_password: '', password: '', password_confirmation: '' });
         } catch (err) {
@@ -56,41 +100,6 @@ export default function ChangePassword({ auth }) {
         { key: 'documents',     label: '201',           href: route('volunteer.documents'),     icon: <FolderIcon /> },
     ];
 
-    const inputStyle = (hasError) => ({
-        width: '100%', padding: '10px 40px 10px 12px', fontSize: '13px',
-        border: `1px solid ${hasError ? '#EF4444' : '#E5E7EB'}`,
-        borderRadius: '8px', outline: 'none', boxSizing: 'border-box',
-        color: '#111', background: 'white',
-    });
-
-    const PasswordField = ({ label, name, value, show, onToggle }) => (
-        <div style={{ marginBottom: '18px' }}>
-            <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: '#374151', marginBottom: '6px' }}>{label}</label>
-            <div style={{ position: 'relative' }}>
-                <input
-                    type={show ? 'text' : 'password'}
-                    name={name}
-                    value={value}
-                    onChange={handleChange}
-                    style={inputStyle(!!errors[name])}
-                    autoComplete="off"
-                />
-                <button
-                    type="button"
-                    onClick={onToggle}
-                    style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: '#9CA3AF', display: 'flex', alignItems: 'center' }}
-                >
-                    {show ? <EyeOffIcon /> : <EyeIcon />}
-                </button>
-            </div>
-            {errors[name] && (
-                <div style={{ fontSize: '11px', color: '#EF4444', marginTop: '4px' }}>
-                    {Array.isArray(errors[name]) ? errors[name][0] : errors[name]}
-                </div>
-            )}
-        </div>
-    );
-
     return (
         <>
             <Head title="Change Password" />
@@ -99,7 +108,7 @@ export default function ChangePassword({ auth }) {
             <div style={{ display: 'flex', minHeight: '100vh', fontFamily: "'Inter', sans-serif", background: '#F3F4F6' }}>
 
                 {/* SIDEBAR */}
-                <aside style={{ width: '160px', minHeight: '100vh', background: '#CC0000', display: 'flex', flexDirection: 'column', flexShrink: 0, position: 'fixed', left: 0, top: 0, bottom: 0, zIndex: 100 }}>
+                <aside style={{ width: '160px', minHeight: '100vh', background: '#ff0000', display: 'flex', flexDirection: 'column', flexShrink: 0, position: 'fixed', left: 0, top: 0, bottom: 0, zIndex: 100 }}>
                     <div style={{ padding: '20px 16px 16px', borderBottom: '1px solid rgba(255,255,255,0.15)' }}>
                         <div style={{ fontSize: '11px', fontWeight: '700', color: 'white', lineHeight: '1.4' }}>
                             Rizal Chapter<br /><span style={{ fontWeight: '400', opacity: 0.85 }}>Muntinlupa City Branch</span>
@@ -135,7 +144,7 @@ export default function ChangePassword({ auth }) {
                             <span>›</span>
                             <span style={{ color: '#111' }}>Change Password</span>
                         </div>
-                        <div style={{ width: '34px', height: '34px', borderRadius: '50%', background: avatarUrl ? 'transparent' : '#CC0000', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '13px', fontWeight: '700', overflow: 'hidden', flexShrink: 0 }}>
+                        <div style={{ width: '34px', height: '34px', borderRadius: '50%', background: avatarUrl ? 'transparent' : '#ff0000', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '13px', fontWeight: '700', overflow: 'hidden', flexShrink: 0 }}>
                             {avatarUrl ? <img src={avatarUrl} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : initials}
                         </div>
                     </header>
@@ -158,7 +167,7 @@ export default function ChangePassword({ auth }) {
                                 )}
 
                                 {errors.general && (
-                                    <div style={{ background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: '8px', padding: '10px 14px', marginBottom: '20px', fontSize: '13px', color: '#DC2626' }}>
+                                    <div style={{ background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: '8px', padding: '10px 14px', marginBottom: '20px', fontSize: '13px', color: '#ff0000' }}>
                                         {errors.general}
                                     </div>
                                 )}
@@ -170,6 +179,8 @@ export default function ChangePassword({ auth }) {
                                         value={form.current_password}
                                         show={showCurrent}
                                         onToggle={() => setShowCurrent(v => !v)}
+                                        onChange={handleChange}
+                                        errors={errors}
                                     />
                                     <PasswordField
                                         label="New Password"
@@ -177,6 +188,8 @@ export default function ChangePassword({ auth }) {
                                         value={form.password}
                                         show={showNew}
                                         onToggle={() => setShowNew(v => !v)}
+                                        onChange={handleChange}
+                                        errors={errors}
                                     />
                                     <PasswordField
                                         label="Confirm New Password"
@@ -184,13 +197,15 @@ export default function ChangePassword({ auth }) {
                                         value={form.password_confirmation}
                                         show={showConfirm}
                                         onToggle={() => setShowConfirm(v => !v)}
+                                        onChange={handleChange}
+                                        errors={errors}
                                     />
 
                                     <div style={{ display: 'flex', gap: '10px', marginTop: '8px' }}>
                                         <button
                                             type="submit"
                                             disabled={loading}
-                                            style={{ flex: 1, padding: '10px', background: loading ? '#E5E7EB' : '#CC0000', color: loading ? '#9CA3AF' : 'white', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '600', cursor: loading ? 'not-allowed' : 'pointer' }}
+                                            style={{ flex: 1, padding: '10px', background: loading ? '#E5E7EB' : '#ff0000', color: loading ? '#9CA3AF' : 'white', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '600', cursor: loading ? 'not-allowed' : 'pointer' }}
                                         >
                                             {loading ? 'Updating…' : 'Update Password'}
                                         </button>

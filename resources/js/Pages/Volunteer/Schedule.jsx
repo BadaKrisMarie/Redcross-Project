@@ -80,7 +80,7 @@ export default function VolunteerSchedule({ auth, activities }) {
             >
                 {/* SIDEBAR */}
                 <aside style={{
-                    width: '160px', minHeight: '100vh', background: '#CC0000',
+                    width: '160px', minHeight: '100vh', background: '#ff0000',
                     display: 'flex', flexDirection: 'column', flexShrink: 0,
                     position: 'fixed', left: 0, top: 0, bottom: 0, zIndex: 100,
                 }}>
@@ -137,7 +137,7 @@ export default function VolunteerSchedule({ auth, activities }) {
                                 title={volunteer?.name}
                                 style={{
                                     width: '30px', height: '30px', borderRadius: '50%',
-                                    background: avatarUrl ? 'transparent' : '#CC0000',
+                                    background: avatarUrl ? 'transparent' : '#ff0000',
                                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                                     color: 'white', fontSize: '12px', fontWeight: '700',
                                     flexShrink: 0, overflow: 'hidden',
@@ -192,7 +192,7 @@ export default function VolunteerSchedule({ auth, activities }) {
                                                         fontSize: '12px', fontWeight: isToday ? '700' : '400',
                                                         color: isToday ? 'white' : '#374151',
                                                         width: '22px', height: '22px', borderRadius: '50%',
-                                                        background: isToday ? '#CC0000' : 'transparent',
+                                                        background: isToday ? '#ff0000' : 'transparent',
                                                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                                                         marginBottom: '3px'
                                                     }}>{day}</div>
@@ -291,7 +291,7 @@ export default function VolunteerSchedule({ auth, activities }) {
                             padding: '9px 12px',
                             display: 'flex', alignItems: 'flex-start', gap: '8px',
                         }}>
-                            <span style={{ fontSize: '11px', fontWeight: '600', color: '#CC0000', flexShrink: 0 }}>Assigned by:</span>
+                            <span style={{ fontSize: '11px', fontWeight: '600', color: '#ff0000', flexShrink: 0 }}>Assigned by:</span>
                             <span style={{ fontSize: '11px', color: '#374151', lineHeight: '1.5' }}>
                                 {selectedActivity.assigned_by || 'Philippine Red Cross Admin'}
                             </span>

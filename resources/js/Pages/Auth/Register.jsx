@@ -1,18 +1,56 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Head, Link, useForm } from '@inertiajs/react';
+import axios from 'axios';
 
 export default function Register() {
-    const { data, setData, post, processing, errors } = useForm({
+    const { data, setData, post, processing, errors, setError, clearErrors } = useForm({
         name: '',
         email: '',
         password: '',
         password_confirmation: '',
     });
 
+    const [emailExists, setEmailExists] = useState(false);
+    const [checkingEmail, setCheckingEmail] = useState(false);
+    const debounceRef = useRef(null);
+
+    // ✅ Real-time email existence check (debounced while typing)
+    useEffect(() => {
+        if (debounceRef.current) clearTimeout(debounceRef.current);
+
+        const email = data.email.trim();
+
+        // Basic format check before bothering the server
+        const looksLikeEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
+        if (!looksLikeEmail) {
+            setEmailExists(false);
+            return;
+        }
+
+        debounceRef.current = setTimeout(async () => {
+            setCheckingEmail(true);
+            try {
+                const res = await axios.post(route('check.email'), { email });
+                setEmailExists(res.data.exists);
+            } catch (err) {
+                // Fail silently — server-side validation on submit is still the fallback
+                setEmailExists(false);
+            } finally {
+                setCheckingEmail(false);
+            }
+        }, 500); // 500ms debounce
+
+        return () => clearTimeout(debounceRef.current);
+    }, [data.email]);
+
     const submit = (e) => {
         e.preventDefault();
+        if (emailExists) return; // extra guard, just in case
         post(route('register'));
     };
+
+    const isBlocked = emailExists || processing;
 
     return (
         <>
@@ -28,7 +66,7 @@ export default function Register() {
                 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                         <div style={{
-                            width: '32px', height: '32px', background: '#DC2626',
+                            width: '32px', height: '32px', background: '#ff0000',
                             borderRadius: '4px', display: 'flex', alignItems: 'center',
                             justifyContent: 'center', color: 'white', fontSize: '18px', fontWeight: '900'
                         }}>+</div>
@@ -53,7 +91,7 @@ export default function Register() {
 
                         {/* Card Header */}
                         <div style={{
-                            background: '#DC2626', padding: '28px 32px'
+                            background: '#ff0000', padding: '28px 32px'
                         }}>
                             <div style={{
                                 fontSize: '11px', fontWeight: '600', letterSpacing: '2px',
@@ -100,13 +138,13 @@ export default function Register() {
                                         required
                                         style={{
                                             width: '100%', padding: '10px 14px',
-                                            border: errors.name ? '1px solid #DC2626' : '1px solid #e8e8e8',
+                                            border: errors.name ? '1px solid #ff0000' : '1px solid #e8e8e8',
                                             borderRadius: '6px', fontSize: '14px',
                                             outline: 'none', boxSizing: 'border-box',
                                             fontFamily: "'Source Sans 3', sans-serif"
                                         }}
                                     />
-                                    {errors.name && <p style={{ color: '#DC2626', fontSize: '12px', marginTop: '4px' }}>{errors.name}</p>}
+                                    {errors.name && <p style={{ color: '#ff0000', fontSize: '12px', marginTop: '4px' }}>{errors.name}</p>}
                                 </div>
 
                                 {/* Email */}
@@ -124,13 +162,23 @@ export default function Register() {
                                         required
                                         style={{
                                             width: '100%', padding: '10px 14px',
-                                            border: errors.email ? '1px solid #DC2626' : '1px solid #e8e8e8',
+                                            border: (errors.email || emailExists) ? '1px solid #ff0000' : '1px solid #e8e8e8',
                                             borderRadius: '6px', fontSize: '14px',
                                             outline: 'none', boxSizing: 'border-box',
                                             fontFamily: "'Source Sans 3', sans-serif"
                                         }}
                                     />
-                                    {errors.email && <p style={{ color: '#DC2626', fontSize: '12px', marginTop: '4px' }}>{errors.email}</p>}
+                                    {checkingEmail && (
+                                        <p style={{ color: '#999', fontSize: '12px', marginTop: '4px' }}>
+                                            Checking email…
+                                        </p>
+                                    )}
+                                    {!checkingEmail && emailExists && (
+                                        <p style={{ color: '#ff0000', fontSize: '12px', marginTop: '4px', fontWeight: '600' }}>
+                                            ⚠ This email is already registered. Please use a different email or log in instead.
+                                        </p>
+                                    )}
+                                    {errors.email && <p style={{ color: '#ff0000', fontSize: '12px', marginTop: '4px' }}>{errors.email}</p>}
                                 </div>
 
                                 {/* Password */}
@@ -148,13 +196,13 @@ export default function Register() {
                                         required
                                         style={{
                                             width: '100%', padding: '10px 14px',
-                                            border: errors.password ? '1px solid #DC2626' : '1px solid #e8e8e8',
+                                            border: errors.password ? '1px solid #ff0000' : '1px solid #e8e8e8',
                                             borderRadius: '6px', fontSize: '14px',
                                             outline: 'none', boxSizing: 'border-box',
                                             fontFamily: "'Source Sans 3', sans-serif"
                                         }}
                                     />
-                                    {errors.password && <p style={{ color: '#DC2626', fontSize: '12px', marginTop: '4px' }}>{errors.password}</p>}
+                                    {errors.password && <p style={{ color: '#ff0000', fontSize: '12px', marginTop: '4px' }}>{errors.password}</p>}
                                 </div>
 
                                 {/* Confirm Password */}
@@ -172,29 +220,33 @@ export default function Register() {
                                         required
                                         style={{
                                             width: '100%', padding: '10px 14px',
-                                            border: errors.password_confirmation ? '1px solid #DC2626' : '1px solid #e8e8e8',
+                                            border: errors.password_confirmation ? '1px solid #ff0000' : '1px solid #e8e8e8',
                                             borderRadius: '6px', fontSize: '14px',
                                             outline: 'none', boxSizing: 'border-box',
                                             fontFamily: "'Source Sans 3', sans-serif"
                                         }}
                                     />
-                                    {errors.password_confirmation && <p style={{ color: '#DC2626', fontSize: '12px', marginTop: '4px' }}>{errors.password_confirmation}</p>}
+                                    {errors.password_confirmation && <p style={{ color: '#ff0000', fontSize: '12px', marginTop: '4px' }}>{errors.password_confirmation}</p>}
                                 </div>
 
                                 {/* Submit */}
                                 <button
                                     type="submit"
-                                    disabled={processing}
+                                    disabled={isBlocked}
                                     style={{
-                                        width: '100%', background: processing ? '#999' : '#DC2626',
+                                        width: '100%', background: isBlocked ? '#999' : '#ff0000',
                                         color: 'white', border: 'none', padding: '12px',
                                         borderRadius: '6px', fontSize: '14px', fontWeight: '600',
-                                        cursor: processing ? 'not-allowed' : 'pointer',
+                                        cursor: isBlocked ? 'not-allowed' : 'pointer',
                                         fontFamily: "'Source Sans 3', sans-serif",
                                         letterSpacing: '0.5px'
                                     }}
                                 >
-                                    {processing ? 'Registering...' : 'Register as Volunteer'}
+                                    {processing
+                                        ? 'Registering...'
+                                        : emailExists
+                                            ? 'Email already registered'
+                                            : 'Register as Volunteer'}
                                 </button>
 
                             </form>
@@ -203,7 +255,7 @@ export default function Register() {
 
                     <p style={{ textAlign: 'center', fontSize: '13px', color: '#999', marginTop: '16px' }}>
                         Already have an account?{' '}
-                        <Link href={route('login')} style={{ color: '#DC2626', textDecoration: 'none', fontWeight: '600' }}>
+                        <Link href={route('login')} style={{ color: '#ff0000', textDecoration: 'none', fontWeight: '600' }}>
                             Log in here
                         </Link>
                     </p>

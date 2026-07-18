@@ -20,10 +20,13 @@ class AttendanceController extends Controller
             ->orderBy('date', 'desc')
             ->get();
 
-        $todayRecord = Attendance::where('user_id', $user->id)
+        // ✅ Changed from ->first() to ->get(): a volunteer can be assigned to more than
+        // one activity on the same day, so we need every today's record (one per activity),
+        // not just whichever came first. The frontend matches the right one by activity_id.
+        $todayRecords = Attendance::where('user_id', $user->id)
             ->whereDate('date', today())
             ->with('activity')
-            ->first();
+            ->get();
 
         $totalHours = Attendance::where('user_id', $user->id)
             ->sum('hours_rendered');
@@ -36,9 +39,10 @@ class AttendanceController extends Controller
 
         return Inertia::render('Volunteer/Attendance', [
             'attendances' => $attendances,
-            'todayRecord' => $todayRecord,
+            'todayRecords' => $todayRecords, // ✅ renamed from todayRecord (was a single record, now an array)
             'totalHours'  => $totalHours,
             'activities'  => $activities,
+            'hasFaceDescriptor' => !empty($user->face_descriptor),
         ]);
     }
 }

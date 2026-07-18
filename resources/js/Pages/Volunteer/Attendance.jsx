@@ -29,14 +29,14 @@ function getStatuses(record) {
 
 const STATUS_STYLES = {
     'Early In': { background: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe' },
-    Late:       { background: '#fef2f2', color: '#b91c1c', border: '1px solid #fecaca' },
+    Late:       { background: '#fef2f2', color: '#ff0000', border: '1px solid #fecaca' },
     'Early Out':{ background: '#fff7ed', color: '#c2410c', border: '1px solid #fed7aa' },
     Absent:     { background: '#f3f4f6', color: '#6b7280', border: '1px solid #e5e7eb' },
 };
 
 const FILTER_ACTIVE = {
     'Early In': { background: '#1d4ed8', color: '#fff', border: '1px solid #1d4ed8' },
-    Late:       { background: '#b91c1c', color: '#fff', border: '1px solid #b91c1c' },
+    Late:       { background: '#ff0000', color: '#fff', border: '1px solid #ff0000' },
     'Early Out':{ background: '#c2410c', color: '#fff', border: '1px solid #c2410c' },
     Absent:     { background: '#374151', color: '#fff', border: '1px solid #374151' },
 };
@@ -74,7 +74,7 @@ function FilterChip({ label, active, onClick }) {
     );
 }
 
-export default function VolunteerAttendance({ auth, attendances, todayRecord, totalHours, activities }) {
+export default function VolunteerAttendance({ auth, attendances, todayRecord, totalHours, activities, hasFaceDescriptor }) {
     const { flash } = usePage().props;
     const [activeFilter, setActiveFilter] = useState(null);
     const volunteer = auth.user;
@@ -131,7 +131,7 @@ export default function VolunteerAttendance({ auth, attendances, todayRecord, to
 
                 {/* ✅ UPDATED: Sidebar — same layout as other pages */}
                 <aside style={{
-                    width: '160px', minHeight: '100vh', background: '#CC0000',
+                    width: '160px', minHeight: '100vh', background: '#ff0000',
                     display: 'flex', flexDirection: 'column', flexShrink: 0,
                     position: 'fixed', left: 0, top: 0, bottom: 0, zIndex: 100,
                 }}>
@@ -188,7 +188,7 @@ export default function VolunteerAttendance({ auth, attendances, todayRecord, to
                                 title={volunteer?.name}
                                 style={{
                                     width: '30px', height: '30px', borderRadius: '50%',
-                                    background: avatarUrl ? 'transparent' : '#CC0000',
+                                    background: avatarUrl ? 'transparent' : '#ff0000',
                                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                                     color: 'white', fontSize: '12px', fontWeight: '700',
                                     flexShrink: 0, overflow: 'hidden',
@@ -219,17 +219,17 @@ export default function VolunteerAttendance({ auth, attendances, todayRecord, to
                             }}>⚠️ {flash.error}</div>
                         )}
 
-                        <FaceAttendance todayRecord={todayRecord} activities={activities} />
+                        <FaceAttendance todayRecord={todayRecord} activities={activities} hasFaceDescriptor={hasFaceDescriptor} />
 
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
                             <div style={{ background: 'white', padding: '24px', borderRadius: '8px', border: '1px solid #e8e8e8' }}>
-                                <div style={{ fontSize: '36px', color: '#CC0000', fontWeight: '700' }}>
+                                <div style={{ fontSize: '36px', color: '#ff0000', fontWeight: '700' }}>
                                     {attendances.length}
                                 </div>
                                 <div style={{ fontSize: '13px', color: '#888', marginTop: '4px' }}>Total Days Present</div>
                             </div>
                             <div style={{ background: 'white', padding: '24px', borderRadius: '8px', border: '1px solid #e8e8e8' }}>
-                                <div style={{ fontSize: '36px', color: '#CC0000', fontWeight: '700' }}>
+                                <div style={{ fontSize: '36px', color: '#ff0000', fontWeight: '700' }}>
                                     {parseFloat(totalHours || 0).toFixed(2)}
                                 </div>
                                 <div style={{ fontSize: '13px', color: '#888', marginTop: '4px' }}>Total Hours Rendered</div>
@@ -293,7 +293,7 @@ export default function VolunteerAttendance({ auth, attendances, todayRecord, to
                                             <td style={{ padding: '14px 20px', fontSize: '14px', color: '#111' }}>{formatDate(record.date)}</td>
                                             <td style={{ padding: '14px 20px', fontSize: '14px', color: '#111' }}>{record.activity?.name ?? '—'}</td>
                                             <td style={{ padding: '14px 20px', fontSize: '14px', color: '#16a34a' }}>{formatTime(record.time_in)}</td>
-                                            <td style={{ padding: '14px 20px', fontSize: '14px', color: '#CC0000' }}>{formatTime(record.time_out)}</td>
+                                            <td style={{ padding: '14px 20px', fontSize: '14px', color: '#ff0000' }}>{formatTime(record.time_out)}</td>
                                             <td style={{ padding: '14px 20px', fontSize: '14px', color: '#111' }}>{record.hours_rendered ?? '—'}</td>
                                             <td style={{ padding: '14px 20px' }}>
                                                 {record.statuses.map(s => <StatusBadge key={s} status={s} />)}

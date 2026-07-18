@@ -48,7 +48,7 @@ export default function AdminSidebar({ auth, activeRoute, sidebarOpen, setSideba
     const Avatar = ({ size = 34, fontSize = 12 }) => (
         <div style={{
             width: size, height: size, borderRadius: '50%',
-            background: '#C8102E', display: 'flex', alignItems: 'center',
+            background: '#ff0000', display: 'flex', alignItems: 'center',
             justifyContent: 'center', color: 'white', fontSize, fontWeight: '700',
             overflow: 'hidden', flexShrink: 0,
         }}>
@@ -145,7 +145,7 @@ export default function AdminSidebar({ auth, activeRoute, sidebarOpen, setSideba
             <style>{`
                 .admin-sidebar {
                     width: 220px;
-                    background: #C8102E;
+                    background: #ff0000;
                     display: flex;
                     flex-direction: column;
                     position: fixed;

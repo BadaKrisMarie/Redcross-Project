@@ -7,11 +7,14 @@ export default function AdminProfile({ auth, activityLogs = [] }) {
     const dropdownRef = useRef();
     const [activeTab, setActiveTab] = useState('info');
     const [dropdownOpen, setDropdownOpen] = useState(false);
+
+    // ✅ Fixed asset helper
+    const photoUrl = (path) => window.location.origin + '/storage/' + path;
+
     const [preview, setPreview] = useState(
-        admin.photo ? asset('storage/' + admin.photo) : null
+        admin.photo ? photoUrl(admin.photo) : null
     );
 
-    // Show/hide states for each password field
     const [showCurrent, setShowCurrent] = useState(false);
     const [showNew, setShowNew] = useState(false);
     const [showConfirm, setShowConfirm] = useState(false);
@@ -39,6 +42,13 @@ export default function AdminProfile({ auth, activityLogs = [] }) {
         document.addEventListener('mousedown', handler);
         return () => document.removeEventListener('mousedown', handler);
     }, []);
+
+    // ✅ Update preview when admin.photo changes (after save)
+    useEffect(() => {
+        if (admin.photo) {
+            setPreview(photoUrl(admin.photo));
+        }
+    }, [admin.photo]);
 
     const handleLogout = () => router.post(route('logout'));
 
@@ -76,7 +86,6 @@ export default function AdminProfile({ auth, activityLogs = [] }) {
         { key: 'logs',     label: 'Activity Logs' },
     ];
 
-    // Reusable eye toggle button
     const EyeButton = ({ show, onToggle }) => (
         <button
             type="button"
@@ -91,7 +100,6 @@ export default function AdminProfile({ auth, activityLogs = [] }) {
             }}
         >
             {show ? (
-                // Eye open — click to hide
                 <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24"
                     fill="none" stroke="currentColor" strokeWidth="2"
                     strokeLinecap="round" strokeLinejoin="round">
@@ -99,7 +107,6 @@ export default function AdminProfile({ auth, activityLogs = [] }) {
                     <circle cx="12" cy="12" r="3" />
                 </svg>
             ) : (
-                // Eye closed — click to show
                 <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24"
                     fill="none" stroke="currentColor" strokeWidth="2"
                     strokeLinecap="round" strokeLinejoin="round">
@@ -118,10 +125,10 @@ export default function AdminProfile({ auth, activityLogs = [] }) {
 
             <div style={{ minHeight: '100vh', background: '#f5f5f5', fontFamily: "'Source Sans 3', sans-serif" }}>
 
-                {/* ─── NAV ─────────────────────────────────────────────────── */}
+                {/* NAV */}
                 <nav style={{ background: '#111', padding: '14px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <div style={{ width: '32px', height: '32px', background: '#DC2626', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '18px', fontWeight: '900' }}>+</div>
+                        <div style={{ width: '32px', height: '32px', background: '#ff0000', borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '18px', fontWeight: '900' }}>+</div>
                         <span style={{ fontFamily: 'Oswald, sans-serif', color: 'white', fontSize: '16px', fontWeight: '600', letterSpacing: '1px' }}>RED CROSS — Admin Panel</span>
                     </div>
 
@@ -149,7 +156,7 @@ export default function AdminProfile({ auth, activityLogs = [] }) {
                             >
                                 <div style={{
                                     width: '32px', height: '32px', borderRadius: '50%',
-                                    background: '#DC2626', display: 'flex', alignItems: 'center',
+                                    background: '#ff0000', display: 'flex', alignItems: 'center',
                                     justifyContent: 'center', color: 'white', fontSize: '12px',
                                     fontWeight: '700', overflow: 'hidden', flexShrink: 0,
                                 }}>
@@ -179,7 +186,7 @@ export default function AdminProfile({ auth, activityLogs = [] }) {
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                                             <div style={{
                                                 width: '36px', height: '36px', borderRadius: '50%',
-                                                background: '#DC2626', display: 'flex', alignItems: 'center',
+                                                background: '#ff0000', display: 'flex', alignItems: 'center',
                                                 justifyContent: 'center', color: 'white', fontSize: '13px',
                                                 fontWeight: '700', overflow: 'hidden', flexShrink: 0,
                                             }}>
@@ -219,13 +226,13 @@ export default function AdminProfile({ auth, activityLogs = [] }) {
                 <div style={{ padding: '40px 32px', maxWidth: '900px', margin: '0 auto' }}>
 
                     <div style={{ marginBottom: '32px' }}>
-                        <div style={{ fontSize: '11px', fontWeight: '600', letterSpacing: '2px', textTransform: 'uppercase', color: '#DC2626', marginBottom: '8px' }}>Admin Panel</div>
+                        <div style={{ fontSize: '11px', fontWeight: '600', letterSpacing: '2px', textTransform: 'uppercase', color: '#ff0000', marginBottom: '8px' }}>Admin Panel</div>
                         <h1 style={{ fontFamily: 'Oswald, sans-serif', fontSize: '36px', color: '#111', fontWeight: '600', letterSpacing: '0.5px', textTransform: 'uppercase', margin: 0 }}>My Profile</h1>
                     </div>
 
                     {/* PROFILE HERO CARD */}
                     <div style={{ background: 'white', borderRadius: '8px', border: '1px solid #e8e8e8', marginBottom: '20px', overflow: 'hidden' }}>
-                        <div style={{ background: '#DC2626', height: '80px', position: 'relative' }} />
+                        <div style={{ background: '#ff0000', height: '80px', position: 'relative' }} />
                         <div style={{ padding: '0 28px 24px', position: 'relative' }}>
                             <div style={{ position: 'relative', display: 'inline-block', marginTop: '-44px', marginBottom: '12px' }}>
                                 <div onClick={() => fileRef.current.click()} title="Click to change photo"
@@ -262,8 +269,8 @@ export default function AdminProfile({ auth, activityLogs = [] }) {
                                     style={{
                                         padding: '14px 24px', fontSize: '13px', fontWeight: '600',
                                         border: 'none', background: 'none', cursor: 'pointer',
-                                        color: activeTab === tab.key ? '#DC2626' : '#888',
-                                        borderBottom: activeTab === tab.key ? '2px solid #DC2626' : '2px solid transparent',
+                                        color: activeTab === tab.key ? '#ff0000' : '#888',
+                                        borderBottom: activeTab === tab.key ? '2px solid #ff0000' : '2px solid transparent',
                                         marginBottom: '-1px', letterSpacing: '0.3px',
                                     }}>
                                     {tab.label}
@@ -308,8 +315,6 @@ export default function AdminProfile({ auth, activityLogs = [] }) {
                                     </div>
                                 )}
                                 <div style={{ maxWidth: '420px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-
-                                    {/* Current Password */}
                                     <div>
                                         <label style={labelStyle}>Current Password</label>
                                         <div style={{ position: 'relative' }}>
@@ -324,8 +329,6 @@ export default function AdminProfile({ auth, activityLogs = [] }) {
                                         </div>
                                         {passwordForm.errors.current_password && <span style={errStyle}>{passwordForm.errors.current_password}</span>}
                                     </div>
-
-                                    {/* New Password */}
                                     <div>
                                         <label style={labelStyle}>New Password</label>
                                         <div style={{ position: 'relative' }}>
@@ -340,8 +343,6 @@ export default function AdminProfile({ auth, activityLogs = [] }) {
                                         </div>
                                         {passwordForm.errors.password && <span style={errStyle}>{passwordForm.errors.password}</span>}
                                     </div>
-
-                                    {/* Confirm New Password */}
                                     <div>
                                         <label style={labelStyle}>Confirm New Password</label>
                                         <div style={{ position: 'relative' }}>
@@ -356,7 +357,6 @@ export default function AdminProfile({ auth, activityLogs = [] }) {
                                         </div>
                                         {passwordForm.errors.password_confirmation && <span style={errStyle}>{passwordForm.errors.password_confirmation}</span>}
                                     </div>
-
                                 </div>
                                 <div style={{ marginTop: '24px' }}>
                                     <button type="submit" disabled={passwordForm.processing} style={btnRedStyle}>
@@ -412,10 +412,6 @@ function logColor(action) {
     return { bg: '#f5f5f5', color: '#555', icon: '📋' };
 }
 
-function asset(path) {
-    return '/' + path;
-}
-
 const labelStyle = { display: 'block', fontSize: '12px', color: '#6B7280', marginBottom: '5px', fontWeight: '500' };
 const inputStyle = {
     width: '100%', boxSizing: 'border-box', border: '1px solid #E5E7EB',
@@ -428,7 +424,7 @@ const inputWithIconStyle = {
     fontFamily: 'inherit', color: '#111', background: 'white',
 };
 const btnRedStyle = {
-    background: '#DC2626', color: 'white', border: 'none', borderRadius: '6px',
+    background: '#ff0000', color: 'white', border: 'none', borderRadius: '6px',
     padding: '10px 24px', fontSize: '13px', fontWeight: '600', cursor: 'pointer',
 };
-const errStyle = { fontSize: '11px', color: '#DC2626', marginTop: '4px', display: 'block' };
+const errStyle = { fontSize: '11px', color: '#ff0000', marginTop: '4px', display: 'block' };

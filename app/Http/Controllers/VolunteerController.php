@@ -45,8 +45,11 @@ class VolunteerController extends Controller
                 'status'           => $volunteer->status,
                 'phone'            => $volunteer->phone    ?? null,
                 'address'          => $volunteer->address  ?? null,
-                'birthday'         => $volunteer->birthday ?? null,
+                'birthdate'        => $volunteer->birthdate ?? null,
                 'gender'           => $volunteer->gender   ?? null,
+                // ✅ NEW: skills/trainings (e.g. First Aid, CPR, Water Rescue)
+                'skills'           => $volunteer->skills   ?? [],
+                'skills_notes'     => $volunteer->skills_notes ?? null,
                 'created_at'       => $volunteer->created_at,
                 'photo'            => $volunteer->photo
                                         ? asset('storage/' . $volunteer->photo)
@@ -94,5 +97,13 @@ class VolunteerController extends Controller
         Mail::to($user->email)->send(new VolunteerRejected($user));
 
         return redirect()->route('admin.volunteers')->with('success', 'Volunteer rejected.');
+    }
+
+    public function destroy($id)
+    {
+        $user = User::findOrFail($id);
+        $user->delete();
+
+        return redirect()->route('admin.volunteers')->with('success', 'Volunteer deleted successfully.');
     }
 }

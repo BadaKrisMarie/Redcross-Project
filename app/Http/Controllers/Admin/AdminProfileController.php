@@ -28,21 +28,18 @@ class AdminProfileController extends Controller
             'photo' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
         ]);
 
-        // Handle photo upload
         if ($request->hasFile('photo')) {
-            // Delete old photo if exists
             if ($user->photo && Storage::disk('public')->exists($user->photo)) {
                 Storage::disk('public')->delete($user->photo);
             }
-
             $path = $request->file('photo')->store('avatars', 'public');
             $validated['photo'] = $path;
         }
 
         $user->update($validated);
 
-        // Redirect to dashboard — triggers Inertia to re-share fresh auth.user
-        return redirect()->route('admin.dashboard')
+        // ✅ Redirect back to profile, not dashboard
+        return redirect()->route('admin.profile')
             ->with('success', 'Profile updated successfully.');
     }
 

@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Link, Head } from "@inertiajs/react";
 
-const RED = "#C8102E";
+const RED = "#ff0000";
 const NAVY = "#1A1464";
 const WHITE = "#FFFFFF";
 const LIGHT = "#FAF9F7";
@@ -26,7 +26,7 @@ function Nav() {
       <Link href="/" style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none" }}>
         <div style={{
           width: 34, height: 34, borderRadius: 4,
-          background: "#DC2626",
+          background: "#ff0000",
           display: "flex", alignItems: "center", justifyContent: "center",
           color: "white", fontSize: 20, fontWeight: 900,
         }}>+</div>
@@ -49,7 +49,7 @@ function Nav() {
           onMouseLeave={() => setOpenTooltip(null)}
         >
           <Link href="/about" style={{
-            textDecoration: "none", fontSize: 13, color: "#DC2626",
+            textDecoration: "none", fontSize: 13, color: "#ff0000",
             fontWeight: 600, padding: "4px 10px", borderRadius: 6,
             background: "rgba(220,38,38,0.08)",
           }}>About</Link>
@@ -141,7 +141,7 @@ function Nav() {
           textDecoration: "none",
           fontSize: 12, fontWeight: 600, color: "#ffffff",
           padding: "8px 18px", borderRadius: 6,
-          background: "#DC2626",
+          background: "#ff0000",
         }}>Log In</Link>
       </div>
     </nav>
@@ -238,7 +238,7 @@ const photos = [
     location: "Muntinlupa City",
     desc: "Red Cross volunteers conduct community outreach activities in Muntinlupa, providing assistance, guidance, and support to residents, especially families and children in need.",
     fullDesc: "Our Community Outreach program reaches the most vulnerable sectors of Muntinlupa City. Volunteers regularly visit barangays to provide basic health consultations, distribute relief goods, and conduct community education sessions. This program has touched thousands of lives across the 9 barangays we serve, ensuring that no family is left behind during times of need.",
-    accent: "#C8102E",
+    accent: "#ff0000",
     tagLabel: "Outreach",
     image: "/images/outreach.jpg",
   },

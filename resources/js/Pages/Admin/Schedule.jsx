@@ -23,7 +23,7 @@ export default function AdminSchedule({ auth, activities = [] }) {
     ];
 
     const NavAvatar = ({ size = 32, fontSize = 12 }) => (
-        <div style={{ width: size, height: size, borderRadius: '50%', background: '#C8102E', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize, fontWeight: '700', overflow: 'hidden', flexShrink: 0 }}>
+        <div style={{ width: size, height: size, borderRadius: '50%', background: '#ff0000', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize, fontWeight: '700', overflow: 'hidden', flexShrink: 0 }}>
             {photoUrl ? <img src={photoUrl} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : initials}
         </div>
     );
@@ -70,10 +70,10 @@ export default function AdminSchedule({ auth, activities = [] }) {
 
             <style>{`
                 * { box-sizing: border-box; margin: 0; padding: 0; }
-                :root { --red: #C8102E; --ink: #1A1A1A; --muted: #6B6B6B; --border: #EDEDED; --surface: #F7F7F5; --white: #FFFFFF; }
+                :root { --red: #ff0000; --ink: #1A1A1A; --muted: #6B6B6B; --border: #EDEDED; --surface: #F7F7F5; --white: #FFFFFF; }
                 body { font-family: 'DM Sans', sans-serif; font-size: 13px; background: var(--surface); }
                 .wrap { display: flex; min-height: 100vh; }
-                .sidebar { width: 220px; background: #CC0000; display: flex; flex-direction: column; position: fixed; top: 0; left: 0; height: 100vh; z-index: 100; transition: transform 0.2s; }
+                .sidebar { width: 220px; background: #ff0000; display: flex; flex-direction: column; position: fixed; top: 0; left: 0; height: 100vh; z-index: 100; transition: transform 0.2s; }
                 .sidebar.closed { transform: translateX(-220px); }
                 .main { margin-left: 220px; flex: 1; display: flex; flex-direction: column; min-height: 100vh; transition: margin-left 0.2s; }
                 .main.full { margin-left: 0; }

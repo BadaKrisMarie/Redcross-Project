@@ -137,7 +137,7 @@ export default function VolunteerDashboard({ auth, totalHours, totalDays, monthD
     const AvatarImg = ({ size = 34, fontSize = 13 }) => (
         <div style={{
             width: size, height: size, borderRadius: '50%',
-            background: avatarUrl ? 'transparent' : '#CC0000',
+            background: avatarUrl ? 'transparent' : '#ff0000',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             color: 'white', fontSize, fontWeight: '700',
             flexShrink: 0, overflow: 'hidden',
@@ -168,7 +168,7 @@ export default function VolunteerDashboard({ auth, totalHours, totalDays, monthD
             <div style={{ display: 'flex', minHeight: '100vh', fontFamily: "'Inter', sans-serif", background: '#F3F4F6' }}>
 
                 {/* SIDEBAR */}
-                <aside style={{ width: '160px', minHeight: '100vh', background: '#CC0000', display: 'flex', flexDirection: 'column', flexShrink: 0, position: 'fixed', left: 0, top: 0, bottom: 0, zIndex: 100 }}>
+                <aside style={{ width: '160px', minHeight: '100vh', background: '#ff0000', display: 'flex', flexDirection: 'column', flexShrink: 0, position: 'fixed', left: 0, top: 0, bottom: 0, zIndex: 100 }}>
                     <div style={{ padding: '20px 16px 16px', borderBottom: '1px solid rgba(255,255,255,0.15)' }}>
                         <div style={{ fontSize: '11px', fontWeight: '700', color: 'white', lineHeight: '1.4' }}>
                             Rizal Chapter<br /><span style={{ fontWeight: '400', opacity: 0.85 }}>Muntinlupa City Branch</span>
@@ -218,7 +218,7 @@ export default function VolunteerDashboard({ auth, totalHours, totalDays, monthD
                                 >
                                     <BellIcon />
                                     {bellUnreadCount > 0 && (
-                                        <span style={{ position: 'absolute', top: -2, right: -2, background: '#CC0000', color: 'white', fontSize: '9px', fontWeight: '700', width: '16px', height: '16px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid white', pointerEvents: 'none' }}>
+                                        <span style={{ position: 'absolute', top: -2, right: -2, background: '#ff0000', color: 'white', fontSize: '9px', fontWeight: '700', width: '16px', height: '16px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid white', pointerEvents: 'none' }}>
                                             {bellUnreadCount > 9 ? '9+' : bellUnreadCount}
                                         </span>
                                     )}
@@ -241,7 +241,7 @@ export default function VolunteerDashboard({ auth, totalHours, totalDays, monthD
                                                 return (
                                                     <div key={n.id} style={{ borderBottom: '1px solid #F9FAFB' }}>
                                                         <div onClick={() => handleNotifClick(n.id)} style={{ display: 'flex', gap: '10px', padding: '10px 16px', background: isExpanded ? '#FFF5F5' : 'white', cursor: 'pointer', transition: 'background 0.15s' }}>
-                                                            <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#CC0000', flexShrink: 0, marginTop: '5px' }} />
+                                                            <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#ff0000', flexShrink: 0, marginTop: '5px' }} />
                                                             <div style={{ flex: 1, minWidth: 0 }}>
                                                                 <div style={{ fontSize: '12px', fontWeight: '600', color: '#111' }}>{n.message}</div>
                                                                 <div style={{ fontSize: '11px', color: '#9CA3AF', marginTop: '2px' }}>{n.created_at}</div>
@@ -257,7 +257,7 @@ export default function VolunteerDashboard({ auth, totalHours, totalDays, monthD
                                                                     {act.location_name && <div style={{ display: 'flex', gap: '8px', fontSize: '12px' }}><span style={{ color: '#9CA3AF', width: '60px', flexShrink: 0 }}>Location</span><span style={{ color: '#374151', fontWeight: '500' }}>{act.location_name}</span></div>}
                                                                     {act.description && <div style={{ display: 'flex', gap: '8px', fontSize: '12px', marginTop: '2px' }}><span style={{ color: '#9CA3AF', width: '60px', flexShrink: 0 }}>Details</span><span style={{ color: '#6B7280', lineHeight: '1.5' }}>{act.description}</span></div>}
                                                                 </div>
-                                                                <Link href={route('volunteer.schedule')} onClick={() => setShowBellNotifs(false)} style={{ display: 'inline-block', marginTop: '10px', fontSize: '11px', fontWeight: '600', color: '#CC0000', textDecoration: 'none' }}>View in Schedule →</Link>
+                                                                <Link href={route('volunteer.schedule')} onClick={() => setShowBellNotifs(false)} style={{ display: 'inline-block', marginTop: '10px', fontSize: '11px', fontWeight: '600', color: '#ff0000', textDecoration: 'none' }}>View in Schedule →</Link>
                                                             </div>
                                                         )}
                                                     </div>
@@ -300,7 +300,7 @@ export default function VolunteerDashboard({ auth, totalHours, totalDays, monthD
                             <div style={{ position: 'relative' }} ref={dropdownRef}>
                                 <button
                                     onClick={() => { setDropdownOpen(o => !o); setShowNotifs(false); setShowBellNotifs(false); }}
-                                    style={{ width: '34px', height: '34px', borderRadius: '50%', background: avatarUrl ? 'transparent' : '#CC0000', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '13px', fontWeight: '700', flexShrink: 0, overflow: 'hidden' }}
+                                    style={{ width: '34px', height: '34px', borderRadius: '50%', background: avatarUrl ? 'transparent' : '#ff0000', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '13px', fontWeight: '700', flexShrink: 0, overflow: 'hidden' }}
                                 >
                                     {avatarUrl ? <img src={avatarUrl} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} /> : initials}
                                 </button>
@@ -348,7 +348,7 @@ export default function VolunteerDashboard({ auth, totalHours, totalDays, monthD
                     <main style={{ flex: 1, padding: '24px', overflowY: 'auto' }}>
 
                         {/* Welcome Banner */}
-                        <div style={{ background: '#CC0000', borderRadius: '12px', padding: '24px 28px', marginBottom: '20px', position: 'relative', overflow: 'hidden' }}>
+                        <div style={{ background: '#ff0000', borderRadius: '12px', padding: '24px 28px', marginBottom: '20px', position: 'relative', overflow: 'hidden' }}>
                             <div style={{ position: 'absolute', right: -30, top: -30, width: 160, height: 160, borderRadius: '50%', background: 'rgba(255,255,255,0.06)' }} />
                             <div style={{ position: 'absolute', right: 60, bottom: -40, width: 120, height: 120, borderRadius: '50%', background: 'rgba(255,255,255,0.04)' }} />
                             <div style={{ fontSize: '20px', fontWeight: '700', color: 'white', marginBottom: '4px' }}>Welcome, {volunteer?.name}!</div>

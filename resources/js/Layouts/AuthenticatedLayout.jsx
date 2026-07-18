@@ -119,7 +119,7 @@ export default function VolunteerDashboard({ auth, totalHours, totalDays, monthD
 
                 {/* SIDEBAR */}
                 <aside style={{
-                    width: '160px', minHeight: '100vh', background: '#CC0000',
+                    width: '160px', minHeight: '100vh', background: '#ff0000',
                     display: 'flex', flexDirection: 'column', flexShrink: 0,
                     position: 'fixed', left: 0, top: 0, bottom: 0, zIndex: 100,
                 }}>
@@ -185,7 +185,7 @@ export default function VolunteerDashboard({ auth, totalHours, totalDays, monthD
                                     onClick={() => { setDropdownOpen(o => !o); setShowNotifs(false); }}
                                     style={{
                                         width: '34px', height: '34px', borderRadius: '50%',
-                                        background: '#CC0000', border: 'none', cursor: 'pointer',
+                                        background: '#ff0000', border: 'none', cursor: 'pointer',
                                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                                         color: 'white', fontSize: '13px', fontWeight: '700',
                                         flexShrink: 0, position: 'relative', overflow: 'hidden', padding: 0,
@@ -220,7 +220,7 @@ export default function VolunteerDashboard({ auth, totalHours, totalDays, monthD
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                                                 <div style={{
                                                     width: '36px', height: '36px', borderRadius: '50%',
-                                                    background: '#CC0000', display: 'flex', alignItems: 'center',
+                                                    background: '#ff0000', display: 'flex', alignItems: 'center',
                                                     justifyContent: 'center', color: 'white', fontSize: '13px',
                                                     fontWeight: '700', flexShrink: 0, overflow: 'hidden',
                                                 }}>
@@ -276,7 +276,7 @@ export default function VolunteerDashboard({ auth, totalHours, totalDays, monthD
                                             style={{
                                                 display: 'flex', alignItems: 'center', gap: '10px',
                                                 width: '100%', padding: '11px 16px', background: 'none',
-                                                border: 'none', fontSize: '13px', color: '#CC0000', cursor: 'pointer', textAlign: 'left',
+                                                border: 'none', fontSize: '13px', color: '#ff0000', cursor: 'pointer', textAlign: 'left',
                                             }}
                                             onMouseEnter={e => e.currentTarget.style.background = '#FFF5F5'}
                                             onMouseLeave={e => e.currentTarget.style.background = 'none'}
@@ -306,7 +306,7 @@ export default function VolunteerDashboard({ auth, totalHours, totalDays, monthD
                                             {unreadCount > 0 && (
                                                 <button
                                                     onClick={markAllRead}
-                                                    style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '11px', color: '#CC0000', fontWeight: '600' }}
+                                                    style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '11px', color: '#ff0000', fontWeight: '600' }}
                                                 >Mark all read</button>
                                             )}
                                         </div>
@@ -406,7 +406,7 @@ export default function VolunteerDashboard({ auth, totalHours, totalDays, monthD
                                                 >
                                                     <span style={{
                                                         width: '7px', height: '7px', borderRadius: '50%',
-                                                        background: n.is_read ? '#D1D5DB' : '#CC0000',
+                                                        background: n.is_read ? '#D1D5DB' : '#ff0000',
                                                         flexShrink: 0, marginTop: '5px',
                                                     }} />
                                                     <div>
@@ -429,7 +429,7 @@ export default function VolunteerDashboard({ auth, totalHours, totalDays, monthD
 
                             {/* Welcome Banner */}
                             <div style={{
-                                background: '#CC0000', borderRadius: '12px',
+                                background: '#ff0000', borderRadius: '12px',
                                 padding: '24px 28px', marginBottom: '20px',
                                 position: 'relative', overflow: 'hidden'
                             }}>
@@ -482,7 +482,7 @@ export default function VolunteerDashboard({ auth, totalHours, totalDays, monthD
                                 <div style={{ fontSize: '14px', fontWeight: '600', color: '#111', marginBottom: '16px' }}>Your Activity Summary</div>
                                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
                                     <div style={{ textAlign: 'center', padding: '12px', background: '#FFF5F5', borderRadius: '8px' }}>
-                                        <div style={{ fontSize: '22px', fontWeight: '700', color: '#CC0000' }}>{totalHours ?? 0}</div>
+                                        <div style={{ fontSize: '22px', fontWeight: '700', color: '#ff0000' }}>{totalHours ?? 0}</div>
                                         <div style={{ fontSize: '11px', color: '#9CA3AF', marginTop: '2px' }}>Total Hours</div>
                                     </div>
                                     <div style={{ textAlign: 'center', padding: '12px', background: '#F0FDF4', borderRadius: '8px' }}>
@@ -526,7 +526,7 @@ export default function VolunteerDashboard({ auth, totalHours, totalDays, monthD
                         }}
                     >
                         <div style={{
-                            background: '#CC0000', padding: '20px 24px',
+                            background: '#ff0000', padding: '20px 24px',
                             display: 'flex', alignItems: 'center', justifyContent: 'space-between'
                         }}>
                             <div>
@@ -582,7 +582,7 @@ export default function VolunteerDashboard({ auth, totalHours, totalDays, monthD
                                     href={route('volunteer.attendance')}
                                     style={{
                                         flex: 1, textAlign: 'center',
-                                        background: '#CC0000', color: 'white',
+                                        background: '#ff0000', color: 'white',
                                         fontSize: '13px', fontWeight: '600',
                                         padding: '10px', borderRadius: '8px',
                                         textDecoration: 'none',

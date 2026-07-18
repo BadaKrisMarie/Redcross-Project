@@ -63,7 +63,7 @@ export default function WebAuthnRegister() {
                 {loading ? 'Registering...' : '🖐 Register Fingerprint'}
             </button>
             {status && (
-                <p style={{ marginTop: '8px', fontSize: '13px', color: status.startsWith('✅') ? '#16a34a' : '#DC2626' }}>
+                <p style={{ marginTop: '8px', fontSize: '13px', color: status.startsWith('✅') ? '#16a34a' : '#ff0000' }}>
                     {status}
                 </p>
             )}

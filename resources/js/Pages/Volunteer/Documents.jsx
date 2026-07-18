@@ -13,6 +13,16 @@ export default function VolunteerDocuments({ auth, documents }) {
     const [filterType, setFilterType] = useState('all');
     const [deleteModal, setDeleteModal] = useState({ open: false, id: null });
 
+    // ✅ NEW: file preview + validation state
+    const [fileError, setFileError] = useState('');
+    const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+    const ALLOWED_TYPES = {
+        'application/pdf': { label: 'PDF', icon: '📕', color: '#ff0000' },
+        'image/jpeg':      { label: 'JPG', icon: '🖼️', color: '#3B82F6' },
+        'image/jpg':       { label: 'JPG', icon: '🖼️', color: '#3B82F6' },
+        'image/png':       { label: 'PNG', icon: '🖼️', color: '#8B5CF6' },
+    };
+
     const { data, setData, post, processing, reset, errors } = useForm({
         type: 'nbi',
         file: null,
@@ -44,11 +54,46 @@ export default function VolunteerDocuments({ auth, documents }) {
 
     const handleLogout = () => router.post(route('logout'));
 
+    // ✅ NEW: format bytes into readable KB/MB
+    const formatFileSize = (bytes) => {
+        if (bytes < 1024) return `${bytes} B`;
+        if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+        return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+    };
+
+    // ✅ NEW: validate + set file, with preview info
+    const handleFileChange = (e) => {
+        const file = e.target.files[0];
+        if (!file) {
+            setData('file', null);
+            setFileError('');
+            return;
+        }
+
+        const isAllowedType = Object.keys(ALLOWED_TYPES).includes(file.type);
+        const isTooBig = file.size > MAX_FILE_SIZE;
+
+        if (!isAllowedType) {
+            setFileError('Invalid file type. Only PDF, JPG, or PNG files are allowed.');
+            setData('file', null);
+            return;
+        }
+        if (isTooBig) {
+            setFileError(`File is too large (${formatFileSize(file.size)}). Max size is 5MB.`);
+            setData('file', null);
+            return;
+        }
+
+        setFileError('');
+        setData('file', file);
+    };
+
     const handleUpload = (e) => {
         e.preventDefault();
+        if (!data.file || fileError) return;
         post(route('volunteer.documents.store'), {
             forceFormData: true,
-            onSuccess: () => { reset(); setShowUpload(false); },
+            onSuccess: () => { reset(); setFileError(''); setShowUpload(false); },
         });
     };
 
@@ -74,6 +119,9 @@ export default function VolunteerDocuments({ auth, documents }) {
         training: docs.filter(d => d.type === 'training').length,
         barangay: docs.filter(d => d.type === 'barangay').length,
     };
+
+    // ✅ NEW: current selected file preview info
+    const filePreview = data.file ? ALLOWED_TYPES[data.file.type] : null;
 
     return (
         <>
@@ -117,7 +165,7 @@ export default function VolunteerDocuments({ auth, documents }) {
                                 onClick={confirmDelete}
                                 style={{
                                     flex: 1, padding: '10px', borderRadius: '8px',
-                                    border: 'none', background: '#DC2626',
+                                    border: 'none', background: '#ff0000',
                                     color: 'white', fontSize: '13px', fontWeight: '600',
                                     cursor: 'pointer',
                                 }}
@@ -131,7 +179,7 @@ export default function VolunteerDocuments({ auth, documents }) {
 
                 {/* SIDEBAR */}
                 <aside style={{
-                    width: '160px', minHeight: '100vh', background: '#CC0000',
+                    width: '160px', minHeight: '100vh', background: '#ff0000',
                     display: 'flex', flexDirection: 'column', flexShrink: 0,
                     position: 'fixed', left: 0, top: 0, bottom: 0, zIndex: 100,
                 }}>
@@ -189,7 +237,7 @@ export default function VolunteerDocuments({ auth, documents }) {
                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                             <button onClick={() => setShowUpload(!showUpload)} style={{
                                 display: 'flex', alignItems: 'center', gap: '6px',
-                                background: '#CC0000', color: 'white', border: 'none',
+                                background: '#ff0000', color: 'white', border: 'none',
                                 borderRadius: '6px', padding: '8px 16px',
                                 fontSize: '13px', fontWeight: '600', cursor: 'pointer'
                             }}>
@@ -198,7 +246,7 @@ export default function VolunteerDocuments({ auth, documents }) {
                             </button>
                             <div title={volunteer?.name} style={{
                                 width: '32px', height: '32px', borderRadius: '50%',
-                                background: avatarUrl ? 'transparent' : '#CC0000',
+                                background: avatarUrl ? 'transparent' : '#ff0000',
                                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                                 color: 'white', fontSize: '13px', fontWeight: '700',
                                 flexShrink: 0, overflow: 'hidden',
@@ -241,21 +289,73 @@ export default function VolunteerDocuments({ auth, documents }) {
                                             <input
                                                 type="file"
                                                 accept=".pdf,.jpg,.jpeg,.png"
-                                                onChange={e => setData('file', e.target.files[0])}
+                                                onChange={handleFileChange}
                                                 style={{ width: '100%', padding: '7px 0', fontSize: '13px' }}
                                             />
-                                            {errors.file && <div style={{ fontSize: '11px', color: '#CC0000', marginTop: '4px' }}>{errors.file}</div>}
+                                            {errors.file && <div style={{ fontSize: '11px', color: '#ff0000', marginTop: '4px' }}>{errors.file}</div>}
                                         </div>
                                     </div>
+
+                                    {/* ✅ NEW: File preview / validation card */}
+                                    {fileError && (
+                                        <div style={{
+                                            display: 'flex', alignItems: 'center', gap: '10px',
+                                            background: '#FEF2F2', border: '1px solid #FECACA',
+                                            borderRadius: '8px', padding: '10px 14px', marginBottom: '16px',
+                                        }}>
+                                            <span style={{ fontSize: '16px' }}>⚠️</span>
+                                            <span style={{ fontSize: '12px', color: '#991B1B', fontWeight: '500' }}>{fileError}</span>
+                                        </div>
+                                    )}
+
+                                    {!fileError && data.file && filePreview && (
+                                        <div style={{
+                                            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                            background: '#F9FAFB', border: '1px solid #E5E7EB',
+                                            borderRadius: '8px', padding: '10px 14px', marginBottom: '16px',
+                                        }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+                                                <div style={{
+                                                    width: '34px', height: '34px', borderRadius: '6px',
+                                                    background: `${filePreview.color}15`,
+                                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                    fontSize: '16px', flexShrink: 0,
+                                                }}>
+                                                    {filePreview.icon}
+                                                </div>
+                                                <div style={{ minWidth: 0 }}>
+                                                    <div style={{
+                                                        fontSize: '12px', fontWeight: '600', color: '#111',
+                                                        whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '260px',
+                                                    }}>
+                                                        {data.file.name}
+                                                    </div>
+                                                    <div style={{ fontSize: '11px', color: '#6B7280', marginTop: '2px' }}>
+                                                        {formatFileSize(data.file.size)}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <span style={{
+                                                background: `${filePreview.color}15`, color: filePreview.color,
+                                                padding: '3px 10px', borderRadius: '20px', fontSize: '10px', fontWeight: '700',
+                                                flexShrink: 0,
+                                            }}>
+                                                {filePreview.label}
+                                            </span>
+                                        </div>
+                                    )}
+
                                     <div style={{ display: 'flex', gap: '10px' }}>
-                                        <button type="submit" disabled={processing} style={{
-                                            background: '#CC0000', color: 'white', border: 'none',
+                                        <button type="submit" disabled={processing || !data.file || !!fileError} style={{
+                                            background: (!data.file || fileError) ? '#F3A6A6' : '#ff0000',
+                                            color: 'white', border: 'none',
                                             borderRadius: '6px', padding: '9px 20px',
-                                            fontSize: '13px', fontWeight: '600', cursor: 'pointer'
+                                            fontSize: '13px', fontWeight: '600',
+                                            cursor: (!data.file || fileError) ? 'not-allowed' : 'pointer'
                                         }}>
                                             {processing ? 'Uploading...' : 'Upload Document'}
                                         </button>
-                                        <button type="button" onClick={() => { setShowUpload(false); reset(); }} style={{
+                                        <button type="button" onClick={() => { setShowUpload(false); reset(); setFileError(''); }} style={{
                                             background: '#F3F4F6', color: '#374151', border: '1px solid #E5E7EB',
                                             borderRadius: '6px', padding: '9px 20px',
                                             fontSize: '13px', fontWeight: '500', cursor: 'pointer'
@@ -302,7 +402,7 @@ export default function VolunteerDocuments({ auth, documents }) {
                             {[['all', 'All Documents'], ['nbi', 'NBI'], ['medical', 'Medical'], ['training', 'Training'], ['barangay', 'Barangay']].map(([key, label]) => (
                                 <button key={key} onClick={() => setFilterType(key)} style={{
                                     padding: '6px 14px', borderRadius: '6px', border: 'none',
-                                    background: filterType === key ? '#CC0000' : 'transparent',
+                                    background: filterType === key ? '#ff0000' : 'transparent',
                                     color: filterType === key ? 'white' : '#6B7280',
                                     fontSize: '12px', fontWeight: filterType === key ? '600' : '400',
                                     cursor: 'pointer'
@@ -318,7 +418,7 @@ export default function VolunteerDocuments({ auth, documents }) {
                                 <div style={{ fontSize: '14px', fontWeight: '600', color: '#374151', marginBottom: '6px' }}>No documents yet</div>
                                 <div style={{ fontSize: '13px', color: '#9CA3AF', marginBottom: '20px' }}>Upload your clearances and certificates to get started.</div>
                                 <button onClick={() => setShowUpload(true)} style={{
-                                    background: '#CC0000', color: 'white', border: 'none',
+                                    background: '#ff0000', color: 'white', border: 'none',
                                     borderRadius: '6px', padding: '9px 20px',
                                     fontSize: '13px', fontWeight: '600', cursor: 'pointer'
                                 }}>Upload your first document</button>
@@ -335,9 +435,15 @@ export default function VolunteerDocuments({ auth, documents }) {
                                                 <div>
                                                     <div style={{ fontSize: '13px', fontWeight: '600', color: '#111' }}>{docTypes[doc.type]?.label || doc.type}</div>
                                                     <div style={{ fontSize: '11px', color: '#9CA3AF', marginTop: '2px', maxWidth: '160px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{doc.original_name}</div>
+                                                    {/* ✅ NEW: file size display for uploaded docs, if backend provides it */}
+                                                    {doc.file_size != null && (
+                                                        <div style={{ fontSize: '10px', color: '#D1D5DB', marginTop: '1px' }}>
+                                                            {formatFileSize(doc.file_size)}
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
-                                            <button onClick={() => handleDelete(doc.id)} style={{ background: '#FEF2F2', border: 'none', borderRadius: '4px', padding: '4px 6px', cursor: 'pointer', color: '#DC2626', fontSize: '12px', flexShrink: 0 }}>✕</button>
+                                            <button onClick={() => handleDelete(doc.id)} style={{ background: '#FEF2F2', border: 'none', borderRadius: '4px', padding: '4px 6px', cursor: 'pointer', color: '#ff0000', fontSize: '12px', flexShrink: 0 }}>✕</button>
                                         </div>
                                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                                             <span style={{

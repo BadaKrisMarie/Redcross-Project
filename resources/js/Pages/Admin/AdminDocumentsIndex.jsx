@@ -1,6 +1,35 @@
 import React, { useState } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 
+// ✅ NEW: standalone Avatar component (defined OUTSIDE AdminDocumentsIndex).
+// Falls back to initials if the image fails to load, or if it "silently" loads
+// broken (0-byte / corrupt response with no error event, checked via naturalWidth).
+// Keeping this outside the parent component prevents it from being re-created
+// on every re-render, which would otherwise reset the error state each time.
+function Avatar({ src, initials, bg = '#ff0000', color = 'white', size = 32, fontSize = 12 }) {
+    const [broken, setBroken] = useState(false);
+    const showImage = !!src && !broken;
+
+    return (
+        <div style={{ width: size, height: size, borderRadius: '50%', background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center', color, fontSize, fontWeight: '700', overflow: 'hidden', flexShrink: 0 }}>
+            {showImage
+                ? (
+                    <img
+                        src={src}
+                        alt="avatar"
+                        onError={() => setBroken(true)}
+                        onLoad={(e) => {
+                            if (e.target.naturalWidth === 0) setBroken(true);
+                        }}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                    />
+                )
+                : initials
+            }
+        </div>
+    );
+}
+
 export default function AdminDocumentsIndex({ auth, documents = [] }) {
     const [previewDoc, setPreviewDoc] = useState(null);
     const [filter, setFilter] = useState('pending');
@@ -17,12 +46,31 @@ export default function AdminDocumentsIndex({ auth, documents = [] }) {
         ['#dcfce7', '#166534'], ['#ede9fe', '#5b21b6'], ['#fef3c7', '#92400e'],
     ];
 
-    const isImage = (url) => url && /\.(jpg|jpeg|png|gif|webp)(\?.*)?$/i.test(url);
-    const isPdf   = (url) => url && (/\.pdf(\?.*)?$/i.test(url) || /\/documents\/\d+\/file/.test(url));
+    // ✅ BAGO: gamitin ang mime_type, hindi extension ng URL
+    const isImageDoc = (doc) => doc.mime_type && doc.mime_type.startsWith('image/');
+    const isPdfDoc   = (doc) => doc.mime_type === 'application/pdf';
+
+    // ✅ NEW: file type icon/label/color based on mime_type, for quick recognition without opening
+    const getFileTypeInfo = (doc) => {
+        if (isPdfDoc(doc))   return { icon: '📕', label: 'PDF', color: '#ff0000' };
+        if (isImageDoc(doc)) {
+            if (doc.mime_type === 'image/png') return { icon: '🖼️', label: 'PNG', color: '#8B5CF6' };
+            return { icon: '🖼️', label: 'JPG', color: '#3B82F6' };
+        }
+        return { icon: '📄', label: doc.mime_type ? doc.mime_type.split('/')[1]?.toUpperCase() : 'FILE', color: '#6B7280' };
+    };
+
+    // ✅ NEW: format bytes into readable KB/MB
+    const formatFileSize = (bytes) => {
+        if (bytes == null) return null;
+        if (bytes < 1024) return `${bytes} B`;
+        if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+        return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+    };
 
     const handleDownload = async (doc) => {
         if (!doc.file_url) return;
-        const ext = isPdf(doc.file_url) ? '.pdf' : '.' + doc.file_url.split('.').pop();
+        const ext = isPdfDoc(doc) ? '.pdf' : (doc.mime_type ? '.' + doc.mime_type.split('/')[1] : '');
         const fileName = `${doc.name}_${doc.type}`.replace(/\s+/g, '_') + ext;
         try {
             const res = await fetch(doc.file_url);
@@ -59,9 +107,7 @@ export default function AdminDocumentsIndex({ auth, documents = [] }) {
     };
 
     const NavAvatar = ({ size = 32, fontSize = 12 }) => (
-        <div style={{ width: size, height: size, borderRadius: '50%', background: '#C8102E', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize, fontWeight: '700', overflow: 'hidden', flexShrink: 0 }}>
-            {photoUrl ? <img src={photoUrl} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : initials}
-        </div>
+        <Avatar src={photoUrl} initials={initials} bg="#ff0000" color="white" size={size} fontSize={fontSize} />
     );
 
     const navLinks = [
@@ -81,10 +127,10 @@ export default function AdminDocumentsIndex({ auth, documents = [] }) {
 
             <style>{`
                 * { box-sizing: border-box; margin: 0; padding: 0; }
-                :root { --red: #C8102E; --red-dark: #9B0B22; --ink: #1A1A1A; --muted: #6B6B6B; --border: #EDEDED; --surface: #F7F7F5; --white: #FFFFFF; }
+                :root { --red: #ff0000; --red-dark: #9B0B22; --ink: #1A1A1A; --muted: #6B6B6B; --border: #EDEDED; --surface: #F7F7F5; --white: #FFFFFF; }
                 body { font-family: 'DM Sans', sans-serif; font-size: 13px; background: var(--surface); }
                 .wrap { display: flex; min-height: 100vh; }
-                .sidebar { width: 220px; background: #CC0000; display: flex; flex-direction: column; position: fixed; top: 0; left: 0; height: 100vh; z-index: 100; transition: transform 0.2s; }
+                .sidebar { width: 220px; background: #ff0000; display: flex; flex-direction: column; position: fixed; top: 0; left: 0; height: 100vh; z-index: 100; transition: transform 0.2s; }
                 .sidebar.closed { transform: translateX(-220px); }
                 .main { margin-left: 220px; flex: 1; display: flex; flex-direction: column; min-height: 100vh; transition: margin-left 0.2s; }
                 .main.full { margin-left: 0; }
@@ -114,8 +160,8 @@ export default function AdminDocumentsIndex({ auth, documents = [] }) {
                 .filter-btn.active { background: var(--red); color: #fff; border-color: var(--red); }
                 .filter-btn:hover:not(.active) { border-color: #ccc; color: var(--ink); }
                 .table-card { background: var(--white); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
-                .table-head { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 120px; gap: 12px; padding: 12px 20px; background: var(--surface); border-bottom: 1px solid var(--border); font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; }
-                .table-row { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 120px; gap: 12px; padding: 13px 20px; border-bottom: 1px solid var(--border); align-items: center; cursor: pointer; transition: background .12s; }
+                .table-head { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr 120px; gap: 12px; padding: 12px 20px; background: var(--surface); border-bottom: 1px solid var(--border); font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; }
+                .table-row { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr 120px; gap: 12px; padding: 13px 20px; border-bottom: 1px solid var(--border); align-items: center; cursor: pointer; transition: background .12s; }
                 .table-row:last-child { border-bottom: none; }
                 .table-row:hover { background: #fafafa; }
                 .vol-av { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; flex-shrink: 0; }
@@ -126,20 +172,27 @@ export default function AdminDocumentsIndex({ auth, documents = [] }) {
                 .btn-reject { background: #fee2e2; color: #991b1b; border: none; padding: 5px 10px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer; transition: opacity .15s; }
                 .btn-reject:hover { opacity: .8; }
                 .empty { text-align: center; padding: 48px; color: var(--muted); font-size: 13px; }
-                .doc-type { font-size: 13px; color: #C8102E; font-weight: 600; text-transform: uppercase; }
+                .doc-type { font-size: 13px; color: #ff0000; font-weight: 600; text-transform: uppercase; }
+                .file-chip { display: inline-flex; align-items: center; gap: 5px; }
+                .file-chip-label { font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 4px; }
             `}</style>
 
             {/* PREVIEW MODAL */}
             {previewDoc && (
                 <div onClick={() => setPreviewDoc(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
                     <div onClick={e => e.stopPropagation()} style={{ background: '#fff', borderRadius: 12, width: '100%', maxWidth: 860, maxHeight: '90vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+
                         {/* Modal Header */}
                         <div style={{ padding: '16px 20px', borderBottom: '1px solid #f0f0f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                                {previewDoc.photo
-                                    ? <img src={previewDoc.photo} style={{ width: 36, height: 36, borderRadius: '50%', objectFit: 'cover' }} />
-                                    : <div style={{ width: 36, height: 36, borderRadius: '50%', background: avatarColors[previewDoc.color_id ?? 0][0], color: avatarColors[previewDoc.color_id ?? 0][1], display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 600 }}>{previewDoc.initials}</div>
-                                }
+                                <Avatar
+                                    src={previewDoc.photo}
+                                    initials={previewDoc.initials}
+                                    bg={avatarColors[previewDoc.color_id ?? 0][0]}
+                                    color={avatarColors[previewDoc.color_id ?? 0][1]}
+                                    size={36}
+                                    fontSize={13}
+                                />
                                 <div>
                                     <div style={{ fontFamily: 'Barlow Condensed', fontSize: 16, fontWeight: 700, textTransform: 'uppercase' }}>{previewDoc.name}</div>
                                     <div className="doc-type">{previewDoc.type}</div>
@@ -150,18 +203,38 @@ export default function AdminDocumentsIndex({ auth, documents = [] }) {
 
                         {/* Modal Body */}
                         <div style={{ flex: 1, overflow: 'auto', display: 'grid', gridTemplateColumns: '220px 1fr' }}>
+
+                            {/* Left panel */}
                             <div style={{ borderRight: '1px solid #f0f0f0', padding: '24px 20px', display: 'flex', flexDirection: 'column', gap: 12 }}>
-                                {previewDoc.photo
-                                    ? <img src={previewDoc.photo} style={{ width: 72, height: 72, borderRadius: '50%', objectFit: 'cover', margin: '0 auto' }} />
-                                    : <div style={{ width: 72, height: 72, borderRadius: '50%', background: avatarColors[previewDoc.color_id ?? 0][0], color: avatarColors[previewDoc.color_id ?? 0][1], display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, fontWeight: 700, margin: '0 auto' }}>{previewDoc.initials}</div>
-                                }
+                                <div style={{ margin: '0 auto' }}>
+                                    <Avatar
+                                        src={previewDoc.photo}
+                                        initials={previewDoc.initials}
+                                        bg={avatarColors[previewDoc.color_id ?? 0][0]}
+                                        color={avatarColors[previewDoc.color_id ?? 0][1]}
+                                        size={72}
+                                        fontSize={22}
+                                    />
+                                </div>
                                 <div style={{ textAlign: 'center' }}>
                                     <div style={{ fontWeight: 600, fontSize: 14 }}>{previewDoc.name}</div>
                                     <div style={{ fontSize: 12, color: '#888', marginTop: 2 }}>Muntinlupa City Branch</div>
                                 </div>
                                 <div style={{ marginTop: 8 }}>
-                                    <div style={{ fontSize: 11, fontWeight: 600, color: '#888', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 4 }}>Document Type</div>
+                                    <div style={{ fontSize: 11, fontWeight: 600, color: '#888', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 4 }}>Document</div>
                                     <div className="doc-type">{previewDoc.type}</div>
+                                </div>
+                                {/* ✅ NEW: File type + size in modal */}
+                                <div>
+                                    <div style={{ fontSize: 11, fontWeight: 600, color: '#888', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 4 }}>File</div>
+                                    <div className="file-chip">
+                                        <span className="file-chip-label" style={{ background: `${getFileTypeInfo(previewDoc).color}15`, color: getFileTypeInfo(previewDoc).color }}>
+                                            {getFileTypeInfo(previewDoc).label}
+                                        </span>
+                                        {formatFileSize(previewDoc.file_size) && (
+                                            <span style={{ fontSize: 12, color: '#6B6B6B' }}>{formatFileSize(previewDoc.file_size)}</span>
+                                        )}
+                                    </div>
                                 </div>
                                 <div>
                                     <div style={{ fontSize: 11, fontWeight: 600, color: '#888', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 4 }}>Status</div>
@@ -172,17 +245,27 @@ export default function AdminDocumentsIndex({ auth, documents = [] }) {
                                     <div style={{ fontSize: 12 }}>{previewDoc.uploaded_at}</div>
                                 </div>
                             </div>
+
+                            {/* ✅ Right panel — preview using mime_type */}
                             <div style={{ background: '#f5f5f5', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 380, overflow: 'hidden' }}>
                                 {previewDoc.file_url ? (
-                                    isImage(previewDoc.file_url)
-                                        ? <img src={previewDoc.file_url} alt={previewDoc.type} style={{ maxWidth: '100%', maxHeight: '55vh', objectFit: 'contain', borderRadius: 4, margin: 20 }} />
-                                        : isPdf(previewDoc.file_url)
-                                            ? <iframe src={`${previewDoc.file_url}#toolbar=1&navpanes=0&scrollbar=1&view=FitH`} style={{ width: '100%', height: '55vh', border: 'none' }} title={previewDoc.type} />
+                                    isImageDoc(previewDoc)
+                                        ? <img
+                                            src={previewDoc.file_url}
+                                            alt={previewDoc.type}
+                                            style={{ maxWidth: '100%', maxHeight: '55vh', objectFit: 'contain', borderRadius: 4, margin: 20 }}
+                                          />
+                                        : isPdfDoc(previewDoc)
+                                            ? <iframe
+                                                src={`${previewDoc.file_url}#toolbar=1&navpanes=0&scrollbar=1&view=FitH`}
+                                                style={{ width: '100%', height: '55vh', border: 'none' }}
+                                                title={previewDoc.type}
+                                              />
                                             : <div style={{ textAlign: 'center', color: '#888' }}>
                                                 <div style={{ fontSize: 48, marginBottom: 12 }}>📄</div>
-                                                <div style={{ fontSize: 13, marginBottom: 8 }}>Hindi ma-preview ang file.</div>
-                                                <button onClick={() => handleDownload(previewDoc)} style={{ background: 'none', border: 'none', color: '#C8102E', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>download →</button>
-                                            </div>
+                                                <div style={{ fontSize: 13, marginBottom: 8 }}>Hindi ma-preview ang file na ito.</div>
+                                                <button onClick={() => handleDownload(previewDoc)} style={{ background: 'none', border: 'none', color: '#ff0000', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Download →</button>
+                                              </div>
                                 ) : (
                                     <div style={{ textAlign: 'center', color: '#aaa', fontSize: 13 }}>Walang file na naka-attach.</div>
                                 )}
@@ -201,7 +284,7 @@ export default function AdminDocumentsIndex({ auth, documents = [] }) {
                             </div>
                             <div style={{ display: 'flex', gap: 8 }}>
                                 {previewDoc.file_url && (
-                                    <button onClick={() => handleDownload(previewDoc)} style={{ background: '#f5f5f5', border: '1px solid #e8e8e8', padding: '7px 14px', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>download</button>
+                                    <button onClick={() => handleDownload(previewDoc)} style={{ background: '#f5f5f5', border: '1px solid #e8e8e8', padding: '7px 14px', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Download</button>
                                 )}
                                 <button onClick={() => setPreviewDoc(null)} style={{ background: '#f5f5f5', border: '1px solid #e8e8e8', padding: '7px 14px', borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Close</button>
                             </div>
@@ -253,7 +336,6 @@ export default function AdminDocumentsIndex({ auth, documents = [] }) {
 
                 {/* MAIN */}
                 <main className={`main ${sidebarOpen ? '' : 'full'}`}>
-                    {/* TOPBAR */}
                     <div className="topbar">
                         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                             <button className="menu-btn" onClick={() => setSidebarOpen(o => !o)}>
@@ -271,9 +353,7 @@ export default function AdminDocumentsIndex({ auth, documents = [] }) {
                         <NavAvatar size={32} fontSize={12} />
                     </div>
 
-                    {/* CONTENT */}
                     <div className="content">
-                        {/* Summary chips */}
                         <div style={{ display: 'flex', gap: 12, marginBottom: 24, flexWrap: 'wrap' }}>
                             {[
                                 { label: 'Total',    value: counts.all,      color: '#1A1A1A' },
@@ -288,7 +368,6 @@ export default function AdminDocumentsIndex({ auth, documents = [] }) {
                             ))}
                         </div>
 
-                        {/* Filter tabs */}
                         <div className="filters">
                             {['all', 'pending', 'approved', 'rejected'].map(f => (
                                 <button key={f} className={`filter-btn ${filter === f ? 'active' : ''}`} onClick={() => setFilter(f)}>
@@ -297,11 +376,11 @@ export default function AdminDocumentsIndex({ auth, documents = [] }) {
                             ))}
                         </div>
 
-                        {/* Table */}
                         <div className="table-card">
                             <div className="table-head">
                                 <span>Volunteer</span>
                                 <span>Document Type</span>
+                                <span>File</span>
                                 <span>Uploaded</span>
                                 <span>Status</span>
                                 <span>Actions</span>
@@ -310,19 +389,25 @@ export default function AdminDocumentsIndex({ auth, documents = [] }) {
                                 <div className="empty">Walang dokumento.</div>
                             ) : filtered.map((doc, i) => {
                                 const [bg, color] = avatarColors[doc.color_id ?? i % 5];
+                                const fileInfo = getFileTypeInfo(doc);
+                                const sizeLabel = formatFileSize(doc.file_size);
                                 return (
                                     <div key={doc.id} className="table-row" onClick={() => setPreviewDoc(doc)}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                            {doc.photo
-                                                ? <img src={doc.photo} style={{ width: 32, height: 32, borderRadius: '50%', objectFit: 'cover' }} />
-                                                : <div className="vol-av" style={{ background: bg, color }}>{doc.initials}</div>
-                                            }
+                                            <Avatar src={doc.photo} initials={doc.initials} bg={bg} color={color} size={32} fontSize={11} />
                                             <div>
                                                 <div style={{ fontWeight: 500, fontSize: 13 }}>{doc.name}</div>
                                                 <div style={{ fontSize: 11, color: '#6B6B6B' }}>Muntinlupa City Branch</div>
                                             </div>
                                         </div>
                                         <div className="doc-type">{doc.type}</div>
+                                        {/* ✅ NEW: File type icon + size, quick recognition before opening */}
+                                        <div className="file-chip">
+                                            <span className="file-chip-label" style={{ background: `${fileInfo.color}15`, color: fileInfo.color }}>
+                                                {fileInfo.label}
+                                            </span>
+                                            {sizeLabel && <span style={{ fontSize: 11, color: '#9CA3AF' }}>{sizeLabel}</span>}
+                                        </div>
                                         <div style={{ fontSize: 12, color: '#6B6B6B' }}>{doc.uploaded_at}</div>
                                         <span className="badge" style={statusStyle(doc.status)}>{doc.status}</span>
                                         <div className="action-btns" onClick={e => e.stopPropagation()}>

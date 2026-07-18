@@ -102,15 +102,58 @@ class AdminController extends Controller
             ->values()
             ->toArray();
 
+        // ── Volunteer activity analytics (para sa bar chart) ───────────
+        // Awtomatikong kukuha ng lahat ng taon na may attendance record.
+        $availableYears = Attendance::selectRaw('YEAR(date) as year')
+            ->distinct()
+            ->orderByDesc('year')
+            ->pluck('year');
+
+        if ($availableYears->isEmpty()) {
+            $availableYears = collect([now()->year]);
+        }
+
+        $currentYear  = now()->year;
+        $currentMonth = now()->month;
+
+        $activityStatsByYear = [];
+
+        foreach ($availableYears as $year) {
+            // Ilang distinct volunteer ang nag-attend kada buwan sa taong ito
+            $attendedPerMonth = Attendance::selectRaw('MONTH(date) as month, COUNT(DISTINCT user_id) as total')
+                ->whereYear('date', $year)
+                ->groupBy('month')
+                ->pluck('total', 'month');
+
+            // Hanggang current month lang kung kasalukuyang taon; buong 12 kung nakaraan
+            $monthLimit = ($year == $currentYear) ? $currentMonth : 12;
+
+            $monthly = [];
+            for ($m = 1; $m <= $monthLimit; $m++) {
+                $attended = $attendedPerMonth[$m] ?? 0;
+                // "Missed" = approved volunteers na hindi nag-attend ng kahit isang beses sa buwang ito
+                $missed = max($approvedCount - $attended, 0);
+
+                $monthly[] = [
+                    'month'    => \Carbon\Carbon::create()->month($m)->format('M'),
+                    'attended' => $attended,
+                    'missed'   => $missed,
+                ];
+            }
+
+            $activityStatsByYear[$year] = $monthly;
+        }
+
         return Inertia::render('Admin/Dashboard', [
-            'pendingCount'     => $pendingCount,
-            'totalVolunteers'  => $totalVolunteers,
-            'activeToday'      => $activeToday,
-            'recentVolunteers' => $recentVolunteers,
-            'pendingDocuments' => $pendingDocuments,
-            'volunteerStats'   => $volunteerStats,
-            'upcomingEvents'   => $upcomingEvents,
-            'quickStats'       => $quickStats,
+            'pendingCount'         => $pendingCount,
+            'totalVolunteers'      => $totalVolunteers,
+            'activeToday'          => $activeToday,
+            'recentVolunteers'     => $recentVolunteers,
+            'pendingDocuments'     => $pendingDocuments,
+            'volunteerStats'       => $volunteerStats,
+            'upcomingEvents'       => $upcomingEvents,
+            'quickStats'           => $quickStats,
+            'activityStatsByYear'  => $activityStatsByYear,
         ]);
     }
 }

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Attendance;
 use App\Models\Activity;
 use App\Models\User;
+use App\Models\VolunteerLiveLocation;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -44,6 +45,30 @@ class AttendanceController extends Controller
             'activities'  => $activities,
             'filters'     => $request->only(['volunteer_id', 'activity_id', 'date']),
         ]);
+    }
+
+    // ✅ Added: polled every few seconds from the admin live-map widget (a plain
+    // JSON endpoint, not a full Inertia page reload). Only returns pings from the
+    // last 90 seconds - if a volunteer's browser stopped pinging (closed tab, lost
+    // signal, crashed) without a proper time-out, they silently drop off the map
+    // instead of leaving a stale marker behind forever.
+    public function liveLocations()
+    {
+        $locations = VolunteerLiveLocation::with(['user:id,name,photo', 'activity:id,name,location_name'])
+            ->where('last_ping_at', '>=', now()->subSeconds(90))
+            ->get()
+            ->map(fn ($loc) => [
+                'user_id'       => $loc->user_id,
+                'user_name'     => $loc->user->name ?? 'Unknown',
+                'activity_id'   => $loc->activity_id,
+                'activity_name' => $loc->activity->name ?? '-',
+                'location_name' => $loc->activity->location_name ?? '-',
+                'latitude'      => $loc->latitude,
+                'longitude'     => $loc->longitude,
+                'last_ping_at'  => $loc->last_ping_at->diffForHumans(),
+            ]);
+
+        return response()->json(['locations' => $locations]);
     }
 
     public function exportPdf(Request $request)

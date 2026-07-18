@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Volunteer;
 use App\Http\Controllers\Controller;
 use App\Models\Attendance;
 use App\Models\Activity;
+use App\Models\VolunteerLiveLocation;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 
@@ -18,7 +19,7 @@ class FaceAttendanceController extends Controller
 
         $user = auth()->user();
         $user->update([
-            'face_descriptor' => json_encode($request->face_descriptor),
+            'face_descriptor' => $request->face_descriptor, // ✅ no more json_encode — 'array' cast on User model handles it
         ]);
 
         return response()->json(['message' => 'Face registered successfully!']);
@@ -41,7 +42,7 @@ class FaceAttendanceController extends Controller
         }
 
         // Check face match
-        $stored = json_decode($user->face_descriptor, true);
+        $stored = $user->face_descriptor; // ✅ already an array thanks to the cast — no json_decode needed
         $incoming = $request->face_descriptor;
         $distance = $this->euclideanDistance($stored, $incoming);
 
@@ -96,7 +97,7 @@ class FaceAttendanceController extends Controller
         $user = auth()->user();
 
         // Check face match
-        $stored = json_decode($user->face_descriptor, true);
+        $stored = $user->face_descriptor; // ✅ already an array thanks to the cast — no json_decode needed
         $incoming = $request->face_descriptor;
         $distance = $this->euclideanDistance($stored, $incoming);
 
@@ -133,6 +134,12 @@ class FaceAttendanceController extends Controller
             'time_out'       => $timeOut,
             'hours_rendered' => $hours,
         ]);
+
+        // ✅ Added: stop showing this volunteer on the admin live map right away,
+        // instead of waiting for the 90-second stale-ping cutoff.
+        VolunteerLiveLocation::where('user_id', $user->id)
+            ->where('activity_id', $request->activity_id)
+            ->delete();
 
         return response()->json(['message' => "Time out recorded! Hours rendered: {$hours}"]);
     }

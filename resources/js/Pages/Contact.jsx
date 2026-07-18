@@ -60,7 +60,7 @@ export default function Contact() {
                 @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@300;400;500;600&display=swap');
                 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
                 :root {
-                    --red: #DC2626; --red-dark: #A51818;
+                    --red: #ff0000; --red-dark: #A51818;
                     --white: #ffffff; --offwhite: #f8f8f8;
                     --charcoal: #1c1c1c; --gray: #6b6b6b;
                     --light-gray: #e5e5e5; --navy: #1a2744;
@@ -81,13 +81,13 @@ export default function Contact() {
                     font-family: Inter, sans-serif;
                 }
                 .nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
-                .nav-logo-icon { width: 34px; height: 34px; background: #DC2626; border-radius: 4px; display: flex; align-items: center; justify-content: center; color: white; font-size: 20px; font-weight: 900; }
+                .nav-logo-icon { width: 34px; height: 34px; background: #ff0000; border-radius: 4px; display: flex; align-items: center; justify-content: center; color: white; font-size: 20px; font-weight: 900; }
                 .nav-logo-texts .top { font-size: 12px; font-weight: 600; color: #111111; line-height: 1.2; display: block; }
                 .nav-logo-texts .bottom { font-size: 10px; color: #888880; display: block; }
                 .nav-links { display: flex; align-items: center; gap: 28px; list-style: none; margin: 0; padding: 0; }
                 .nav-links a { text-decoration: none; font-size: 13px; font-weight: 500; color: #444444; padding: 4px 10px; border-radius: 6px; transition: background 0.2s, color 0.2s; }
-                .nav-links a:hover, .nav-links a.active { color: #DC2626; background: rgba(220,38,38,0.08); }
-                .nav-links .login-btn a { background: #DC2626; color: white !important; font-weight: 600; padding: 8px 18px; border-radius: 6px; font-size: 12px; }
+                .nav-links a:hover, .nav-links a.active { color: #ff0000; background: rgba(220,38,38,0.08); }
+                .nav-links .login-btn a { background: #ff0000; color: white !important; font-weight: 600; padding: 8px 18px; border-radius: 6px; font-size: 12px; }
                 .nav-links .login-btn a:hover { background: var(--red-dark); }
 
                 .contact-hero { background: #1a1a1a; padding: 72px 60px; text-align: center; position: relative; overflow: hidden; background-image: url('https://scontent.fmnl8-1.fna.fbcdn.net/v/t39.30808-6/486253255_122117910200759224_1850104524729330657_n.jpg?_nc_cat=108&ccb=1-7&_nc_sid=127cfc&_nc_ohc=s3qPx72vL0QQ7kNvwEIiHPI&_nc_oc=AdqRmmyhVTdlpQ1ucKr3gwtRZUjigQziyUGexQspH0zfnd9XfILoSqGTRbOsO1TXLSzdeB3CaaEb3y_yR-Ejs5Rk&_nc_zt=23&_nc_ht=scontent.fmnl8-1.fna&_nc_gid=OEftzlaHV_BR3OPDU5Gs0g&_nc_ss=7b289&oh=00_Af5Y55emzOdxd-X1_8lK2G_kTNILcyfRuukztDwxOLT0bw&oe=6A1CBC37'); background-size: cover; background-position: center; }
@@ -390,7 +390,7 @@ export default function Contact() {
                     </div>
                 </div>
                 <div className="footer-bottom">
-                    <p>Â© 2026 Philippine Red Cross â€“ Muntinlupa City Branch. All rights reserved.</p>
+                    <p style={{ fontSize: 16, fontWeight: 800, color: "rgba(255,255,255,1)", fontFamily: "'Source Sans 3', sans-serif" }}>© 2026 Philippine Red Cross – Muntinlupa City Branch. All rights reserved.</p>
                     <div className="footer-socials">
                         <button className="social">FB</button>
                         <button className="social">TW</button>
@@ -401,3 +401,4 @@ export default function Contact() {
         </>
     );
 }
+

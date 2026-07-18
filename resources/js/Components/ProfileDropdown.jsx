@@ -86,7 +86,7 @@ export default function ProfileDropdown() {
       {toast && (
         <div style={{
           position: 'fixed', top: 20, left: '50%', transform: 'translateX(-50%)',
-          background: toast.type === 'error' ? '#CC0000' : '#16a34a',
+          background: toast.type === 'error' ? '#ff0000' : '#16a34a',
           color: '#fff', padding: '8px 20px', borderRadius: 8, fontSize: 13,
           zIndex: 9999, pointerEvents: 'none', boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
         }}>
@@ -105,7 +105,7 @@ export default function ProfileDropdown() {
           aria-label="Open profile menu"
           style={{
             width: 34, height: 34, borderRadius: '50%',
-            background: profile?.avatar_url ? 'transparent' : '#CC0000',
+            background: profile?.avatar_url ? 'transparent' : '#ff0000',
             backgroundImage: profile?.avatar_url ? `url(${profile.avatar_url})` : undefined,
             backgroundSize: 'cover', backgroundPosition: 'center',
             border: 'none', cursor: 'pointer', overflow: 'hidden',
@@ -144,7 +144,7 @@ export default function ProfileDropdown() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '14px 14px 12px' }}>
               <div style={{
                 width: 38, height: 38, borderRadius: '50%',
-                background: profile?.avatar_url ? 'transparent' : '#CC0000',
+                background: profile?.avatar_url ? 'transparent' : '#ff0000',
                 backgroundImage: profile?.avatar_url ? `url(${profile.avatar_url})` : undefined,
                 backgroundSize: 'cover', backgroundPosition: 'center',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -210,7 +210,7 @@ export default function ProfileDropdown() {
                 display: 'flex', alignItems: 'center', gap: 10,
                 padding: '10px 14px', width: '100%',
                 background: 'none', border: 'none',
-                fontSize: 13, color: '#CC0000', cursor: 'pointer', textAlign: 'left',
+                fontSize: 13, color: '#ff0000', cursor: 'pointer', textAlign: 'left',
               }}
               onMouseEnter={(e) => e.currentTarget.style.background = '#FFF5F5'}
               onMouseLeave={(e) => e.currentTarget.style.background = 'none'}

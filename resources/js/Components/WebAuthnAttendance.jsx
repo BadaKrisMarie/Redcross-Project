@@ -69,7 +69,7 @@ export default function WebAuthnAttendance({ todayRecord }) {
                     disabled={!alreadyTimedIn || alreadyTimedOut || loading}
                     style={{
                         flex: 1, padding: '12px',
-                        background: alreadyTimedOut ? '#e5e7eb' : (!alreadyTimedIn ? '#e5e7eb' : '#DC2626'),
+                        background: alreadyTimedOut ? '#e5e7eb' : (!alreadyTimedIn ? '#e5e7eb' : '#ff0000'),
                         color: (alreadyTimedOut || !alreadyTimedIn) ? '#9ca3af' : 'white',
                         border: 'none', borderRadius: '6px',
                         fontSize: '14px', fontWeight: '600',
@@ -83,7 +83,7 @@ export default function WebAuthnAttendance({ todayRecord }) {
             {status && (
                 <p style={{
                     fontSize: '13px',
-                    color: status.startsWith('✅') ? '#16a34a' : '#DC2626',
+                    color: status.startsWith('✅') ? '#16a34a' : '#ff0000',
                     marginTop: '8px'
                 }}>
                     {status}

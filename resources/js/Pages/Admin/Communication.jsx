@@ -51,7 +51,7 @@ export default function AdminCommunication({ auth, messages, announcements }) {
     ];
 
     const NavAvatar = ({ size = 32, fontSize = 12 }) => (
-        <div style={{ width: size, height: size, borderRadius: '50%', background: '#C8102E', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize, fontWeight: '700', overflow: 'hidden', flexShrink: 0 }}>
+        <div style={{ width: size, height: size, borderRadius: '50%', background: '#ff0000', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize, fontWeight: '700', overflow: 'hidden', flexShrink: 0 }}>
             {photoUrl ? <img src={photoUrl} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : initials}
         </div>
     );
@@ -59,8 +59,8 @@ export default function AdminCommunication({ auth, messages, announcements }) {
     const tabStyle = (key) => ({
         padding: '8px 18px', fontSize: '13px',
         fontWeight: activeTab === key ? '600' : '400',
-        color: activeTab === key ? '#CC0000' : '#6B7280',
-        borderBottom: activeTab === key ? '2px solid #CC0000' : '2px solid transparent',
+        color: activeTab === key ? '#ff0000' : '#6B7280',
+        borderBottom: activeTab === key ? '2px solid #ff0000' : '2px solid transparent',
         background: 'none', border: 'none', cursor: 'pointer',
     });
 
@@ -71,9 +71,9 @@ export default function AdminCommunication({ auth, messages, announcements }) {
 
             <style>{`
                 * { box-sizing: border-box; margin: 0; padding: 0; }
-                :root { --red: #C8102E; --red-dark: #9B0B22; --ink: #1A1A1A; --muted: #6B6B6B; --border: #EDEDED; --surface: #F7F7F5; --white: #FFFFFF; }
+                :root { --red: #ff0000; --red-dark: #9B0B22; --ink: #1A1A1A; --muted: #6B6B6B; --border: #EDEDED; --surface: #F7F7F5; --white: #FFFFFF; }
                 .wrap { display: flex; min-height: 100vh; background: var(--surface); font-family: 'DM Sans', sans-serif; font-size: 13px; }
-                .sidebar { width: 220px; background: #CC0000; display: flex; flex-direction: column; position: fixed; top: 0; left: 0; height: 100vh; z-index: 100; transition: transform 0.2s; flex-shrink: 0; }
+                .sidebar { width: 220px; background: #ff0000; display: flex; flex-direction: column; position: fixed; top: 0; left: 0; height: 100vh; z-index: 100; transition: transform 0.2s; flex-shrink: 0; }
                 .sidebar.closed { transform: translateX(-220px); }
                 .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 99; }
                 .main { margin-left: 220px; flex: 1; display: flex; flex-direction: column; min-height: 100vh; transition: margin-left 0.2s; }
@@ -190,7 +190,7 @@ export default function AdminCommunication({ auth, messages, announcements }) {
                         <button style={tabStyle('messages')} onClick={() => setActiveTab('messages')}>
                             📥 Volunteer Messages
                             {messages.length > 0 && (
-                                <span style={{ background: '#CC0000', color: 'white', borderRadius: '10px', padding: '1px 6px', fontSize: '10px', marginLeft: '6px' }}>
+                                <span style={{ background: '#ff0000', color: 'white', borderRadius: '10px', padding: '1px 6px', fontSize: '10px', marginLeft: '6px' }}>
                                     {messages.length}
                                 </span>
                             )}
@@ -217,7 +217,7 @@ export default function AdminCommunication({ auth, messages, announcements }) {
                                             </div>
                                         ) : (
                                             messages.map((msg, i) => (
-                                                <div key={i} onClick={() => setSelectedMessage(msg)} style={{ padding: '14px 18px', cursor: 'pointer', borderBottom: i < messages.length - 1 ? '1px solid #F3F4F6' : 'none', background: selectedMessage?.id === msg.id ? '#FEF2F2' : 'white', borderLeft: selectedMessage?.id === msg.id ? '3px solid #CC0000' : '3px solid transparent' }}>
+                                                <div key={i} onClick={() => setSelectedMessage(msg)} style={{ padding: '14px 18px', cursor: 'pointer', borderBottom: i < messages.length - 1 ? '1px solid #F3F4F6' : 'none', background: selectedMessage?.id === msg.id ? '#FEF2F2' : 'white', borderLeft: selectedMessage?.id === msg.id ? '3px solid #ff0000' : '3px solid transparent' }}>
                                                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
                                                         <div style={{ fontSize: '13px', fontWeight: '600', color: '#111' }}>{msg.user?.name || 'Volunteer'}</div>
                                                         {msg.reply && <span style={{ background: '#DCFCE7', color: '#166534', fontSize: '10px', fontWeight: '600', padding: '1px 6px', borderRadius: '8px' }}>Replied</span>}
@@ -256,9 +256,9 @@ export default function AdminCommunication({ auth, messages, announcements }) {
                                                 <div style={{ fontSize: '13px', fontWeight: '600', color: '#374151', marginBottom: '10px' }}>{selectedMessage.reply ? 'Update Reply' : 'Reply'}</div>
                                                 <form onSubmit={handleReply}>
                                                     <textarea value={replyForm.data.reply} onChange={e => replyForm.setData('reply', e.target.value)} placeholder="Type your reply..." rows={4} style={{ width: '100%', padding: '10px 14px', border: '1px solid #E5E7EB', borderRadius: '8px', fontSize: '13px', outline: 'none', resize: 'vertical', boxSizing: 'border-box', fontFamily: 'inherit', marginBottom: '12px' }} />
-                                                    {replyForm.errors.reply && <div style={{ fontSize: '11px', color: '#CC0000', marginBottom: '8px' }}>{replyForm.errors.reply}</div>}
+                                                    {replyForm.errors.reply && <div style={{ fontSize: '11px', color: '#ff0000', marginBottom: '8px' }}>{replyForm.errors.reply}</div>}
                                                     <div style={{ display: 'flex', gap: '10px' }}>
-                                                        <button type="submit" disabled={replyForm.processing} style={{ background: '#CC0000', color: 'white', border: 'none', borderRadius: '8px', padding: '9px 20px', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}>{replyForm.processing ? 'Sending...' : 'Send Reply'}</button>
+                                                        <button type="submit" disabled={replyForm.processing} style={{ background: '#ff0000', color: 'white', border: 'none', borderRadius: '8px', padding: '9px 20px', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}>{replyForm.processing ? 'Sending...' : 'Send Reply'}</button>
                                                         <button type="button" onClick={() => setSelectedMessage(null)} style={{ background: '#F3F4F6', color: '#374151', border: 'none', borderRadius: '8px', padding: '9px 20px', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}>Cancel</button>
                                                     </div>
                                                 </form>
@@ -279,14 +279,14 @@ export default function AdminCommunication({ auth, messages, announcements }) {
                                             <div style={{ marginBottom: '14px' }}>
                                                 <label style={{ fontSize: '13px', fontWeight: '500', color: '#374151', display: 'block', marginBottom: '6px' }}>Title</label>
                                                 <input type="text" value={announceForm.data.title} onChange={e => announceForm.setData('title', e.target.value)} placeholder="e.g. Schedule Change Notice" style={{ width: '100%', padding: '10px 14px', border: '1px solid #E5E7EB', borderRadius: '8px', fontSize: '13px', outline: 'none', boxSizing: 'border-box' }} />
-                                                {announceForm.errors.title && <div style={{ fontSize: '11px', color: '#CC0000', marginTop: '4px' }}>{announceForm.errors.title}</div>}
+                                                {announceForm.errors.title && <div style={{ fontSize: '11px', color: '#ff0000', marginTop: '4px' }}>{announceForm.errors.title}</div>}
                                             </div>
                                             <div style={{ marginBottom: '18px' }}>
                                                 <label style={{ fontSize: '13px', fontWeight: '500', color: '#374151', display: 'block', marginBottom: '6px' }}>Message</label>
                                                 <textarea value={announceForm.data.body} onChange={e => announceForm.setData('body', e.target.value)} placeholder="Type your announcement here..." rows={5} style={{ width: '100%', padding: '10px 14px', border: '1px solid #E5E7EB', borderRadius: '8px', fontSize: '13px', outline: 'none', resize: 'vertical', boxSizing: 'border-box', fontFamily: 'inherit' }} />
-                                                {announceForm.errors.body && <div style={{ fontSize: '11px', color: '#CC0000', marginTop: '4px' }}>{announceForm.errors.body}</div>}
+                                                {announceForm.errors.body && <div style={{ fontSize: '11px', color: '#ff0000', marginTop: '4px' }}>{announceForm.errors.body}</div>}
                                             </div>
-                                            <button type="submit" disabled={announceForm.processing} style={{ background: '#CC0000', color: 'white', border: 'none', borderRadius: '8px', padding: '10px 24px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', width: '100%' }}>{announceForm.processing ? 'Posting...' : '📢 Post to All Volunteers'}</button>
+                                            <button type="submit" disabled={announceForm.processing} style={{ background: '#ff0000', color: 'white', border: 'none', borderRadius: '8px', padding: '10px 24px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', width: '100%' }}>{announceForm.processing ? 'Posting...' : '📢 Post to All Volunteers'}</button>
                                         </form>
                                     </div>
                                 </div>

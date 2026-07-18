@@ -67,7 +67,7 @@ export default function Profile({ user }) {
                     <div style={{ background: 'white', borderRadius: 14, border: '1px solid #E5E7EB', overflow: 'hidden' }}>
 
                         {/* Header */}
-                        <div style={{ background: '#CC0000', padding: '28px 24px', display: 'flex', alignItems: 'center', gap: 18 }}>
+                        <div style={{ background: '#ff0000', padding: '28px 24px', display: 'flex', alignItems: 'center', gap: 18 }}>
                             {/* Avatar — clickable para mag-upload */}
                             <div
                                 onClick={() => fileRef.current.click()}
@@ -240,8 +240,8 @@ const inputStyle = {
     fontFamily: 'inherit', color: '#111', background: 'white',
 };
 const primaryBtnStyle = {
-    background: '#CC0000', color: '#fff', border: 'none', borderRadius: 8,
+    background: '#ff0000', color: '#fff', border: 'none', borderRadius: 8,
     padding: '10px 24px', fontSize: 13, fontWeight: 600, cursor: 'pointer',
     width: '100%',
 };
-const errStyle = { fontSize: 11, color: '#CC0000', marginTop: 4, display: 'block' };
+const errStyle = { fontSize: 11, color: '#ff0000', marginTop: 4, display: 'block' };

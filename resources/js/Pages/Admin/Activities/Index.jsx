@@ -6,6 +6,7 @@ export default function Index({ auth, activities = [], pendingCount = 0 }) {
     const [view, setView] = useState('table');
     const [search, setSearch] = useState('');
     const [filterStatus, setFilterStatus] = useState('all');
+    const [deleteTarget, setDeleteTarget] = useState(null);
 
     const admin = auth?.user;
     const photoUrl = admin?.photo ? `/storage/${admin.photo}` : null;
@@ -13,10 +14,14 @@ export default function Index({ auth, activities = [], pendingCount = 0 }) {
         ? admin.name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
         : 'AD';
 
-    const handleDelete = (id) => {
-        if (confirm('Are you sure you want to delete this activity?')) {
-            router.delete(route('admin.activities.destroy', id));
-        }
+    const handleDelete = (activity) => {
+        setDeleteTarget(activity);
+    };
+
+    const confirmDelete = () => {
+        if (!deleteTarget) return;
+        router.delete(route('admin.activities.destroy', deleteTarget.id));
+        setDeleteTarget(null);
     };
 
     const handleLogout = () => router.post(route('logout'));
@@ -44,7 +49,7 @@ export default function Index({ auth, activities = [], pendingCount = 0 }) {
     const NavAvatar = ({ size = 32, fontSize = 12 }) => (
         <div style={{
             width: size, height: size, borderRadius: '50%',
-            background: '#C8102E', display: 'flex', alignItems: 'center',
+            background: '#ff0000', display: 'flex', alignItems: 'center',
             justifyContent: 'center', color: 'white', fontSize,
             fontWeight: '700', overflow: 'hidden', flexShrink: 0,
         }}>
@@ -69,13 +74,13 @@ export default function Index({ auth, activities = [], pendingCount = 0 }) {
             <style>{`
                 * { box-sizing: border-box; margin: 0; padding: 0; }
                 :root {
-                    --red: #C8102E; --red-dark: #9B0B22; --ink: #1A1A1A;
+                    --red: #ff0000; --red-dark: #9B0B22; --ink: #1A1A1A;
                     --muted: #6B6B6B; --border: #EDEDED; --surface: #F7F7F5; --white: #FFFFFF;
                 }
                 body { font-family: 'DM Sans', sans-serif; background: var(--surface); }
                 .wrap { display: flex; min-height: 100vh; }
                 .sidebar {
-                    width: 220px; background: #CC0000; display: flex; flex-direction: column;
+                    width: 220px; background: #ff0000; display: flex; flex-direction: column;
                     position: fixed; top: 0; left: 0; height: 100vh; z-index: 100;
                     transition: transform 0.2s;
                 }
@@ -84,7 +89,7 @@ export default function Index({ auth, activities = [], pendingCount = 0 }) {
                 .main.full { margin-left: 0; }
                 .sb-brand { padding: 18px 20px 14px; border-bottom: 1px solid rgba(255,255,255,0.15); background: #AA0000; }
                 .sb-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
-                .sb-cross { width: 32px; height: 32px; background: #CC0000; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #fff; font-family: 'Barlow Condensed', sans-serif; font-size: 20px; font-weight: 700; flex-shrink: 0; }
+                .sb-cross { width: 32px; height: 32px; background: #ff0000; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #fff; font-family: 'Barlow Condensed', sans-serif; font-size: 20px; font-weight: 700; flex-shrink: 0; }
                 .sb-name { font-family: 'Barlow Condensed', sans-serif; color: #fff; font-size: 13px; font-weight: 600; letter-spacing: .5px; line-height: 1.3; }
                 .sb-name span { display: block; color: rgba(255,255,255,0.7); font-size: 11px; font-weight: 400; letter-spacing: 1px; text-transform: uppercase; }
                 .sb-user { padding: 14px 20px; border-bottom: 1px solid rgba(255,255,255,0.15); display: flex; align-items: center; gap: 10px; text-decoration: none; transition: background 0.15s; }
@@ -135,6 +140,49 @@ export default function Index({ auth, activities = [], pendingCount = 0 }) {
                     .content { padding: 16px; }
                 }
             `}</style>
+
+            {/* ✅ NEW: styled delete confirmation modal, replaces browser confirm() */}
+            {deleteTarget && (
+                <div
+                    onClick={() => setDeleteTarget(null)}
+                    style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}
+                >
+                    <div
+                        onClick={e => e.stopPropagation()}
+                        style={{ background: '#fff', borderRadius: '12px', width: '100%', maxWidth: '380px', overflow: 'hidden', boxShadow: '0 20px 50px rgba(0,0,0,0.2)' }}
+                    >
+                        <div style={{ padding: '24px 24px 16px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: '10px' }}>
+                            <div style={{ width: 46, height: 46, borderRadius: '50%', background: '#FEE2E2', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#991B1B" strokeWidth="2">
+                                    <path d="M3 6h18" /><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                                    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                                    <line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" />
+                                </svg>
+                            </div>
+                            <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: '19px', fontWeight: '700', color: '#1A1A1A', textTransform: 'uppercase' }}>
+                                Delete activity?
+                            </div>
+                            <div style={{ fontSize: '13px', color: '#6B6B6B', lineHeight: '1.5' }}>
+                                Are you sure you want to delete <strong style={{ color: '#1A1A1A' }}>{deleteTarget.name}</strong>? This action cannot be undone.
+                            </div>
+                        </div>
+                        <div style={{ display: 'flex', gap: '8px', padding: '16px 24px 24px' }}>
+                            <button
+                                onClick={() => setDeleteTarget(null)}
+                                style={{ flex: 1, background: '#F7F7F5', border: '1px solid #EDEDED', color: '#1A1A1A', padding: '10px', borderRadius: '8px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={confirmDelete}
+                                style={{ flex: 1, background: '#ff0000', border: 'none', color: '#fff', padding: '10px', borderRadius: '8px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}
+                            >
+                                Delete
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <div className="wrap">
                 {/* SIDEBAR */}
@@ -321,7 +369,7 @@ export default function Index({ auth, activities = [], pendingCount = 0 }) {
                                                 <td>
                                                     <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
                                                         <Link href={route('admin.activities.edit', activity.id)} className="btn-edit">Edit</Link>
-                                                        <button onClick={() => handleDelete(activity.id)} className="btn-del">Delete</button>
+                                                        <button onClick={() => handleDelete(activity)} className="btn-del">Delete</button>
                                                     </div>
                                                 </td>
                                             </tr>
@@ -362,7 +410,7 @@ export default function Index({ auth, activities = [], pendingCount = 0 }) {
 
                                         <div style={{ display: 'flex', gap: '8px', marginTop: '4px', borderTop: '1px solid var(--border)', paddingTop: '12px' }}>
                                             <Link href={route('admin.activities.edit', activity.id)} className="btn-edit" style={{ flex: 1, textAlign: 'center' }}>Edit</Link>
-                                            <button onClick={() => handleDelete(activity.id)} className="btn-del" style={{ flex: 1 }}>Delete</button>
+                                            <button onClick={() => handleDelete(activity)} className="btn-del" style={{ flex: 1 }}>Delete</button>
                                         </div>
                                     </div>
                                 ))}
