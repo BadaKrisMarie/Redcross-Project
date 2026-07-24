@@ -46,10 +46,13 @@ function VolunteerShow({ volunteer }) {
         ? volunteer.name.split(' ').map(w => w[0]?.toUpperCase() ?? '').slice(0, 2).join('')
         : '?';
 
-    // ✅ NEW: compute age from birthday
-    const getAge = (birthday) => {
-        if (!birthday) return null;
-        const dob = new Date(birthday);
+    // Compute age from birthdate.
+    // NOTE: the User model / controller uses the column name "birthdate"
+    // (matches the actual DB column) — read that same key here, not "birthday",
+    // or this silently shows "—" even when the volunteer has a birthdate on file.
+    const getAge = (birthdate) => {
+        if (!birthdate) return null;
+        const dob = new Date(birthdate);
         const today = new Date();
         let age = today.getFullYear() - dob.getFullYear();
         const monthDiff = today.getMonth() - dob.getMonth();
@@ -58,7 +61,7 @@ function VolunteerShow({ volunteer }) {
         }
         return age;
     };
-    const age = getAge(volunteer.birthday);
+    const age = getAge(volunteer.birthdate);
 
     // ✅ NEW: skills can arrive as an array (JSON column) — guard against string/null
     const skillsList = Array.isArray(volunteer.skills) ? volunteer.skills : [];
@@ -96,7 +99,7 @@ function VolunteerShow({ volunteer }) {
                             { label: 'Member Since',  value: volunteer.created_at ? new Date(volunteer.created_at).toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' }) : '—' },
                             { label: 'Phone',         value: volunteer.phone    ?? '—' },
                             { label: 'Address',       value: volunteer.address  ?? '—' },
-                            { label: 'Birthday',      value: volunteer.birthday ? new Date(volunteer.birthday).toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' }) : '—' },
+                            { label: 'Birthday',      value: volunteer.birthdate ? new Date(volunteer.birthdate).toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' }) : '—' },
                             { label: 'Age',           value: age !== null ? `${age} years old` : '—' },
                             { label: 'Gender',        value: volunteer.gender   ?? '—' },
                         ].map(({ label, value }) => (

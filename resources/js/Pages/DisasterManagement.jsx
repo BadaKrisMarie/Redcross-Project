@@ -34,7 +34,7 @@ export default function DisasterManagement() {
   return (
     <>
       <Head title="Disaster Management Service - Philippine Red Cross" />
-      <div style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>
+      <div style={{ fontFamily: "monserrat, monserratf" }}>
 
         <SiteNavbar />
 
@@ -55,7 +55,7 @@ export default function DisasterManagement() {
           }}>
             <h1 style={{
               fontSize: 56, fontWeight: 800, color: '#fff', margin: 0,
-              fontFamily: 'Inter, sans-serif', letterSpacing: '-0.01em',
+              fontFamily: 'monserrat, monserrat', letterSpacing: '-0.01em',
               lineHeight: 1.15, textShadow: '0 2px 12px rgba(0,0,0,0.35)',
               maxWidth: 900,
             }}>
@@ -66,7 +66,7 @@ export default function DisasterManagement() {
 
         {/* BREADCRUMB */}
         <div style={{
-          padding: '20px 60px', fontFamily: 'Inter, sans-serif',
+          padding: '20px 60px', fontFamily: 'monserrat, monserrat',
           fontSize: 13, fontWeight: 700, letterSpacing: '0.03em',
         }}>
           <Link href="/" style={{ color: '#9ca3af', textDecoration: 'none' }}>HOME</Link>
@@ -89,7 +89,7 @@ export default function DisasterManagement() {
 
           <div style={{
             flex: '1 1 320px', background: '#f8f9fa', padding: '40px 36px',
-            fontFamily: 'Inter, sans-serif',
+            fontFamily: 'monserrat, monserrat',
           }}>
             <h2 style={{
               fontSize: 24, fontWeight: 700, color: '#374151', margin: '0 0 28px',
@@ -133,7 +133,7 @@ export default function DisasterManagement() {
 
             <h2 style={{
               fontSize: 32, fontWeight: 800, color: RED, margin: '0 0 24px',
-              fontFamily: 'Inter, sans-serif',
+              fontFamily: 'monserrat, monserrat',
             }}>
               Core programs of DMS
             </h2>
@@ -143,9 +143,9 @@ export default function DisasterManagement() {
                 <div key={i}>
                   <h3 style={{
                     fontSize: 19, fontWeight: 700, color: '#1f2937', margin: '0 0 6px',
-                    fontFamily: 'Inter, sans-serif',
+                    fontFamily: 'monserrat, monserrat',
                   }}>{item.title}</h3>
-                  <p style={{ fontSize: 17, color: '#1f2937', lineHeight: 1.6, margin: 0, fontFamily: 'Inter, sans-serif' }}>
+                  <p style={{ fontSize: 17, color: '#1f2937', lineHeight: 1.6, margin: 0, fontFamily: 'monserrat, monserrat' }}>
                     {item.body}
                   </p>
                 </div>

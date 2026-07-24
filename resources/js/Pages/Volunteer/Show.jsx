@@ -6,12 +6,12 @@ function VolunteerShow({ volunteer }) {
     const s = {
         content: { maxWidth: '900px' },
         eyebrow: { fontSize: '11px', fontWeight: '600', letterSpacing: '2px', textTransform: 'uppercase', color: '#ff0000', marginBottom: '8px' },
-        h1: { fontFamily: 'Oswald, sans-serif', fontSize: '32px', color: '#111', fontWeight: '600', letterSpacing: '0.5px', textTransform: 'uppercase', margin: '0 0 32px' },
+        h1: { fontFamily: 'monserrat, monserrat', fontSize: '32px', color: '#111', fontWeight: '600', letterSpacing: '0.5px', textTransform: 'uppercase', margin: '0 0 32px' },
         card: { background: 'white', borderRadius: '8px', border: '1px solid #e8e8e8', padding: '28px', marginBottom: '20px' },
-        cardTitle: { fontFamily: 'Oswald, sans-serif', fontSize: '14px', color: '#888', fontWeight: '600', letterSpacing: '1px', textTransform: 'uppercase', marginBottom: '20px', paddingBottom: '12px', borderBottom: '1px solid #f0f0f0' },
+        cardTitle: { fontFamily: 'monserrat, monserrat', fontSize: '14px', color: '#888', fontWeight: '600', letterSpacing: '1px', textTransform: 'uppercase', marginBottom: '20px', paddingBottom: '12px', borderBottom: '1px solid #f0f0f0' },
         profileRow: { display: 'flex', alignItems: 'center', gap: '24px', marginBottom: '8px' },
         avatar: { width: '72px', height: '72px', borderRadius: '50%', background: '#fee2e2', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', fontWeight: '700', color: '#991b1b', flexShrink: 0 },
-        name: { fontFamily: 'Oswald, sans-serif', fontSize: '26px', color: '#111', fontWeight: '600', margin: '0 0 4px' },
+        name: { fontFamily: 'monserrat, monserrat', fontSize: '26px', color: '#111', fontWeight: '600', margin: '0 0 4px' },
         email: { fontSize: '14px', color: '#666', margin: '0 0 8px' },
         grid2: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' },
         fieldLabel: { fontSize: '11px', fontWeight: '600', letterSpacing: '1px', textTransform: 'uppercase', color: '#aaa', marginBottom: '4px' },
@@ -34,7 +34,7 @@ function VolunteerShow({ volunteer }) {
         btnReject:  { background: 'white', color: '#ff0000', border: '1px solid #ff0000', padding: '10px 22px', borderRadius: '4px', fontSize: '13px', fontWeight: '600', cursor: 'pointer' },
         btnBack:    { background: '#f5f5f5', color: '#111', border: '1px solid #e8e8e8', padding: '10px 22px', borderRadius: '4px', fontSize: '13px', fontWeight: '600', textDecoration: 'none', display: 'inline-block' },
         statBox: { textAlign: 'center', padding: '16px', background: '#fafafa', borderRadius: '8px', border: '1px solid #f0f0f0' },
-        statNum: { fontFamily: 'Oswald, sans-serif', fontSize: '28px', color: '#ff0000', fontWeight: '600' },
+        statNum: { fontFamily: 'monserrat, monserrat', fontSize: '28px', color: '#ff0000', fontWeight: '600' },
         statLbl: { fontSize: '12px', color: '#888', marginTop: '2px' },
         skillPill: { display: 'inline-block', fontSize: '12px', padding: '5px 14px', borderRadius: '20px', background: '#dbeafe', color: '#1e40af', fontWeight: '600', marginRight: '8px', marginBottom: '8px' },
         noSkills: { fontSize: '13px', color: '#aaa' },
@@ -69,7 +69,7 @@ function VolunteerShow({ volunteer }) {
     return (
         <>
             <Head title={`${volunteer.name} — Volunteer Profile`} />
-            <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Source+Sans+3:wght@300;400;600&display=swap" rel="stylesheet" />
+            <link href="https://fonts.googleapis.com/css2?family=monserrat:wght@400;500;600;700&family=Source+Sans+3:wght@300;400;600&display=swap" rel="stylesheet" />
 
             <div style={s.content}>
                 <div style={s.eyebrow}>Volunteer Profile</div>

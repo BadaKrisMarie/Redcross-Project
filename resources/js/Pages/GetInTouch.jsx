@@ -18,7 +18,7 @@ export default function GetInTouch() {
 
       <div
         style={{
-          fontFamily: 'Inter, sans-serif',
+          fontFamily: 'monserrat, monserrat',
           paddingTop: '92px',
           background: '#F3F4F6',
           minHeight: '100vh',
@@ -105,7 +105,7 @@ export default function GetInTouch() {
                   fontSize: '22px',
                 }}
               >
-                📍
+                
               </div>
               <div>
                 <div
@@ -151,7 +151,7 @@ export default function GetInTouch() {
                   fontSize: '22px',
                 }}
               >
-                🚨
+                
               </div>
               <div>
                 <div

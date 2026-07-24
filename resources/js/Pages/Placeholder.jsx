@@ -8,7 +8,7 @@ export default function Placeholder({ title, description }) {
     return (
         <>
             <Head title={title} />
-            <div style={{ fontFamily: "'Source Sans 3', sans-serif", margin: 0, padding: 0 }}>
+            <div style={{ fontFamily: "'monserrat', monserrat", margin: 0, padding: 0 }}>
 
                 <SiteNavbar />
 

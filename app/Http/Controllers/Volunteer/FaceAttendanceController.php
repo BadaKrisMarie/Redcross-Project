@@ -19,7 +19,7 @@ class FaceAttendanceController extends Controller
 
         $user = auth()->user();
         $user->update([
-            'face_descriptor' => $request->face_descriptor, // ✅ no more json_encode — 'array' cast on User model handles it
+            'face_descriptor' => $request->face_descriptor,
         ]);
 
         return response()->json(['message' => 'Face registered successfully!']);
@@ -36,13 +36,11 @@ class FaceAttendanceController extends Controller
 
         $user = auth()->user();
 
-        // Check face descriptor exists
         if (!$user->face_descriptor) {
             return response()->json(['message' => 'Face not registered. Please register your face first.'], 422);
         }
 
-        // Check face match
-        $stored = $user->face_descriptor; // ✅ already an array thanks to the cast — no json_decode needed
+        $stored = $user->face_descriptor;
         $incoming = $request->face_descriptor;
         $distance = $this->euclideanDistance($stored, $incoming);
 
@@ -50,7 +48,6 @@ class FaceAttendanceController extends Controller
             return response()->json(['message' => 'Face not recognized. Please try again.'], 422);
         }
 
-        // Check location
         $activity = Activity::findOrFail($request->activity_id);
         $dist = $this->haversineDistance(
             $request->latitude, $request->longitude,
@@ -63,7 +60,6 @@ class FaceAttendanceController extends Controller
             ], 422);
         }
 
-        // Check already timed in
         $existing = Attendance::where('user_id', $user->id)
             ->where('activity_id', $request->activity_id)
             ->whereDate('date', today())
@@ -80,6 +76,7 @@ class FaceAttendanceController extends Controller
             'time_in'     => Carbon::now(),
             'latitude'    => $request->latitude,
             'longitude'   => $request->longitude,
+            'method'      => 'face',
         ]);
 
         return response()->json(['message' => 'Time in recorded successfully!']);
@@ -96,8 +93,7 @@ class FaceAttendanceController extends Controller
 
         $user = auth()->user();
 
-        // Check face match
-        $stored = $user->face_descriptor; // ✅ already an array thanks to the cast — no json_decode needed
+        $stored = $user->face_descriptor;
         $incoming = $request->face_descriptor;
         $distance = $this->euclideanDistance($stored, $incoming);
 
@@ -105,7 +101,6 @@ class FaceAttendanceController extends Controller
             return response()->json(['message' => 'Face not recognized. Please try again.'], 422);
         }
 
-        // Check location
         $activity = Activity::findOrFail($request->activity_id);
         $dist = $this->haversineDistance(
             $request->latitude, $request->longitude,
@@ -135,8 +130,6 @@ class FaceAttendanceController extends Controller
             'hours_rendered' => $hours,
         ]);
 
-        // ✅ Added: stop showing this volunteer on the admin live map right away,
-        // instead of waiting for the 90-second stale-ping cutoff.
         VolunteerLiveLocation::where('user_id', $user->id)
             ->where('activity_id', $request->activity_id)
             ->delete();

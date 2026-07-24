@@ -288,7 +288,7 @@ export default function History() {
   return (
     <>
       <Head title="History - Philippine Red Cross" />
-      <div style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}>
+      <div style={{ fontFamily: "monserrat, monserratf" }}>
 
         <SiteNavbar />
 
@@ -316,7 +316,7 @@ export default function History() {
           }}>
             <h1 style={{
               fontSize: 64, fontWeight: 900, color: '#fff', margin: 0,
-              fontFamily: 'Inter, sans-serif', letterSpacing: '0.02em',
+              fontFamily: 'monserrat, monserrat', letterSpacing: '0.02em',
               textShadow: '0 2px 16px rgba(0,0,0,0.45)', textAlign: 'center',
             }}>
               ABOUT RED CROSS
@@ -326,7 +326,7 @@ export default function History() {
 
         {/* BREADCRUMB */}
         <div style={{
-          padding: '20px 60px', fontFamily: 'Inter, sans-serif',
+          padding: '20px 60px', fontFamily: 'monserrat, monserrat',
           fontSize: 13, fontWeight: 700, letterSpacing: '0.03em',
         }}>
           <Link href="/" style={{ color: '#9ca3af', textDecoration: 'none' }}>HOME</Link>
@@ -338,7 +338,7 @@ export default function History() {
         <main style={{ padding: '20px 60px 80px', maxWidth: 900, margin: '0 auto' }}>
           <h1 style={{
             fontSize: 44, fontWeight: 900, color: RED, margin: '20px 0 48px',
-            fontFamily: 'Inter, sans-serif', letterSpacing: '-0.01em',
+            fontFamily: 'monserrat, monserrat', letterSpacing: '-0.01em',
           }}>
             History of the Philippine Red Cross
           </h1>
@@ -362,7 +362,7 @@ export default function History() {
 
                 <div style={{
                   fontSize: 28, fontWeight: 800, color: RED,
-                  fontFamily: 'Inter, sans-serif', marginBottom: 14,
+                  fontFamily: 'monserrat, monserrat', marginBottom: 14,
                   letterSpacing: '-0.01em',
                 }}>
                   {block.year}
@@ -373,7 +373,7 @@ export default function History() {
                     {entry.date && (
                       <div style={{
                         fontSize: 14, fontWeight: 700, color: '#374151',
-                        fontFamily: 'Inter, sans-serif', textTransform: 'uppercase',
+                        fontFamily: 'monserrat, monserrat', textTransform: 'uppercase',
                         letterSpacing: '0.05em', marginBottom: 6,
                       }}>
                         {entry.date}
@@ -381,7 +381,7 @@ export default function History() {
                     )}
                     <p style={{
                       fontSize: 17, color: '#222', lineHeight: 1.85,
-                      margin: 0, fontFamily: 'Georgia, serif',
+                      margin: 0, fontFamily: 'monserrat, monserrat',
                     }}>
                       {entry.text}
                     </p>
@@ -415,7 +415,7 @@ export default function History() {
               fontSize: '44px',
               fontWeight: '800',
               color: '#ff0000',
-              fontFamily: 'Georgia, serif',
+              fontFamily: 'monserrat, monserrat',
               margin: '0 0 20px',
             }}>
               Save Lives. Join the Red Cross.
@@ -424,7 +424,7 @@ export default function History() {
               fontSize: '16px',
               lineHeight: 1.7,
               color: '#000000',
-              fontFamily: 'Inter, sans-serif',
+              fontFamily: 'monserrat, monserrat',
               margin: '0 0 36px',
             }}>
               We take pride in urging all Filipinos to take part in the heroism of the Philippine
@@ -435,7 +435,7 @@ export default function History() {
               background: RED,
               color: 'white',
               textDecoration: 'none',
-              fontFamily: 'Inter, sans-serif',
+              fontFamily: 'monserrat, monserrat',
               fontSize: '14px',
               fontWeight: '700',
               letterSpacing: '0.06em',

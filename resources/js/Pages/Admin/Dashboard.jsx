@@ -14,8 +14,15 @@ function AdminDashboard({
     // shape: { "2026": [{ month: 'Jan', attended: 62, missed: 10 }, ...], "2025": [...] }
     // Awtomatikong galing sa backend (Attendance table) — walang naka-hardcode na dummy data.
     activityStatsByYear = {},
+    // NEW props
+    flaggedThisWeek = 0,
+    topVolunteers = [],
+    todaysActivities = [],
+    branchBreakdown = [],
+    recentActivityLog = [],
 }) {
     const [previewDoc, setPreviewDoc] = useState(null);
+    const [expandedActivityId, setExpandedActivityId] = useState(null);
     const thisYear = new Date().getFullYear();
     const availableYears = Object.keys(activityStatsByYear).map(Number).sort((a, b) => b - a);
     const yearOptions = availableYears.includes(thisYear) ? availableYears : [thisYear, ...availableYears];
@@ -24,7 +31,7 @@ function AdminDashboard({
 
     const avatarColors = [
         ['#fee2e2', '#991b1b'], ['#dbeafe', '#1e40af'],
-        ['#dcfce7', '#166534'], ['#ede9fe', '#5b21b6'], ['#fef3c7', '#92400e'],
+        ['#dcfce7', '#166534'], ['#ede9fe', '#0000ff'], ['#fef3c7', '#92400e'],
     ];
 
     const qs = {
@@ -82,7 +89,7 @@ function AdminDashboard({
                     return (
                         <g key={i}>
                             <line x1={padL} y1={y} x2={W - 4} y2={y} stroke="#F0F0F0" strokeWidth="1" />
-                            <text x={padL - 6} y={y + 3} textAnchor="end" fontSize="9" fill="#999" fontFamily="'DM Sans', sans-serif">{val}</text>
+                            <text x={padL - 6} y={y + 3} textAnchor="end" fontSize="9" fill="#999" fontFamily="'Montserrat', sans-serif">{val}</text>
                         </g>
                     );
                 })}
@@ -97,7 +104,7 @@ function AdminDashboard({
                         <g key={i}>
                             <rect x={x} y={yBottom - attendedH} width={barW} height={Math.max(attendedH, 0)} rx="3" fill="#FF0000" />
                             <rect x={x} y={yBottom - barH} width={barW} height={Math.max(missedH - 2, 0)} rx="3" fill="#F0C7CC" />
-                            <text x={x + barW / 2} y={H - 6} textAnchor="middle" fontSize="10" fill="#6B6B6B" fontFamily="'DM Sans', sans-serif">{d.month}</text>
+                            <text x={x + barW / 2} y={H - 6} textAnchor="middle" fontSize="10" fill="#6B6B6B" fontFamily="'Montserrat', sans-serif">{d.month}</text>
                         </g>
                     );
                 })}
@@ -121,16 +128,11 @@ function AdminDashboard({
             <Head title="Admin Dashboard" />
 
             <style>{`
-                .metrics-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
-                .metric-card { background: var(--white); padding: 20px; border-radius: 10px; border: 1px solid var(--border); text-decoration: none; display: block; transition: border-color 0.15s; }
-                .metric-card:hover { border-color: #ccc; }
-                .metric-val { font-family: 'Barlow Condensed', sans-serif; font-size: 36px; font-weight: 700; color: var(--red); line-height: 1; }
-                .metric-val.highlight { color: #f59e0b; }
-                .metric-label { font-size: 12px; color: var(--muted); margin-top: 4px; }
                 .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+                .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 16px; }
                 .full-card { margin-bottom: 16px; }
                 .card { background: var(--white); border: 1px solid var(--border); border-radius: 10px; padding: 20px; }
-                .card-title { font-family: 'Barlow Condensed', sans-serif; font-size: 15px; font-weight: 700; color: var(--ink); text-transform: uppercase; letter-spacing: .3px; margin-bottom: 14px; }
+                .card-title { font-family: 'Montserrat', sans-serif; font-size: 15px; font-weight: 700; color: var(--ink); text-transform: uppercase; letter-spacing: .3px; margin-bottom: 14px; }
                 .vol-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid #f0f0f0; text-decoration: none; }
                 .vol-row:last-child { border-bottom: none; }
                 .vol-name { font-size: 13px; color: var(--ink); font-weight: 500; }
@@ -138,12 +140,61 @@ function AdminDashboard({
                 .badge { font-size: 11px; padding: 3px 9px; border-radius: 20px; white-space: nowrap; }
                 .view-all { font-size: 12px; color: var(--red); text-decoration: none; font-weight: 600; }
                 .quick-actions { display: flex; gap: 10px; flex-wrap: wrap; }
-                .btn-red   { background: var(--red); color: #fff; border: none; padding: 9px 18px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-block; transition: background 0.15s; font-family: 'DM Sans', sans-serif; }
+                .btn-red   { background: var(--red); color: #fff; border: none; padding: 9px 18px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-block; transition: background 0.15s; font-family: 'Montserrat', sans-serif; }
                 .btn-red:hover { background: var(--red-dark); }
-                .btn-blue  { background: #1d4ed8; color: #fff; border: none; padding: 9px 18px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-block; font-family: 'DM Sans', sans-serif; }
-                .btn-green { background: #16a34a; color: #fff; border: none; padding: 9px 18px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-block; font-family: 'DM Sans', sans-serif; }
-                .btn-gray  { background: #f5f5f5; border: 1px solid var(--border); padding: 9px 18px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; color: var(--ink); text-decoration: none; display: inline-block; font-family: 'DM Sans', sans-serif; }
+                .btn-blue  { background: #1d4ed8; color: #fff; border: none; padding: 9px 18px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-block; font-family: 'Montserrat', sans-serif; }
+                .btn-green { background: #16a34a; color: #fff; border: none; padding: 9px 18px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-block; font-family: 'Montserrat', sans-serif; }
+                .btn-gray  { background: #f5f5f5; border: 1px solid var(--border); padding: 9px 18px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; color: var(--ink); text-decoration: none; display: inline-block; font-family: 'Montserrat', sans-serif; }
                 .alert { background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 14px 20px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; }
+
+                /* Recent Volunteers scrollable list + custom scrollbar */
+                .vol-list-scroll { max-height: 320px; overflow-y: auto; padding-right: 6px; }
+                .vol-list-scroll::-webkit-scrollbar { width: 6px; }
+                .vol-list-scroll::-webkit-scrollbar-track { background: transparent; }
+                .vol-list-scroll::-webkit-scrollbar-thumb { background-color: #4B4B4B; border-radius: 999px; }
+                .vol-list-scroll::-webkit-scrollbar-thumb:hover { background-color: #2E2E2E; }
+                .vol-list-scroll { scrollbar-width: thin; scrollbar-color: #4B4B4B transparent; }
+
+                /* NEW: mini stat card (Flagged This Week) */
+                .mini-stat-card { display: flex; flex-direction: column; justify-content: center; gap: 10px; height: 100%; }
+                .mini-stat-val { font-family: 'Montserrat', sans-serif; font-size: 32px; font-weight: 700; line-height: 1; }
+                .mini-stat-val.warn { color: #0000ff; }
+                .mini-stat-sub { font-size: 11px; color: var(--muted); margin-top: 4px; }
+
+                /* NEW: top volunteers leaderboard */
+                .lb-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid #f0f0f0; }
+                .lb-row:last-child { border-bottom: none; }
+                .lb-rank { font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 14px; color: #999; width: 18px; }
+                .lb-hours { font-size: 12px; font-weight: 700; color: var(--red); margin-left: auto; }
+
+                /* NEW: today's activities horizontal strip */
+                .today-strip { display: flex; gap: 12px; overflow-x: auto; align-items: flex-start; padding-bottom: 4px; }
+                .today-pill { flex: 0 0 auto; width: 220px; border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; cursor: pointer; transition: box-shadow 0.15s, border-color 0.15s, width 0.2s ease; }
+                .today-pill:hover { border-color: #ccc; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+                .today-pill.expanded { width: 320px; box-shadow: 0 4px 14px rgba(0,0,0,0.08); border-color: #ddd; }
+                .today-pill .name { font-size: 13px; font-weight: 600; color: var(--ink); display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+                .today-pill .name .chevron { font-size: 10px; color: #999; transition: transform 0.15s; flex-shrink: 0; }
+                .today-pill .name .chevron.rotated { transform: rotate(180deg); }
+                .today-pill .meta { font-size: 11px; color: var(--muted); margin-top: 4px; }
+                .today-pill .count { font-size: 11px; color: #0000ff; margin-top: 6px; font-weight: 600; }
+                .today-pill .detail { margin-top: 10px; padding-top: 10px; border-top: 1px solid #f0f0f0; }
+                .today-pill .detail .desc { font-size: 12px; color: #444; line-height: 1.5; margin-bottom: 8px; }
+                .today-pill .detail .status-tag { display: inline-block; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 10px; background: #f0f0f0; color: #666; text-transform: capitalize; margin-bottom: 8px; }
+                .today-pill .detail .names { font-size: 11px; color: #666; line-height: 1.6; }
+                .today-pill .detail .names strong { color: #333; }
+                .today-pill .detail .edit-link { display: inline-block; margin-top: 8px; font-size: 11px; font-weight: 600; color: #0000ff; text-decoration: none; }
+
+                /* NEW: branch breakdown bars */
+                .branch-row { margin-bottom: 10px; }
+                .branch-row .top { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px; }
+                .branch-bar-track { height: 6px; background: #f0f0f0; border-radius: 4px; overflow: hidden; }
+                .branch-bar-fill { height: 100%; background: var(--red); border-radius: 4px; }
+
+                /* NEW: recent activity log */
+                .log-row { display: flex; gap: 10px; padding: 8px 0; border-bottom: 1px solid #f0f0f0; font-size: 12px; }
+                .log-row:last-child { border-bottom: none; }
+                .log-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--red); margin-top: 5px; flex-shrink: 0; }
+                .log-time { color: #999; font-size: 11px; white-space: nowrap; margin-left: auto; }
             `}</style>
 
             {/* MODAL */}
@@ -154,8 +205,8 @@ function AdminDashboard({
                             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                                 <ProfileAvatar doc={previewDoc} size={36} />
                                 <div>
-                                    <div style={{ fontFamily: 'Barlow Condensed', fontSize: '16px', fontWeight: '700', textTransform: 'uppercase' }}>{previewDoc.name}</div>
-                                    <div style={{ fontSize: '12px', color: '#ff0000', fontWeight: '600', marginTop: '2px' }}>{previewDoc.type}</div>
+                                    <div style={{ fontFamily: 'Montserrat', fontSize: '16px', fontWeight: '700', textTransform: 'uppercase' }}>{previewDoc.name}</div>
+                                    <div style={{ fontSize: '12px', color: '#0000ff', fontWeight: '600', marginTop: '2px' }}>{previewDoc.type}</div>
                                 </div>
                             </div>
                             <button onClick={() => setPreviewDoc(null)} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#888' }}>✕</button>
@@ -197,21 +248,6 @@ function AdminDashboard({
                 </div>
             )}
 
-            {/* METRICS */}
-            <div className="metrics-grid">
-                {[
-                    { label: 'Total Volunteers', value: totalVolunteers ?? 0, href: route('admin.volunteers') },
-                    { label: 'Active Today',     value: activeToday ?? 0,     href: route('admin.attendance.index') },
-                    { label: 'Pending Approval', value: pendingCount ?? 0, highlight: true, href: route('admin.volunteers') },
-                    { label: 'Total Activities', value: qs.totalActivities,  href: route('admin.activities.index') },
-                ].map(({ label, value, highlight, href }) => (
-                    <Link key={label} href={href} className="metric-card">
-                        <div className={`metric-val ${highlight && value > 0 ? 'highlight' : ''}`}>{value}</div>
-                        <div className="metric-label">{label}</div>
-                    </Link>
-                ))}
-            </div>
-
             {/* ALERT */}
             {pendingCount > 0 && (
                 <div className="alert">
@@ -222,6 +258,101 @@ function AdminDashboard({
                 </div>
             )}
 
+            {/* NEW: FLAGGED THIS WEEK / TOP VOLUNTEERS / BRANCH BREAKDOWN */}
+            <div className="grid3">
+                <Link href={route('admin.reports.index', { status: 'flagged' })} className="card mini-stat-card" style={{ textDecoration: 'none' }}>
+                    <div className="card-title" style={{ marginBottom: 0 }}>Flagged This Week</div>
+                    <div>
+                        <div className={`mini-stat-val ${flaggedThisWeek > 0 ? 'warn' : ''}`}>{flaggedThisWeek}</div>
+                        <div className="mini-stat-sub">Geofence violations · click to review</div>
+                    </div>
+                </Link>
+
+                <div className="card">
+                    <div className="card-title">Top Volunteers</div>
+                    {topVolunteers.length === 0 ? (
+                        <div style={{ textAlign: 'center', color: '#aaa', fontSize: '13px', padding: '10px 0' }}>No hours recorded yet</div>
+                    ) : topVolunteers.map((v, i) => {
+                        const [bg, color] = avatarColors[i % avatarColors.length];
+                        return (
+                            <div key={i} className="lb-row">
+                                <span className="lb-rank">{i + 1}</span>
+                                {v.photo
+                                    ? <img src={v.photo} alt={v.name} style={{ width: 28, height: 28, borderRadius: '50%', objectFit: 'cover' }} />
+                                    : <div style={{ width: 28, height: 28, borderRadius: '50%', background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: '600', color }}>{v.initials}</div>
+                                }
+                                <span className="vol-name" style={{ fontSize: '12px' }}>{v.name}</span>
+                                <span className="lb-hours">{v.hours}h</span>
+                            </div>
+                        );
+                    })}
+                </div>
+
+                <div className="card">
+                    <div className="card-title">Volunteers by Branch</div>
+                    {branchBreakdown.length === 0 ? (
+                        <div style={{ textAlign: 'center', color: '#aaa', fontSize: '13px', padding: '10px 0' }}>No data yet</div>
+                    ) : (() => {
+                        const max = Math.max(...branchBreakdown.map(b => b.total), 1);
+                        return branchBreakdown.map((b, i) => (
+                            <div key={i} className="branch-row">
+                                <div className="top">
+                                    <span>{b.branch}</span>
+                                    <span style={{ fontWeight: 600 }}>{b.total}</span>
+                                </div>
+                                <div className="branch-bar-track">
+                                    <div className="branch-bar-fill" style={{ width: `${(b.total / max) * 100}%` }} />
+                                </div>
+                            </div>
+                        ));
+                    })()}
+                </div>
+            </div>
+
+            {/* NEW: TODAY'S ACTIVITIES */}
+            <div className="card full-card">
+                <div className="card-title">Today's Activities</div>
+                {todaysActivities.length === 0 ? (
+                    <div style={{ textAlign: 'center', color: '#aaa', fontSize: '13px', padding: '10px 0' }}>Walang naka-schedule ngayong araw</div>
+                ) : (
+                    <div className="today-strip">
+                        {todaysActivities.map((a) => {
+                            const isOpen = expandedActivityId === a.id;
+                            return (
+                                <div
+                                    key={a.id}
+                                    className={`today-pill ${isOpen ? 'expanded' : ''}`}
+                                    onClick={() => setExpandedActivityId(isOpen ? null : a.id)}
+                                >
+                                    <div className="name">
+                                        <span>{a.name}</span>
+                                        <span className={`chevron ${isOpen ? 'rotated' : ''}`}>▼</span>
+                                    </div>
+                                    <div className="meta">{a.time}{a.location ? ` · ${a.location}` : ''}</div>
+                                    <div className="count">{a.assignedCount} assigned</div>
+
+                                    {isOpen && (
+                                        <div className="detail" onClick={e => e.stopPropagation()}>
+                                            {a.status && <span className="status-tag">{a.status}</span>}
+                                            {a.description && <div className="desc">{a.description}</div>}
+                                            <div className="names">
+                                                <strong>Assigned:</strong>{' '}
+                                                {a.assignedNames && a.assignedNames.length > 0
+                                                    ? a.assignedNames.join(', ')
+                                                    : 'Wala pang naka-assign'}
+                                            </div>
+                                            <Link href={route('admin.activities.edit', a.id)} className="edit-link">
+                                                View full activity →
+                                            </Link>
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
+            </div>
+
             {/* RECENT VOLUNTEERS + ANALYTICS CHART */}
             <div className="grid2">
                 <div className="card">
@@ -229,31 +360,33 @@ function AdminDashboard({
                         <div className="card-title">Recent Volunteers</div>
                         <Link href={route('admin.volunteers')} className="view-all">View all →</Link>
                     </div>
-                    {recentVolunteers.length === 0 ? (
-                        <div style={{ textAlign: 'center', color: '#aaa', fontSize: '13px', padding: '20px 0' }}>No volunteers yet</div>
-                    ) : recentVolunteers.map((vol, i) => {
-                        const [bg, color] = avatarColors[i % avatarColors.length];
-                        return (
-                            <Link key={i} href={route('admin.volunteers')} className="vol-row">
-                                {vol.photo
-                                    ? <img src={vol.photo} alt={vol.name} style={{ width: 34, height: 34, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
-                                    : <div style={{ width: 34, height: 34, borderRadius: '50%', background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: '600', color, flexShrink: 0 }}>{vol.initials}</div>
-                                }
-                                <div style={{ flex: 1 }}>
-                                    <div className="vol-name">{vol.name}</div>
-                                    <div className="vol-sub">{vol.branch}</div>
-                                </div>
-                                <div style={{ display: 'flex', gap: 4, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-                                    {vol.is_available ? (
-                                        <span className="badge" style={availabilityBadgeStyle}>● Available</span>
-                                    ) : (
-                                        <span className="badge" style={{ background: '#f5f5f5', color: '#999' }}>○ Offline</span>
-                                    )}
-                                    <span className="badge" style={statusBadge(vol.status)}>{vol.status}</span>
-                                </div>
-                            </Link>
-                        );
-                    })}
+                    <div className="vol-list-scroll">
+                        {recentVolunteers.length === 0 ? (
+                            <div style={{ textAlign: 'center', color: '#aaa', fontSize: '13px', padding: '20px 0' }}>No volunteers yet</div>
+                        ) : recentVolunteers.map((vol, i) => {
+                            const [bg, color] = avatarColors[i % avatarColors.length];
+                            return (
+                                <Link key={i} href={route('admin.volunteers')} className="vol-row">
+                                    {vol.photo
+                                        ? <img src={vol.photo} alt={vol.name} style={{ width: 34, height: 34, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
+                                        : <div style={{ width: 34, height: 34, borderRadius: '50%', background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: '600', color, flexShrink: 0 }}>{vol.initials}</div>
+                                    }
+                                    <div style={{ flex: 1 }}>
+                                        <div className="vol-name">{vol.name}</div>
+                                        <div className="vol-sub">{vol.branch}</div>
+                                    </div>
+                                    <div style={{ display: 'flex', gap: 4, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                                        {vol.is_available ? (
+                                            <span className="badge" style={availabilityBadgeStyle}>● Available</span>
+                                        ) : (
+                                            <span className="badge" style={{ background: '#f5f5f5', color: '#999' }}>○ Offline</span>
+                                        )}
+                                        <span className="badge" style={statusBadge(vol.status)}>{vol.status}</span>
+                                    </div>
+                                </Link>
+                            );
+                        })}
+                    </div>
                 </div>
 
                 <div className="card">
@@ -273,7 +406,7 @@ function AdminDashboard({
                         <select
                             value={selectedYear}
                             onChange={e => setSelectedYear(Number(e.target.value))}
-                            style={{ fontSize: '12px', fontWeight: '600', color: '#1A1A1A', border: '1px solid #EDEDED', borderRadius: '6px', padding: '4px 8px', background: '#fff', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}
+                            style={{ fontSize: '12px', fontWeight: '600', color: '#1A1A1A', border: '1px solid #EDEDED', borderRadius: '6px', padding: '4px 8px', background: '#fff', cursor: 'pointer', fontFamily: "'Montserrat', sans-serif" }}
                         >
                             {yearOptions.map(year => (
                                 <option key={year} value={year}>{year}</option>
@@ -317,18 +450,20 @@ function AdminDashboard({
                 })}
             </div>
 
-            {/* QUICK ACTIONS */}
-            <div className="card">
-                <div className="card-title">Quick Actions</div>
-                <div className="quick-actions">
-                    <Link href={route('admin.volunteers')}           className="btn-red">Manage Volunteers</Link>
-                    <Link href={route('admin.activities.index')}     className="btn-blue">Manage Activities</Link>
-                    <Link href={route('admin.activities.create')}    className="btn-green">+ New Activity</Link>
-                    <Link href={route('admin.attendance.index')}     className="btn-gray">View Attendance</Link>
-                    <Link href={route('admin.attendance.export.pdf')} className="btn-gray">Export PDF</Link>
-                    <Link href={route('admin.communication')}        className="btn-gray">Communication</Link>
-                </div>
+            {/* NEW: RECENT ACTIVITY LOG */}
+            <div className="card full-card">
+                <div className="card-title">Recent Activity</div>
+                {recentActivityLog.length === 0 ? (
+                    <div style={{ textAlign: 'center', color: '#aaa', fontSize: '13px', padding: '10px 0' }}>No recent activity</div>
+                ) : recentActivityLog.map((log, i) => (
+                    <div key={i} className="log-row">
+                        <span className="log-dot" />
+                        <span>{log.text}</span>
+                        <span className="log-time">{log.time}</span>
+                    </div>
+                ))}
             </div>
+
         </>
     );
 }

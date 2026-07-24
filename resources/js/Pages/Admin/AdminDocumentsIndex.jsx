@@ -50,14 +50,14 @@ export default function AdminDocumentsIndex({ auth, documents = [] }) {
     const isImageDoc = (doc) => doc.mime_type && doc.mime_type.startsWith('image/');
     const isPdfDoc   = (doc) => doc.mime_type === 'application/pdf';
 
-    // ✅ NEW: file type icon/label/color based on mime_type, for quick recognition without opening
+    // ✅ NEW: file type label/color based on mime_type, for quick recognition without opening
     const getFileTypeInfo = (doc) => {
-        if (isPdfDoc(doc))   return { icon: '📕', label: 'PDF', color: '#ff0000' };
+        if (isPdfDoc(doc))   return { label: 'PDF', color: '#ff0000' };
         if (isImageDoc(doc)) {
-            if (doc.mime_type === 'image/png') return { icon: '🖼️', label: 'PNG', color: '#8B5CF6' };
-            return { icon: '🖼️', label: 'JPG', color: '#3B82F6' };
+            if (doc.mime_type === 'image/png') return { label: 'PNG', color: '#8B5CF6' };
+            return { label: 'JPG', color: '#3B82F6' };
         }
-        return { icon: '📄', label: doc.mime_type ? doc.mime_type.split('/')[1]?.toUpperCase() : 'FILE', color: '#6B7280' };
+        return { label: doc.mime_type ? doc.mime_type.split('/')[1]?.toUpperCase() : 'FILE', color: '#6B7280' };
     };
 
     // ✅ NEW: format bytes into readable KB/MB
@@ -123,12 +123,12 @@ export default function AdminDocumentsIndex({ auth, documents = [] }) {
     return (
         <>
             <Head title="201 Files" />
-            <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+            <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
 
             <style>{`
                 * { box-sizing: border-box; margin: 0; padding: 0; }
                 :root { --red: #ff0000; --red-dark: #9B0B22; --ink: #1A1A1A; --muted: #6B6B6B; --border: #EDEDED; --surface: #F7F7F5; --white: #FFFFFF; }
-                body { font-family: 'DM Sans', sans-serif; font-size: 13px; background: var(--surface); }
+                body { font-family: 'Montserrat', sans-serif; font-size: 13px; background: var(--surface); }
                 .wrap { display: flex; min-height: 100vh; }
                 .sidebar { width: 220px; background: #ff0000; display: flex; flex-direction: column; position: fixed; top: 0; left: 0; height: 100vh; z-index: 100; transition: transform 0.2s; }
                 .sidebar.closed { transform: translateX(-220px); }
@@ -136,8 +136,8 @@ export default function AdminDocumentsIndex({ auth, documents = [] }) {
                 .main.full { margin-left: 0; }
                 .sb-brand { padding: 18px 20px 14px; border-bottom: 1px solid rgba(255,255,255,0.15); }
                 .sb-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
-                .sb-cross { width: 32px; height: 32px; background: rgba(0,0,0,0.2); border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #fff; font-family: 'Barlow Condensed', sans-serif; font-size: 20px; font-weight: 700; flex-shrink: 0; }
-                .sb-name { font-family: 'Barlow Condensed', sans-serif; color: #fff; font-size: 13px; font-weight: 600; letter-spacing: .5px; line-height: 1.3; }
+                .sb-cross { width: 32px; height: 32px; background: rgba(0,0,0,0.2); border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #fff; font-family: 'Montserrat', sans-serif; font-size: 20px; font-weight: 700; flex-shrink: 0; }
+                .sb-name { font-family: 'Montserrat', sans-serif; color: #fff; font-size: 13px; font-weight: 600; letter-spacing: .5px; line-height: 1.3; }
                 .sb-name span { display: block; color: rgba(255,255,255,0.7); font-size: 11px; font-weight: 400; letter-spacing: 1px; text-transform: uppercase; }
                 .sb-user { padding: 14px 20px; border-bottom: 1px solid rgba(255,255,255,0.15); display: flex; align-items: center; gap: 10px; text-decoration: none; }
                 .sb-uname { color: #fff; font-size: 12px; font-weight: 500; line-height: 1.3; }
@@ -149,11 +149,11 @@ export default function AdminDocumentsIndex({ auth, documents = [] }) {
                 .nav-item.active { background: rgba(255,255,255,0.2); border-left-color: #fff; color: #fff; }
                 .nav-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
                 .sb-footer { padding: 14px 20px; border-top: 1px solid rgba(255,255,255,0.15); }
-                .logout-btn { display: flex; align-items: center; gap: 8px; color: rgba(255,255,255,0.8); font-size: 12px; cursor: pointer; background: none; border: none; width: 100%; font-family: 'DM Sans', sans-serif; }
+                .logout-btn { display: flex; align-items: center; gap: 8px; color: rgba(255,255,255,0.8); font-size: 12px; cursor: pointer; background: none; border: none; width: 100%; font-family: 'Montserrat', sans-serif; }
                 .logout-btn:hover { color: #fff; }
                 .topbar { background: var(--white); border-bottom: 1px solid var(--border); padding: 0 28px; height: 56px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 50; }
                 .menu-btn { background: none; border: none; cursor: pointer; color: var(--ink); display: flex; align-items: center; padding: 4px; }
-                .page-title { font-family: 'Barlow Condensed', sans-serif; font-size: 20px; font-weight: 700; color: var(--ink); letter-spacing: .3px; text-transform: uppercase; }
+                .page-title { font-family: 'Montserrat', sans-serif; font-size: 20px; font-weight: 700; color: var(--ink); letter-spacing: .3px; text-transform: uppercase; }
                 .content { flex: 1; padding: 28px; }
                 .filters { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
                 .filter-btn { padding: 7px 16px; border-radius: 20px; font-size: 12px; font-weight: 600; cursor: pointer; border: 1.5px solid var(--border); background: var(--white); color: var(--muted); transition: all .15s; }
@@ -194,7 +194,7 @@ export default function AdminDocumentsIndex({ auth, documents = [] }) {
                                     fontSize={13}
                                 />
                                 <div>
-                                    <div style={{ fontFamily: 'Barlow Condensed', fontSize: 16, fontWeight: 700, textTransform: 'uppercase' }}>{previewDoc.name}</div>
+                                    <div style={{ fontFamily: 'Montserrat', fontSize: 16, fontWeight: 700, textTransform: 'uppercase' }}>{previewDoc.name}</div>
                                     <div className="doc-type">{previewDoc.type}</div>
                                 </div>
                             </div>
@@ -262,7 +262,6 @@ export default function AdminDocumentsIndex({ auth, documents = [] }) {
                                                 title={previewDoc.type}
                                               />
                                             : <div style={{ textAlign: 'center', color: '#888' }}>
-                                                <div style={{ fontSize: 48, marginBottom: 12 }}>📄</div>
                                                 <div style={{ fontSize: 13, marginBottom: 8 }}>Hindi ma-preview ang file na ito.</div>
                                                 <button onClick={() => handleDownload(previewDoc)} style={{ background: 'none', border: 'none', color: '#ff0000', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Download →</button>
                                               </div>
@@ -277,8 +276,8 @@ export default function AdminDocumentsIndex({ auth, documents = [] }) {
                             <div style={{ display: 'flex', gap: 8 }}>
                                 {previewDoc.status === 'pending' && (
                                     <>
-                                        <button onClick={() => { handleApprove(previewDoc.id); setPreviewDoc(null); }} className="btn-approve" style={{ padding: '8px 18px', fontSize: 13 }}>✓ Approve</button>
-                                        <button onClick={() => { handleReject(previewDoc.id); setPreviewDoc(null); }} className="btn-reject" style={{ padding: '8px 18px', fontSize: 13 }}>✕ Reject</button>
+                                        <button onClick={() => { handleApprove(previewDoc.id); setPreviewDoc(null); }} className="btn-approve" style={{ padding: '8px 18px', fontSize: 13 }}>Approve</button>
+                                        <button onClick={() => { handleReject(previewDoc.id); setPreviewDoc(null); }} className="btn-reject" style={{ padding: '8px 18px', fontSize: 13 }}>Reject</button>
                                     </>
                                 )}
                             </div>
@@ -296,15 +295,7 @@ export default function AdminDocumentsIndex({ auth, documents = [] }) {
             <div className="wrap">
                 {/* SIDEBAR */}
                 <aside className={`sidebar ${sidebarOpen ? '' : 'closed'}`}>
-                    <div className="sb-brand">
-                        <Link href={route('admin.dashboard')} className="sb-logo">
-                            <div className="sb-cross">+</div>
-                            <div className="sb-name">
-                                Philippine Red Cross
-                                <span>Rizal · Muntinlupa</span>
-                            </div>
-                        </Link>
-                    </div>
+                    
                     <Link href={route('admin.profile')} className="sb-user">
                         <NavAvatar size={34} fontSize={12} />
                         <div className="sb-uname">
@@ -342,11 +333,6 @@ export default function AdminDocumentsIndex({ auth, documents = [] }) {
                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
                             </button>
                             <div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11 }}>
-                                    <Link href={route('admin.dashboard')} style={{ color: '#aaa', textDecoration: 'none' }}>Dashboard</Link>
-                                    <span style={{ color: '#ccc' }}>›</span>
-                                    <span style={{ color: '#1A1A1A', fontWeight: 500 }}>201 Files</span>
-                                </div>
                                 <div className="page-title">201 Files</div>
                             </div>
                         </div>
@@ -354,20 +340,6 @@ export default function AdminDocumentsIndex({ auth, documents = [] }) {
                     </div>
 
                     <div className="content">
-                        <div style={{ display: 'flex', gap: 12, marginBottom: 24, flexWrap: 'wrap' }}>
-                            {[
-                                { label: 'Total',    value: counts.all,      color: '#1A1A1A' },
-                                { label: 'Pending',  value: counts.pending,  color: '#92400e', bg: '#fef3c7' },
-                                { label: 'Approved', value: counts.approved, color: '#166534', bg: '#dcfce7' },
-                                { label: 'Rejected', value: counts.rejected, color: '#991b1b', bg: '#fee2e2' },
-                            ].map(({ label, value, color, bg }) => (
-                                <div key={label} style={{ background: bg ?? '#fff', border: '1px solid #EDEDED', borderRadius: 10, padding: '14px 20px', minWidth: 100 }}>
-                                    <div style={{ fontFamily: 'Barlow Condensed', fontSize: 28, fontWeight: 700, color, lineHeight: 1 }}>{value}</div>
-                                    <div style={{ fontSize: 11, color: '#6B6B6B', textTransform: 'uppercase', letterSpacing: '.5px', marginTop: 4 }}>{label}</div>
-                                </div>
-                            ))}
-                        </div>
-
                         <div className="filters">
                             {['all', 'pending', 'approved', 'rejected'].map(f => (
                                 <button key={f} className={`filter-btn ${filter === f ? 'active' : ''}`} onClick={() => setFilter(f)}>
@@ -401,7 +373,7 @@ export default function AdminDocumentsIndex({ auth, documents = [] }) {
                                             </div>
                                         </div>
                                         <div className="doc-type">{doc.type}</div>
-                                        {/* ✅ NEW: File type icon + size, quick recognition before opening */}
+                                        {/* ✅ NEW: File type + size, quick recognition before opening */}
                                         <div className="file-chip">
                                             <span className="file-chip-label" style={{ background: `${fileInfo.color}15`, color: fileInfo.color }}>
                                                 {fileInfo.label}
@@ -413,8 +385,8 @@ export default function AdminDocumentsIndex({ auth, documents = [] }) {
                                         <div className="action-btns" onClick={e => e.stopPropagation()}>
                                             {doc.status === 'pending' && (
                                                 <>
-                                                    <button className="btn-approve" onClick={() => handleApprove(doc.id)}>✓</button>
-                                                    <button className="btn-reject"  onClick={() => handleReject(doc.id)}>✕</button>
+                                                    <button className="btn-approve" onClick={() => handleApprove(doc.id)}>Approve</button>
+                                                    <button className="btn-reject"  onClick={() => handleReject(doc.id)}>Reject</button>
                                                 </>
                                             )}
                                             {doc.status !== 'pending' && (

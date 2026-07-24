@@ -7,7 +7,7 @@ export default function MissionVision() {
             <Head title="Our Mission & Vision" />
             <div style={{
                 minHeight: '100vh', background: '#f4f5f7',
-                fontFamily: "'Source Sans 3', sans-serif",
+                fontFamily: "'monserrat, monserratf",
                 display: 'flex', flexDirection: 'column', alignItems: 'center',
                 padding: '60px 24px',
             }}>

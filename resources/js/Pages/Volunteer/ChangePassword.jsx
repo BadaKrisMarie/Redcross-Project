@@ -103,9 +103,9 @@ export default function ChangePassword({ auth }) {
     return (
         <>
             <Head title="Change Password" />
-            <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+            <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
 
-            <div style={{ display: 'flex', minHeight: '100vh', fontFamily: "'Inter', sans-serif", background: '#F3F4F6' }}>
+            <div style={{ display: 'flex', minHeight: '100vh', fontFamily: "'Montserrat', sans-serif", background: '#F3F4F6' }}>
 
                 {/* SIDEBAR */}
                 <aside style={{ width: '160px', minHeight: '100vh', background: '#ff0000', display: 'flex', flexDirection: 'column', flexShrink: 0, position: 'fixed', left: 0, top: 0, bottom: 0, zIndex: 100 }}>

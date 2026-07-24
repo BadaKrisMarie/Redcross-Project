@@ -37,6 +37,7 @@ class WebAuthnAttendanceController extends Controller
                 'user_id' => $user->id,
                 'date'    => today(),
                 'time_in' => Carbon::now(),
+                'method'  => 'fingerprint',
             ]);
 
             return response()->json(['message' => 'Time in recorded!']);

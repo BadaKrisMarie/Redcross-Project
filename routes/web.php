@@ -15,6 +15,7 @@ use App\Http\Controllers\Admin\ActivityController;
 use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\Admin\AdminProfileController;
 use App\Http\Controllers\Admin\AttendanceController as AdminAttendanceController;
+use App\Http\Controllers\Admin\AttendanceLogController;
 use App\Http\Controllers\Admin\CommunicationController as AdminCommunicationController;
 use App\Http\Controllers\Admin\DocumentController as AdminDocumentController;
 use App\Http\Controllers\DisasterAlertController;
@@ -23,6 +24,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+use App\Http\Controllers\Admin\ReportController;
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [
@@ -89,7 +91,7 @@ Route::get('/safety-services', function () {
 
 // --- Navbar Dropdown Subpages (placeholder content, expand later) -------------
 // Each route below renders the generic Placeholder page with a custom title.
-// Replace any of these with a real Inertia page + controller whenever ready �
+// Replace any of these with a real Inertia page + controller whenever ready ?
 // just swap the closure for a controller method and point to a real view.
 
 // DONATE submenu
@@ -111,7 +113,7 @@ Route::get('/donate/international', fn () => Inertia::render('Placeholder', [
     'title' => 'International Donations',
 ]))->name('donate.international');
 
-// GIVE BLOOD submenu (legacy links � kept working, GIVE BLOOD nav now points to /give-blood)
+// GIVE BLOOD submenu (legacy links ? kept working, GIVE BLOOD nav now points to /give-blood)
 Route::prefix('blood')->name('blood.')->group(function () {
     Route::get('/why-donate', fn () => Inertia::render('GiveBlood'))->name('why-donate');
 
@@ -130,7 +132,7 @@ Route::prefix('blood')->name('blood.')->group(function () {
     ]))->name('safety-info');
 });
 
-// TRAINING submenu (legacy links � kept working, TRAINING nav now points to /training)
+// TRAINING submenu (legacy links ? kept working, TRAINING nav now points to /training)
 Route::prefix('training')->name('training.')->group(function () {
     Route::get('/first-aid-cpr', fn () => Inertia::render('Placeholder', [
         'title' => 'First Aid & CPR',
@@ -153,7 +155,7 @@ Route::prefix('training')->name('training.')->group(function () {
     ]))->name('online-courses');
 });
 
-// VOLUNTEER submenu (public-facing info page � distinct from the authenticated
+// VOLUNTEER submenu (public-facing info page ? distinct from the authenticated
 // /volunteer/* dashboard routes further below)
 // "Become a Volunteer", "Red Cross 143 Program", and "Volunteer Service FAQs"
 // are all sections within the same Volunteer.jsx page (linked via in-page anchors).
@@ -229,7 +231,7 @@ Route::prefix('contact')->name('contact.')->group(function () {
 // ----------------------------------------------------------------------------
 
 // --- Real-time Email Availability Check (Register page) -----------------------
-// No auth middleware � must be reachable by guests filling out the register form.
+// No auth middleware ? must be reachable by guests filling out the register form.
 Route::post('/check-email', [RegisteredUserController::class, 'checkEmail'])
     ->name('check.email');
 
@@ -309,8 +311,17 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     // Attendance
     Route::get('/attendance', [AdminAttendanceController::class, 'index'])->name('attendance.index');
     Route::get('/attendance/export-pdf', [AdminAttendanceController::class, 'exportPdf'])->name('attendance.export.pdf');
-    // ✅ Added — polled by LiveLocationMap.jsx to render current volunteer positions
+    // ? Added � polled by LiveLocationMap.jsx to render current volunteer positions
     Route::get('/attendance/live-locations', [AdminAttendanceController::class, 'liveLocations'])->name('attendance.live-locations');
+
+    // ✅ NEW: Attendance Logs (separate detailed log view from the main Attendance summary page)
+    Route::get('/attendance-logs', [AttendanceLogController::class, 'index'])
+        ->name('attendance-logs.index');
+
+    // Reports
+    Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
+    Route::get('/reports/export', [ReportController::class, 'export'])->name('reports.export');
+    Route::get('/reports/export-pdf', [ReportController::class, 'exportPdf'])->name('reports.export.pdf');
 
     // Communication
     Route::get('/communication', [AdminCommunicationController::class, 'index'])->name('communication');
@@ -353,6 +364,7 @@ Route::middleware(['auth', 'role:volunteer'])->prefix('volunteer')->name('volunt
             ->orderBy('date', 'desc')
             ->limit(5)
             ->get(['date', 'time_in', 'time_out', 'hours_rendered']);
+        $announcements = \App\Models\Announcement::with('admin')->orderBy('created_at','desc')->get();
 
         return Inertia::render('Volunteer/Dashboard', [
             'totalHours'         => $totalHours,
@@ -360,6 +372,7 @@ Route::middleware(['auth', 'role:volunteer'])->prefix('volunteer')->name('volunt
             'monthDays'          => $monthDays,
             'assignedActivities' => $assignedActivities,
             'recentAttendance'   => $recentAttendance,
+            'announcements'      => $announcements,
         ]);
     })->name('dashboard');
 
@@ -417,7 +430,7 @@ Route::middleware(['auth', 'role:volunteer'])->prefix('volunteer')->name('volunt
     Route::post('/face/timein', [FaceAttendanceController::class, 'timeIn'])->name('face.timein');
     Route::post('/face/timeout', [FaceAttendanceController::class, 'timeOut'])->name('face.timeout');
 
-    // ✅ Added — periodic location pings sent by FaceAttendance.jsx while checked in,
+    // ? Added � periodic location pings sent by FaceAttendance.jsx while checked in,
     // and a clear call right after a successful time-out. Powers the admin live map.
     Route::post('/location/ping', [LocationPingController::class, 'store'])->name('location.ping');
     Route::post('/location/clear', [LocationPingController::class, 'clear'])->name('location.clear');
@@ -435,6 +448,5 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
-
 
 require __DIR__.'/auth.php';

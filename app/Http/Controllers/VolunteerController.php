@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Mail\VolunteerApproved;
 use App\Mail\VolunteerRejected;
+use App\Mail\VolunteerDeleted;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
@@ -21,6 +22,8 @@ class VolunteerController extends Controller
                 'name'       => $v->name,
                 'email'      => $v->email,
                 'status'     => $v->status,
+                'phone'      => $v->phone ?? null,
+                'address'    => $v->address ?? null,
                 'created_at' => $v->created_at,
                 'photo'      => $v->photo ? asset('storage/' . $v->photo) : null,
             ]);
@@ -47,7 +50,7 @@ class VolunteerController extends Controller
                 'address'          => $volunteer->address  ?? null,
                 'birthdate'        => $volunteer->birthdate ?? null,
                 'gender'           => $volunteer->gender   ?? null,
-                // ✅ NEW: skills/trainings (e.g. First Aid, CPR, Water Rescue)
+                // skills/trainings (e.g. First Aid, CPR, Water Rescue)
                 'skills'           => $volunteer->skills   ?? [],
                 'skills_notes'     => $volunteer->skills_notes ?? null,
                 'created_at'       => $volunteer->created_at,
@@ -102,6 +105,9 @@ class VolunteerController extends Controller
     public function destroy($id)
     {
         $user = User::findOrFail($id);
+
+        Mail::to($user->email)->send(new VolunteerDeleted($user));
+
         $user->delete();
 
         return redirect()->route('admin.volunteers')->with('success', 'Volunteer deleted successfully.');

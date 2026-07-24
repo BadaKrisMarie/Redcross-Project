@@ -56,7 +56,7 @@ export default function Movement() {
 
         {/* BREADCRUMB */}
         <div style={{
-          padding: '20px 60px', fontFamily: 'Inter, sans-serif',
+          padding: '20px 60px', fontFamily: 'monserrat, monserrat',
           fontSize: 13, fontWeight: 700, letterSpacing: '0.03em',
         }}>
           <Link href="/" style={{ color: '#9ca3af', textDecoration: 'none' }}>HOME</Link>
@@ -68,7 +68,7 @@ export default function Movement() {
         <main style={{ padding: '20px 60px 80px', maxWidth: 900, margin: '0 auto' }}>
           <h1 style={{
             fontSize: 44, fontWeight: 900, color: RED, margin: '20px 0 48px',
-            fontFamily: 'Inter, sans-serif', letterSpacing: '-0.01em',
+            fontFamily: 'monserrat, monserrat', letterSpacing: '-0.01em',
           }}>
             The Movement
           </h1>
@@ -79,7 +79,7 @@ export default function Movement() {
 
           <h2 style={{
             fontSize: 28, fontWeight: 800, color: RED,
-            fontFamily: 'Inter, sans-serif', marginBottom: 20,
+            fontFamily: 'monserrat, monserrat', marginBottom: 20,
             letterSpacing: '-0.01em',
           }}>
             The Birth of an Idea
@@ -87,7 +87,7 @@ export default function Movement() {
 
           <p style={{
             fontSize: 17, color: '#222', lineHeight: 1.85,
-            margin: '0 0 24px', fontFamily: 'Georgia, serif',
+            margin: '0 0 24px', fontFamily: 'monserrat, monserrat',
           }}>
             The Red Cross idea was born in 1859, when Jean Henry Dunant, a young Swiss businessman,
             came upon the scene of a bloody battle in Solferino, Italy, between the armies of
@@ -97,7 +97,7 @@ export default function Movement() {
 
           <p style={{
             fontSize: 17, color: '#222', lineHeight: 1.85,
-            margin: '0 0 24px', fontFamily: 'Georgia, serif',
+            margin: '0 0 24px', fontFamily: 'monserrat, monserrat',
           }}>
             Dunant organized local people to bind the soldiers' wounds and to feed and comfort
             them. On his return, he called for the creation of national relief societies to assist
@@ -109,7 +109,7 @@ export default function Movement() {
 
           <p style={{
             fontSize: 17, color: '#222', lineHeight: 1.85,
-            margin: 0, fontFamily: 'Georgia, serif',
+            margin: 0, fontFamily: 'monserrat, monserrat',
           }}>
             The Red Cross was born in 1863 when five Geneva men, including Dunant, set up the
             International Committee for Relief to the Wounded, later to become the International
@@ -134,14 +134,14 @@ export default function Movement() {
             <div>
               <h2 style={{
                 fontSize: 22, fontWeight: 800, color: '#000000',
-                fontFamily: 'Inter, sans-serif', marginBottom: 16,
+                fontFamily: 'monserrat, monserrat', marginBottom: 16,
                 letterSpacing: '0.01em', textTransform: 'uppercase',
               }}>
                 Jean Henry Dunant – The Destiny of the Red Cross
               </h2>
               <p style={{
                 fontSize: 16, color: '#222', lineHeight: 1.8,
-                margin: 0, fontFamily: 'Inter, sans-serif',
+                margin: 0, fontFamily: 'monserrat, monserrat',
               }}>
                 Jean-Henry Dunant was born on 8 May 1828 in Geneva to a middle-class Calvinist
                 family. His early initiatives included participating in the creation of the
@@ -155,7 +155,7 @@ export default function Movement() {
           <div style={{ marginTop: 56 }}>
             <h2 style={{
               fontSize: 22, fontWeight: 800, color: '#000000',
-              fontFamily: 'Inter, sans-serif', marginBottom: 16,
+              fontFamily: 'monserrat, monserrat', marginBottom: 16,
               letterSpacing: '0.01em', textTransform: 'uppercase',
             }}>
               The International Red Cross and Red Crescent Movement (
@@ -167,7 +167,7 @@ export default function Movement() {
             </h2>
             <p style={{
               fontSize: 16, color: '#222', lineHeight: 1.8,
-              margin: '0 0 20px', fontFamily: 'Inter, sans-serif',
+              margin: '0 0 20px', fontFamily: 'monserrat, monserrat',
             }}>
               The International Red Cross and Red Crescent Movement is the world's largest
               humanitarian network. The Movement is neutral and impartial, and provides
@@ -175,14 +175,14 @@ export default function Movement() {
             </p>
             <p style={{
               fontSize: 16, color: '#222', lineHeight: 1.8,
-              margin: 0, fontFamily: 'Inter, sans-serif',
+              margin: 0, fontFamily: 'monserrat, monserrat',
             }}>
               The Movement is made up of nearly 100 million members, volunteers and supporters
               in 190 National Societies. It has three main components:
             </p>
             <ul style={{
               fontSize: 16, color: '#000000', lineHeight: 1.8,
-              margin: '16px 0 20px', paddingLeft: 24, fontFamily: 'Inter, sans-serif',
+              margin: '16px 0 20px', paddingLeft: 24, fontFamily: 'monserrat, monserrat',
             }}>
               <li>The International Committee of the Red Cross (ICRC)</li>
               <li>The International Federation of Red Cross and Red Crescent Movement (IFRC)</li>
@@ -190,7 +190,7 @@ export default function Movement() {
             </ul>
             <p style={{
               fontSize: 16, color: '#000000', lineHeight: 1.8,
-              margin: '0 0 20px', fontFamily: 'Inter, sans-serif',
+              margin: '0 0 20px', fontFamily: 'monserrat, monserrat',
             }}>
               As partners, the different members of the Movement support communities in becoming
               stronger and safer through a variety of development projects and humanitarian
@@ -199,7 +199,7 @@ export default function Movement() {
             </p>
             <p style={{
               fontSize: 16, color: '#222', lineHeight: 1.8,
-              margin: 0, fontFamily: 'Inter, sans-serif',
+              margin: 0, fontFamily: 'monserrat, monserrat',
             }}>
               The ICRC, the Federation and the National Societies are independent bodies. Each
               has its own individual status and exercises no authority over the others.
@@ -210,7 +210,7 @@ export default function Movement() {
           <div style={{ marginTop: 56 }}>
             <h2 style={{
               fontSize: 22, fontWeight: 800, color: '#000000',
-              fontFamily: 'Inter, sans-serif', marginBottom: 16,
+              fontFamily: 'monserrat, monserrat', marginBottom: 16,
               letterSpacing: '0.01em', textTransform: 'uppercase',
             }}>
               The International Committee of the Red Cross (ICRC) (
@@ -222,7 +222,7 @@ export default function Movement() {
             </h2>
             <p style={{
               fontSize: 16, color: '#222', lineHeight: 1.8,
-              margin: '0 0 20px', fontFamily: 'Inter, sans-serif',
+              margin: '0 0 20px', fontFamily: 'monserrat, monserrat',
             }}>
               The International Committee of the Red Cross (ICRC) is an impartial, neutral and
               independent organization whose exclusive humanitarian mission is to protect the
@@ -231,7 +231,7 @@ export default function Movement() {
             </p>
             <p style={{
               fontSize: 16, color: '#222', lineHeight: 1.8,
-              margin: '0 0 20px', fontFamily: 'Inter, sans-serif',
+              margin: '0 0 20px', fontFamily: 'monserrat, monserrat',
             }}>
               During situations of armed conflict, the ICRC is responsible for directing and
               coordinating the Movement's international relief activities. It also promotes the
@@ -240,7 +240,7 @@ export default function Movement() {
             </p>
             <p style={{
               fontSize: 16, color: '#222', lineHeight: 1.8,
-              margin: '0 0 20px', fontFamily: 'Inter, sans-serif',
+              margin: '0 0 20px', fontFamily: 'monserrat, monserrat',
             }}>
               As the custodian of the Geneva Conventions, the ICRC has a permanent mandate under
               international law to visit prisons, organize relief operations, reunite separated
@@ -248,7 +248,7 @@ export default function Movement() {
             </p>
             <p style={{
               fontSize: 16, color: '#222', lineHeight: 1.8,
-              margin: 0, fontFamily: 'Inter, sans-serif',
+              margin: 0, fontFamily: 'monserrat, monserrat',
             }}>
               The ICRC also works to meet the needs of internally displaced persons, raise
               public awareness of the dangers of mines and explosive remnants of war and trace
@@ -267,7 +267,7 @@ export default function Movement() {
             </h3>
             <p style={{
               fontSize: 16, color: '#222', lineHeight: 1.8,
-              margin: '0 0 20px', fontFamily: 'Inter, sans-serif',
+              margin: '0 0 20px', fontFamily: 'monserrat, monserrat',
             }}>
               The ICRC established a permanent presence in the Philippines in 1982, although the
               organization had been active in the country since 1959. The ICRC delegation in
@@ -276,7 +276,7 @@ export default function Movement() {
             </p>
             <p style={{
               fontSize: 16, color: '#222', lineHeight: 1.8,
-              margin: '0 0 20px', fontFamily: 'Inter, sans-serif',
+              margin: '0 0 20px', fontFamily: 'monserrat, monserrat',
             }}>
               Throughout decades of internal armed conflict in the Philippines, the ICRC has
               visited detainees across the country, particularly those individuals held in
@@ -285,14 +285,14 @@ export default function Movement() {
             </p>
             <p style={{
               fontSize: 16, color: '#000000', lineHeight: 1.8,
-              margin: '0 0 20px', fontFamily: 'Inter, sans-serif',
+              margin: '0 0 20px', fontFamily: 'monserrat, monserrat',
             }}>
               Today, the ICRC's delegation is based in Makati City with subdelegations covering
               Mindanao and Luzon/Visayas regions.
             </p>
             <p style={{
               fontSize: 16, color: '#000000', lineHeight: 1.8,
-              margin: 0, fontFamily: 'Inter, sans-serif',
+              margin: 0, fontFamily: 'monserrat, monserrat',
             }}>
               Read more about the work of the ICRC in the Philippines at{' '}
               <a href="https://www.icrc.org/ph" target="_blank" rel="noopener noreferrer"
@@ -328,7 +328,7 @@ export default function Movement() {
               fontSize: '44px',
               fontWeight: '800',
               color: '#ff0000',
-              fontFamily: 'Georgia, serif',
+              fontFamily: 'monserrat, monserrat',
               margin: '0 0 20px',
             }}>
               Save Lives. Join the Red Cross.
@@ -337,7 +337,7 @@ export default function Movement() {
               fontSize: '16px',
               lineHeight: 1.7,
               color: '#000000',
-              fontFamily: 'Inter, sans-serif',
+              fontFamily: 'monserrat, monserrat',
               margin: '0 0 36px',
             }}>
               We take pride in urging all Filipinos to take part in the heroism of the Philippine
@@ -348,7 +348,7 @@ export default function Movement() {
               background: RED,
               color: 'white',
               textDecoration: 'none',
-              fontFamily: 'Inter, sans-serif',
+              fontFamily: 'monserrat, monserrat',
               fontSize: '14px',
               fontWeight: '700',
               letterSpacing: '0.06em',

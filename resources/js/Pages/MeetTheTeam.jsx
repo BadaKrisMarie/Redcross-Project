@@ -240,7 +240,7 @@ function InitialsAvatar({ name, photo }) {
       width: 56, height: 56, borderRadius: '50%', flexShrink: 0,
       background: '#e5e7eb', color: '#6b7280',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      fontSize: 16, fontWeight: 700, fontFamily: 'Inter, sans-serif',
+      fontSize: 16, fontWeight: 700, fontFamily: 'monserrat, monserrat',
     }}>
       {initials}
     </div>
@@ -254,7 +254,7 @@ function BoardOfGovernorsList() {
         <h2 style={{
           fontSize: 13, fontWeight: 800, letterSpacing: '0.1em',
           color: '#6b7280', textTransform: 'uppercase',
-          marginBottom: 18, fontFamily: 'Inter, sans-serif',
+          marginBottom: 18, fontFamily: 'monserrat, monserrat',
         }}>Executives</h2>
         <div>
           {boardExecutives.map((person, i) => (
@@ -267,11 +267,11 @@ function BoardOfGovernorsList() {
               <InitialsAvatar name={person.name} photo={person.photo} />
               <div style={{
                 fontSize: 16, fontWeight: 800, color: '#1f2937',
-                fontFamily: 'Inter, sans-serif', letterSpacing: '0.02em',
+                fontFamily: 'monserrat, monserrat', letterSpacing: '0.02em',
                 flex: '1 1 260px',
               }}>{person.name.toUpperCase()}</div>
               <div style={{
-                fontSize: 15, color: '#374151', fontFamily: 'Inter, sans-serif',
+                fontSize: 15, color: '#374151', fontFamily: 'monserrat, monserrat',
               }}>{person.position}</div>
             </div>
           ))}
@@ -282,7 +282,7 @@ function BoardOfGovernorsList() {
         <h2 style={{
           fontSize: 13, fontWeight: 800, letterSpacing: '0.1em',
           color: '#6b7280', textTransform: 'uppercase',
-          marginBottom: 18, fontFamily: 'Inter, sans-serif',
+          marginBottom: 18, fontFamily: 'monserrat, monserrat',
         }}>Members</h2>
         <div>
           {boardMembers.map((person, i) => (
@@ -294,7 +294,7 @@ function BoardOfGovernorsList() {
               <InitialsAvatar name={person.name} photo={person.photo} />
               <div style={{
                 fontSize: 16, fontWeight: 800, color: '#1f2937',
-                fontFamily: 'Inter, sans-serif', letterSpacing: '0.02em',
+                fontFamily: 'monserrat, monserrat', letterSpacing: '0.02em',
               }}>{person.name.toUpperCase()}</div>
             </div>
           ))}
@@ -311,7 +311,7 @@ function ExecutiveStaffTable() {
       <div style={{
         display: 'flex', gap: 20, padding: '0 0 12px',
         borderBottom: '2px solid #d1d5db',
-        fontFamily: 'Inter, sans-serif',
+        fontFamily: 'monserrat, monserrat',
       }}>
         <div style={{ flex: '1 1 260px', fontSize: 12, fontWeight: 800, letterSpacing: '0.08em', color: '#9ca3af', textTransform: 'uppercase' }}>Name</div>
         <div style={{ flex: '1 1 220px', fontSize: 12, fontWeight: 800, letterSpacing: '0.08em', color: '#9ca3af', textTransform: 'uppercase' }}>Position</div>
@@ -322,7 +322,7 @@ function ExecutiveStaffTable() {
         <div key={i} style={{
           display: 'flex', gap: 20, padding: '16px 0',
           borderBottom: i < executiveStaff.length - 1 ? '1px solid #e5e7eb' : 'none',
-          flexWrap: 'wrap', fontFamily: 'Inter, sans-serif',
+          flexWrap: 'wrap', fontFamily: 'monserrat, monserrat',
         }}>
           <div style={{
             flex: '1 1 260px', fontSize: 15, fontWeight: 800, color: '#1f2937',
@@ -373,7 +373,7 @@ function GordonAccordion() {
             section.content.map(function(para, pi) {
               return React.createElement('p', {
                 key: pi,
-                style: { fontSize: 17, color: '#374151', lineHeight: 1.85, marginBottom: 14, fontFamily: 'Georgia, serif' }
+                style: { fontSize: 17, color: '#374151', lineHeight: 1.85, marginBottom: 14, fontFamily: 'monserrat, monserrat' }
               }, para);
             })
           )
@@ -443,7 +443,7 @@ export default function MeetTheTeam() {
 
         {/* BREADCRUMB */}
         <div style={{
-          padding: '20px 60px', fontFamily: 'Inter, sans-serif',
+          padding: '20px 60px', fontFamily: 'monserrat, monserrat',
           fontSize: 13, fontWeight: 700, letterSpacing: '0.03em',
         }}>
           <Link href="/" style={{ color: '#9ca3af', textDecoration: 'none' }}>HOME</Link>
@@ -459,7 +459,7 @@ export default function MeetTheTeam() {
             borderRight: '1px solid #e5e7eb', padding: '40px 24px',
             position: 'sticky', top: 56, alignSelf: 'flex-start',
             height: 'calc(100vh - 56px)', overflowY: 'auto',
-            fontFamily: 'Inter, sans-serif',
+            fontFamily: 'monserrat, monserrat',
           }}>
             <div style={{ marginBottom: 36 }}>
               <div style={{ fontSize: 17, fontWeight: 600, color: '#374151', marginBottom: 12 }}>
@@ -489,7 +489,7 @@ export default function MeetTheTeam() {
           <main style={{ flex: 1, padding: '48px 60px', maxWidth: 900 }}>
             {member.isBoardList ? (
               <div>
-                <h1 style={{ fontSize: 36, fontWeight: 700, color: '#111', margin: '0 0 6px', fontFamily: 'Georgia, serif' }}>
+                <h1 style={{ fontSize: 36, fontWeight: 700, color: '#111', margin: '0 0 6px', fontFamily: 'monserrat, monserrat' }}>
                   {member.name}
                 </h1>
                 <div style={{
@@ -503,7 +503,7 @@ export default function MeetTheTeam() {
               </div>
             ) : member.isExecutiveTable ? (
               <div>
-                <h1 style={{ fontSize: 36, fontWeight: 700, color: '#111', margin: '0 0 6px', fontFamily: 'Georgia, serif' }}>
+                <h1 style={{ fontSize: 36, fontWeight: 700, color: '#111', margin: '0 0 6px', fontFamily: 'monserrat, monserrat' }}>
                   {member.name}
                 </h1>
                 <div style={{
@@ -534,7 +534,7 @@ export default function MeetTheTeam() {
 
                 {/* BIO */}
                 <div style={{ flex: 1 }}>
-                  <h1 style={{ fontSize: 36, fontWeight: 700, color: '#111', margin: '0 0 6px', fontFamily: 'Georgia, serif' }}>
+                  <h1 style={{ fontSize: 36, fontWeight: 700, color: '#111', margin: '0 0 6px', fontFamily: 'monserrat, monserrat' }}>
                     {member.name}
                   </h1>
                   <div style={{
@@ -547,7 +547,7 @@ export default function MeetTheTeam() {
                   {member.bio.map((para, i) => (
                     <p key={i} style={{
                       fontSize: 18, color: '#222', lineHeight: 1.85,
-                      marginBottom: 18, fontFamily: 'Georgia, serif',
+                      marginBottom: 18, fontFamily: 'monserrat, monserrat',
                     }}>{para}</p>
                   ))}
 

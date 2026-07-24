@@ -64,6 +64,20 @@ export default function AdminCommunication({ auth, messages, announcements }) {
         background: 'none', border: 'none', cursor: 'pointer',
     });
 
+    // ✅ NEW: simple line-icon components (no emojis) for a cleaner, professional look
+    const IconInbox = ({ size = 16 }) => (
+        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>
+    );
+    const IconMegaphone = ({ size = 16 }) => (
+        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 11l18-5v12L3 13v-2z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>
+    );
+    const IconMessage = ({ size = 32 }) => (
+        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+    );
+    const IconTrash = ({ size = 16 }) => (
+        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+    );
+
     return (
         <>
             <Head title="Communication" />
@@ -115,15 +129,7 @@ export default function AdminCommunication({ auth, messages, announcements }) {
 
                 {/* SIDEBAR */}
                 <aside className={`sidebar ${sidebarOpen ? '' : 'closed'}`}>
-                    <div className="sb-brand">
-                        <Link href={route('admin.dashboard')} className="sb-logo">
-                            <div className="sb-cross">+</div>
-                            <div className="sb-name">
-                                Philippine Red Cross
-                                <span>Rizal · Muntinlupa</span>
-                            </div>
-                        </Link>
-                    </div>
+                    
                     <Link href={route('admin.profile')} className="sb-user">
                         <NavAvatar size={34} fontSize={12} />
                         <div className="sb-uname">
@@ -174,11 +180,6 @@ export default function AdminCommunication({ auth, messages, announcements }) {
                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
                             </button>
                             <div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11 }}>
-                                    <Link href={route('admin.dashboard')} style={{ color: '#aaa', textDecoration: 'none' }}>Dashboard</Link>
-                                    <span style={{ color: '#ccc' }}>›</span>
-                                    <span style={{ color: '#1A1A1A', fontWeight: 500 }}>Communication</span>
-                                </div>
                                 <div className="page-title">Communication</div>
                             </div>
                         </div>
@@ -187,16 +188,18 @@ export default function AdminCommunication({ auth, messages, announcements }) {
 
                     {/* Tabs */}
                     <div style={{ background: 'white', borderBottom: '1px solid #E5E7EB', padding: '0 28px', display: 'flex', gap: '4px' }}>
-                        <button style={tabStyle('messages')} onClick={() => setActiveTab('messages')}>
-                            📥 Volunteer Messages
+                        <button style={{ ...tabStyle('messages'), display: 'flex', alignItems: 'center', gap: '6px' }} onClick={() => setActiveTab('messages')}>
+                            <IconInbox />
+                            Volunteer Messages
                             {messages.length > 0 && (
-                                <span style={{ background: '#ff0000', color: 'white', borderRadius: '10px', padding: '1px 6px', fontSize: '10px', marginLeft: '6px' }}>
+                                <span style={{ background: '#ff0000', color: 'white', borderRadius: '10px', padding: '1px 6px', fontSize: '10px', marginLeft: '2px' }}>
                                     {messages.length}
                                 </span>
                             )}
                         </button>
-                        <button style={tabStyle('announce')} onClick={() => setActiveTab('announce')}>
-                            📢 Announcements
+                        <button style={{ ...tabStyle('announce'), display: 'flex', alignItems: 'center', gap: '6px' }} onClick={() => setActiveTab('announce')}>
+                            <IconMegaphone />
+                            Announcements
                         </button>
                     </div>
 
@@ -212,7 +215,7 @@ export default function AdminCommunication({ auth, messages, announcements }) {
                                         </div>
                                         {messages.length === 0 ? (
                                             <div style={{ padding: '48px', textAlign: 'center', color: '#9CA3AF', fontSize: '13px' }}>
-                                                <div style={{ fontSize: '32px', marginBottom: '8px' }}>📭</div>
+                                                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '10px', color: '#D1D5DB' }}><IconInbox size={30} /></div>
                                                 No messages yet
                                             </div>
                                         ) : (
@@ -234,7 +237,7 @@ export default function AdminCommunication({ auth, messages, announcements }) {
                                 <div style={{ flex: 1, overflowY: 'auto' }}>
                                     {!selectedMessage ? (
                                         <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #E5E7EB', padding: '64px', textAlign: 'center', color: '#9CA3AF' }}>
-                                            <div style={{ fontSize: '36px', marginBottom: '12px' }}>💬</div>
+                                            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '14px', color: '#D1D5DB' }}><IconMessage size={34} /></div>
                                             <div style={{ fontSize: '14px' }}>Select a message to read and reply</div>
                                         </div>
                                     ) : (
@@ -286,7 +289,10 @@ export default function AdminCommunication({ auth, messages, announcements }) {
                                                 <textarea value={announceForm.data.body} onChange={e => announceForm.setData('body', e.target.value)} placeholder="Type your announcement here..." rows={5} style={{ width: '100%', padding: '10px 14px', border: '1px solid #E5E7EB', borderRadius: '8px', fontSize: '13px', outline: 'none', resize: 'vertical', boxSizing: 'border-box', fontFamily: 'inherit' }} />
                                                 {announceForm.errors.body && <div style={{ fontSize: '11px', color: '#ff0000', marginTop: '4px' }}>{announceForm.errors.body}</div>}
                                             </div>
-                                            <button type="submit" disabled={announceForm.processing} style={{ background: '#ff0000', color: 'white', border: 'none', borderRadius: '8px', padding: '10px 24px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', width: '100%' }}>{announceForm.processing ? 'Posting...' : '📢 Post to All Volunteers'}</button>
+                                            <button type="submit" disabled={announceForm.processing} style={{ background: '#ff0000', color: 'white', border: 'none', borderRadius: '8px', padding: '10px 24px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                                                <IconMegaphone size={15} />
+                                                {announceForm.processing ? 'Posting...' : 'Post to All Volunteers'}
+                                            </button>
                                         </form>
                                     </div>
                                 </div>
@@ -297,7 +303,7 @@ export default function AdminCommunication({ auth, messages, announcements }) {
                                         </div>
                                         {announcements.length === 0 ? (
                                             <div style={{ padding: '48px', textAlign: 'center', color: '#9CA3AF', fontSize: '13px' }}>
-                                                <div style={{ fontSize: '32px', marginBottom: '8px' }}>📢</div>
+                                                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '10px', color: '#D1D5DB' }}><IconMegaphone size={30} /></div>
                                                 No announcements posted yet
                                             </div>
                                         ) : (
@@ -309,7 +315,9 @@ export default function AdminCommunication({ auth, messages, announcements }) {
                                                             <div style={{ fontSize: '12px', color: '#6B7280', lineHeight: '1.6', marginBottom: '6px' }}>{a.body}</div>
                                                             <div style={{ fontSize: '10px', color: '#9CA3AF' }}>{new Date(a.created_at).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}</div>
                                                         </div>
-                                                        <button onClick={() => handleDeleteAnnouncement(a.id)} style={{ background: 'none', border: 'none', color: '#EF4444', cursor: 'pointer', fontSize: '18px', padding: '0 0 0 12px', flexShrink: 0 }} title="Delete">🗑</button>
+                                                        <button onClick={() => handleDeleteAnnouncement(a.id)} style={{ background: 'none', border: 'none', color: '#EF4444', cursor: 'pointer', padding: '0 0 0 12px', flexShrink: 0, display: 'flex', alignItems: 'center' }} title="Delete">
+                                                            <IconTrash size={15} />
+                                                        </button>
                                                     </div>
                                                 </div>
                                             ))

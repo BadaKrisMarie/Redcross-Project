@@ -93,11 +93,14 @@ function Volunteers({ volunteers }) {
         transition: 'background 0.15s',
     };
 
+    // ✅ CHANGED: row click now opens the quick-view modal (setSelectedVolunteer)
+    // instead of jumping straight to the full profile page.
+    // "View Profile" button still goes straight there (it has stopPropagation already).
     const VolunteerRow = ({ v, actions }) => (
         <tr
             key={v.id}
             style={clickableRow}
-            onClick={() => viewProfile(v.id)}
+            onClick={() => setSelectedVolunteer(v)}
             onMouseEnter={e => e.currentTarget.style.background = '#f8faff'}
             onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
         >
@@ -142,6 +145,14 @@ function Volunteers({ volunteers }) {
 
             <style>{`
                 * { box-sizing: border-box; }
+
+                /* Recent Volunteers scrollable list + custom scrollbar */
+                .vol-list-scroll { max-height: 220px; overflow-y: scroll; }
+                .vol-list-scroll::-webkit-scrollbar { width: 6px; }
+                .vol-list-scroll::-webkit-scrollbar-track { background: #f0f0f0; border-radius: 999px; margin: 4px 0; }
+                .vol-list-scroll::-webkit-scrollbar-thumb { background-color: #4B4B4B; border-radius: 999px; }
+                .vol-list-scroll::-webkit-scrollbar-thumb:hover { background-color: #2E2E2E; }
+                .vol-list-scroll { scrollbar-width: thin; scrollbar-color: #4B4B4B #f0f0f0; }
             `}</style>
 
             {/* ── DELETE CONFIRMATION MODAL ── */}
@@ -192,7 +203,7 @@ function Volunteers({ volunteers }) {
                 </div>
             )}
 
-            {/* ── VOLUNTEER MODAL ── */}
+            {/* ── VOLUNTEER QUICK-VIEW MODAL ── */}
             {selectedVolunteer && (
                 <div
                     onClick={() => setSelectedVolunteer(null)}
@@ -279,20 +290,9 @@ function Volunteers({ volunteers }) {
                 </div>
             )}
 
-            <div style={{ fontFamily: "'Source Sans 3', sans-serif" }}>
+            <div style={{ fontFamily: "'monserrat', monserrat" }}>
 
-                {/* Header */}
-                <div style={{ marginBottom: '32px' }}>
-                    <div style={{
-                        fontSize: '11px', fontWeight: '600', letterSpacing: '2px',
-                        textTransform: 'uppercase', color: '#ff0000', marginBottom: '8px'
-                    }}>Admin Panel</div>
-                    <h1 style={{
-                        fontFamily: 'Oswald, sans-serif',
-                        fontSize: '36px', color: '#111', fontWeight: '600',
-                        letterSpacing: '0.5px', textTransform: 'uppercase'
-                    }}>Manage Volunteers</h1>
-                </div>
+                
 
                 {/* Flash */}
                 {flash?.success && (
@@ -314,7 +314,7 @@ function Volunteers({ volunteers }) {
                             background: 'white', padding: '24px',
                             borderRadius: '8px', border: '1px solid #e8e8e8'
                         }}>
-                            <div style={{ fontFamily: 'Oswald, sans-serif', fontSize: '36px', color, fontWeight: '600' }}>{value}</div>
+                            <div style={{ fontFamily: 'monserrat', fontSize: '36px', color, fontWeight: '600' }}>{value}</div>
                             <div style={{ fontSize: '13px', color: '#888', marginTop: '4px' }}>{label}</div>
                         </div>
                     ))}
@@ -328,7 +328,7 @@ function Volunteers({ volunteers }) {
                     }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                             <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#ff0000' }}></div>
-                            <span style={{ fontFamily: 'Oswald, sans-serif', fontSize: '16px', fontWeight: '600', color: '#111', textTransform: 'uppercase' }}>Recent Volunteers</span>
+                            <span style={{ fontFamily: 'monserrat', fontSize: '16px', fontWeight: '600', color: '#111', textTransform: 'uppercase' }}>Recent Volunteers</span>
                         </div>
                         <div style={{ position: 'relative' }}>
                             <svg style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', width: '14px', height: '14px', color: '#aaa' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -350,68 +350,70 @@ function Volunteers({ volunteers }) {
                         </div>
                     </div>
 
-                    {recent.length === 0 ? (
-                        <div style={{ padding: '32px', textAlign: 'center', color: '#aaa', fontSize: '13px' }}>No volunteers match your search.</div>
-                    ) : (
-                        recent.map((v, i) => (
-                            <div
-                                key={v.id}
-                                style={{
-                                    display: 'flex', alignItems: 'center',
-                                    justifyContent: 'space-between',
-                                    padding: '14px 24px',
-                                    borderTop: i === 0 ? 'none' : '1px solid #f5f5f5',
-                                    cursor: 'pointer', transition: 'background 0.15s',
-                                }}
-                                onClick={() => setSelectedVolunteer(v)}
-                                onMouseEnter={e => e.currentTarget.style.background = '#fafafa'}
-                                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                            >
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0, flex: 1 }}>
-                                    <div style={{
-                                        width: '38px', height: '38px', borderRadius: '50%',
-                                        background: getAvatarColor(v.name),
-                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                        fontSize: '13px', fontWeight: '600', color: 'white',
-                                        flexShrink: 0, overflow: 'hidden',
-                                    }}>
-                                        {v.profile_photo_url || v.avatar || v.photo ? (
-                                            <img src={v.profile_photo_url || v.avatar || v.photo} alt={v.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} onError={e => { e.target.style.display = 'none'; }} />
-                                        ) : getInitials(v.name)}
+                    <div className="vol-list-scroll">
+                        {recent.length === 0 ? (
+                            <div style={{ padding: '32px', textAlign: 'center', color: '#aaa', fontSize: '13px' }}>No volunteers match your search.</div>
+                        ) : (
+                            recent.map((v, i) => (
+                                <div
+                                    key={v.id}
+                                    style={{
+                                        display: 'flex', alignItems: 'center',
+                                        justifyContent: 'space-between',
+                                        padding: '14px 24px',
+                                        borderTop: i === 0 ? 'none' : '1px solid #f5f5f5',
+                                        cursor: 'pointer', transition: 'background 0.15s',
+                                    }}
+                                    onClick={() => setSelectedVolunteer(v)}
+                                    onMouseEnter={e => e.currentTarget.style.background = '#fafafa'}
+                                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                                >
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0, flex: 1 }}>
+                                        <div style={{
+                                            width: '38px', height: '38px', borderRadius: '50%',
+                                            background: getAvatarColor(v.name),
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                            fontSize: '13px', fontWeight: '600', color: 'white',
+                                            flexShrink: 0, overflow: 'hidden',
+                                        }}>
+                                            {v.profile_photo_url || v.avatar || v.photo ? (
+                                                <img src={v.profile_photo_url || v.avatar || v.photo} alt={v.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} onError={e => { e.target.style.display = 'none'; }} />
+                                            ) : getInitials(v.name)}
+                                        </div>
+                                        <div>
+                                            <div style={{ fontSize: '14px', fontWeight: '500', color: '#111' }}>{v.name}</div>
+                                            <div style={{ fontSize: '12px', color: '#999', marginTop: '1px' }}>{v.email}</div>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <div style={{ fontSize: '14px', fontWeight: '500', color: '#111' }}>{v.name}</div>
-                                        <div style={{ fontSize: '12px', color: '#999', marginTop: '1px' }}>{v.email}</div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexShrink: 0 }}>
+                                        <span style={{ fontSize: '12px', color: '#bbb' }}>
+                                            {new Date(v.created_at).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                        </span>
+                                        {statusBadge(v.status)}
+                                        <button
+                                            onClick={e => { e.stopPropagation(); setToDelete(v); }}
+                                            style={{
+                                                background: 'white', color: '#991b1b',
+                                                border: '1px solid #fca5a5', padding: '4px 12px',
+                                                borderRadius: '4px', fontSize: '11px',
+                                                fontWeight: '600', cursor: 'pointer',
+                                            }}
+                                        >Delete</button>
+                                        <svg style={{ width: '14px', height: '14px', color: '#ccc' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 18l6-6-6-6" />
+                                        </svg>
                                     </div>
                                 </div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexShrink: 0 }}>
-                                    <span style={{ fontSize: '12px', color: '#bbb' }}>
-                                        {new Date(v.created_at).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}
-                                    </span>
-                                    {statusBadge(v.status)}
-                                    <button
-                                        onClick={e => { e.stopPropagation(); setToDelete(v); }}
-                                        style={{
-                                            background: 'white', color: '#991b1b',
-                                            border: '1px solid #fca5a5', padding: '4px 12px',
-                                            borderRadius: '4px', fontSize: '11px',
-                                            fontWeight: '600', cursor: 'pointer',
-                                        }}
-                                    >Delete</button>
-                                    <svg style={{ width: '14px', height: '14px', color: '#ccc' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 18l6-6-6-6" />
-                                    </svg>
-                                </div>
-                            </div>
-                        ))
-                    )}
+                            ))
+                        )}
+                    </div>
                 </div>
 
                 {/* ── PENDING TABLE ── */}
                 <div style={{ background: 'white', borderRadius: '8px', border: '1px solid #e8e8e8', marginBottom: '24px' }}>
                     <div style={{ padding: '20px 24px', borderBottom: '1px solid #f0f0f0', display: 'flex', alignItems: 'center', gap: '10px' }}>
                         <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#f59e0b' }}></div>
-                        <span style={{ fontFamily: 'Oswald, sans-serif', fontSize: '16px', fontWeight: '600', color: '#111', textTransform: 'uppercase' }}>
+                        <span style={{ fontFamily: 'monserrat', fontSize: '16px', fontWeight: '600', color: '#111', textTransform: 'uppercase' }}>
                             Pending Approval ({pending.length})
                         </span>
                     </div>
@@ -433,7 +435,7 @@ function Volunteers({ volunteers }) {
                 <div style={{ background: 'white', borderRadius: '8px', border: '1px solid #e8e8e8', marginBottom: '24px' }}>
                     <div style={{ padding: '20px 24px', borderBottom: '1px solid #f0f0f0', display: 'flex', alignItems: 'center', gap: '10px' }}>
                         <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#16a34a' }}></div>
-                        <span style={{ fontFamily: 'Oswald, sans-serif', fontSize: '16px', fontWeight: '600', color: '#111', textTransform: 'uppercase' }}>
+                        <span style={{ fontFamily: 'monserrat', fontSize: '16px', fontWeight: '600', color: '#111', textTransform: 'uppercase' }}>
                             Approved Volunteers ({approved.length})
                         </span>
                     </div>
@@ -454,7 +456,7 @@ function Volunteers({ volunteers }) {
                 <div style={{ background: 'white', borderRadius: '8px', border: '1px solid #e8e8e8' }}>
                     <div style={{ padding: '20px 24px', borderBottom: '1px solid #f0f0f0', display: 'flex', alignItems: 'center', gap: '10px' }}>
                         <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#ff0000' }}></div>
-                        <span style={{ fontFamily: 'Oswald, sans-serif', fontSize: '16px', fontWeight: '600', color: '#111', textTransform: 'uppercase' }}>
+                        <span style={{ fontFamily: 'monserrat', fontSize: '16px', fontWeight: '600', color: '#111', textTransform: 'uppercase' }}>
                             Rejected Volunteers ({rejected.length})
                         </span>
                     </div>

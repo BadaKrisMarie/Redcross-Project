@@ -17,6 +17,7 @@ const navLinksMain = [
     { label: 'Volunteers', route: 'admin.volunteers' },
     { label: 'Schedule',   route: 'admin.schedule' },
     { label: 'Attendance', route: 'admin.attendance.index' },
+    { label: 'Reports',    route: 'admin.reports.index' },
 ];
 
 const navLinksManage = [
@@ -28,7 +29,7 @@ const navLinksManage = [
 // ⚠️ Idinefine OUTSIDE ng parent component (gaya ng Avatar convention niyo)
 // para hindi mag-reset ang state nito sa bawat re-render.
 const NavAvatar = ({ photoUrl, initials, size = 32, fontSize = 12 }) => (
-    <div style={{ width: size, height: size, borderRadius: '50%', background: '#ff0000', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize, fontWeight: '700', overflow: 'hidden', flexShrink: 0 }}>
+    <div style={{ width: size, height: size, borderRadius: '50%', background: '#0000ff', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize, fontWeight: '700', overflow: 'hidden', flexShrink: 0 }}>
         {photoUrl ? <img src={photoUrl} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : initials}
     </div>
 );
@@ -57,12 +58,12 @@ export default function AdminLayout({ children, title = 'Dashboard' }) {
 
     return (
         <>
-            <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+            <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
 
             <style>{`
                 * { box-sizing: border-box; margin: 0; padding: 0; }
                 :root { --red: #ff0000; --red-dark: #ff0000; --ink: #1A1A1A; --muted: #6B6B6B; --border: #EDEDED; --surface: #F7F7F5; --white: #FFFFFF; }
-                body { font-family: 'DM Sans', sans-serif; background: var(--surface); }
+                body { font-family: Montserrat; background: var(--surface); }
                 .wrap { display: flex; min-height: 100vh; }
                 .sidebar { width: 220px; background: #ff0000; display: flex; flex-direction: column; position: fixed; top: 0; left: 0; height: 100vh; z-index: 100; transition: transform 0.2s; }
                 .sidebar.closed { transform: translateX(-220px); }
@@ -71,10 +72,10 @@ export default function AdminLayout({ children, title = 'Dashboard' }) {
                 .sb-brand { padding: 18px 20px 14px; border-bottom: 1px solid rgba(255,255,255,0.15); }
                 .sb-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
                 .sb-cross { width: 32px; height: 32px; background: rgba(0,0,0,0.2); border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #fff; font-family: 'Barlow Condensed', sans-serif; font-size: 20px; font-weight: 700; flex-shrink: 0; }
-                .sb-name { font-family: 'Barlow Condensed', sans-serif; color: #fff; font-size: 13px; font-weight: 600; letter-spacing: .5px; line-height: 1.3; }
+                .sb-name { font-family: Montserrat; color: #fff; font-size: 13px; font-weight: 600; letter-spacing: .5px; line-height: 1.3; }
                 .sb-name span { display: block; color: rgba(255,255,255,0.7); font-size: 11px; font-weight: 400; letter-spacing: 1px; text-transform: uppercase; }
-                .sb-user { padding: 14px 20px; border-bottom: 1px solid rgba(255,255,255,0.15); display: flex; align-items: center; gap: 10px; text-decoration: none; transition: background 0.15s; }
-                .sb-user:hover { background: rgba(0,0,0,0.1); }
+                /* ✅ Static na lang ito ngayon — hindi na Link, kaya walang cursor pointer / hover state */
+                .sb-user { padding: 14px 20px; border-bottom: 1px solid rgba(255,255,255,0.15); display: flex; align-items: center; gap: 10px; cursor: default; }
                 .sb-uname { color: #fff; font-size: 12px; font-weight: 500; line-height: 1.3; }
                 .sb-uname span { display: block; color: rgba(255,255,255,0.7); font-size: 11px; font-weight: 400; }
                 .sb-nav { padding: 10px 0; flex: 1; overflow-y: auto; }
@@ -89,23 +90,23 @@ export default function AdminLayout({ children, title = 'Dashboard' }) {
                 .logout-btn:hover { color: #fff; }
                 .topbar { background: var(--white); border-bottom: 1px solid var(--border); padding: 0 28px; height: 56px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; position: sticky; top: 0; z-index: 50; }
                 .menu-btn { background: none; border: none; cursor: pointer; color: var(--ink); display: flex; align-items: center; padding: 4px; }
-                .page-title { font-family: 'Barlow Condensed', sans-serif; font-size: 20px; font-weight: 700; color: var(--ink); letter-spacing: .3px; text-transform: uppercase; line-height: 1; }
+                .page-title { font-family: Montserrat; font-size: 20px; font-weight: 700; color: var(--ink); letter-spacing: .3px; text-transform: uppercase; line-height: 1; }
                 .content { flex: 1; padding: 28px; }
+                /* ✅ Right-side topbar profile — dito na ngayon ma-eedit ang profile */
+                .topbar-profile { display: flex; align-items: center; gap: 10px; text-decoration: none; padding: 4px 8px; border-radius: 8px; transition: background 0.15s; cursor: pointer; }
+                .topbar-profile:hover { background: #f5f5f5; }
+                .topbar-profile-name { font-size: 12px; font-weight: 500; color: var(--ink); }
             `}</style>
 
             <div className="wrap">
                 {/* SIDEBAR — persistent, hindi na nawawala sa bawat navigation */}
                 <aside className={`sidebar ${sidebarOpen ? '' : 'closed'}`}>
-                    <div className="sb-brand">
-                        <Link href={route('admin.dashboard')} className="sb-logo">
-                            <div className="sb-cross">+</div>
-                            <div className="sb-name">Philippine Red Cross<span>Rizal · Muntinlupa</span></div>
-                        </Link>
-                    </div>
-                    <Link href={route('admin.profile')} className="sb-user">
+
+                    {/* ✅ Static na lang, hindi na clickable/edit dito */}
+                    <div className="sb-user">
                         <NavAvatar photoUrl={photoUrl} initials={initials} size={34} fontSize={12} />
                         <div className="sb-uname">{admin?.name ?? 'Admin'}<span>Administrator</span></div>
-                    </Link>
+                    </div>
                     <nav className="sb-nav">
                         <div className="nav-section-label">Main</div>
                         {navLinksMain.map(({ label, route: r, badge }) => (
@@ -139,10 +140,12 @@ export default function AdminLayout({ children, title = 'Dashboard' }) {
                             </button>
                             <span className="page-title">{title}</span>
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+
+                        {/* ✅ Dito na ngayon papunta sa admin.profile para ma-edit */}
+                        <Link href={route('admin.profile')} className="topbar-profile">
                             <NavAvatar photoUrl={photoUrl} initials={initials} size={28} fontSize={10} />
-                            <span style={{ fontSize: '12px', fontWeight: '500', color: 'var(--ink)' }}>{admin?.name ?? 'Admin'}</span>
-                        </div>
+                            <span className="topbar-profile-name">{admin?.name ?? 'Admin'}</span>
+                        </Link>
                     </div>
 
                     <div className="content">

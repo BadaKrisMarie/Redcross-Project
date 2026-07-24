@@ -21,7 +21,7 @@ function Nav() {
       background: "#ffffff",
       borderBottom: "1px solid rgba(200,16,46,0.12)",
       position: "sticky", top: 0, zIndex: 100,
-      fontFamily: "Inter, sans-serif",
+      fontFamily: "Montserrat, sans-serif",
     }}>
       <Link href="/" style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none" }}>
         <div style={{
@@ -477,10 +477,10 @@ export default function About() {
   return (
     <>
       <Head title="About" />
-      <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800&display=swap" rel="stylesheet"/>
+      <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
 
       <div style={{
-        fontFamily: "'Inter', sans-serif",
+        fontFamily: "'Montserrat', sans-serif",
         background: LIGHT, backgroundImage: DOT_BG,
         color: DARK, minHeight: "100vh",
       }}>

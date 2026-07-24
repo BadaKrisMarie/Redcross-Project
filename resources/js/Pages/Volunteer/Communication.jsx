@@ -1,27 +1,26 @@
-import React from 'react';
-import { Head, Link, router, useForm } from '@inertiajs/react';
-import { useState } from 'react';
+import React, { useState } from 'react';
+import { Head, useForm } from '@inertiajs/react';
+import VolunteerLayout from '@/Layouts/VolunteerLayout'; // ⚠️ ayusin ang path base sa project mo
 
-export default function VolunteerCommunication({ auth, sentEmails, announcements }) {
-    const volunteer = auth.user;
-    const avatarUrl = volunteer?.photo_url || null;
-    const initials = volunteer?.name
-        ? volunteer.name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
-        : '?';
+const RED = '#ff0000';
 
+/**
+ * ✅ Hindi na dito ginagawa ang sidebar/topbar — galing na sa VolunteerLayout.
+ * Kaya persistent na siya at hindi na "magbabago" tuwing lilipat ka ng page.
+ */
+function VolunteerCommunication({ sentEmails, announcements }) {
     const emails = sentEmails || [];
     const announces = announcements || [];
     const [activeTab, setActiveTab] = useState('compose');
     const [selectedInbox, setSelectedInbox] = useState(null);
     const [selectedAnnouncement, setSelectedAnnouncement] = useState(null);
+    const [focusedField, setFocusedField] = useState(null);
 
     const { data, setData, post, processing, reset, errors } = useForm({
         to: 'rizalmuntinlupa@redcross.org.ph',
         subject: '',
         message: '',
     });
-
-    const handleLogout = () => router.post(route('logout'));
 
     const handleSend = (e) => {
         e.preventDefault();
@@ -33,25 +32,40 @@ export default function VolunteerCommunication({ auth, sentEmails, announcements
     const repliedEmails = emails.filter(e => e.reply);
     const unreadReplies = repliedEmails.length;
 
-    const sidebarLinks = [
-        { key: 'dashboard',     label: 'Dashboard',     href: route('volunteer.dashboard'),     icon: <GridIcon /> },
-        { key: 'schedule',      label: 'Schedule',      href: route('volunteer.schedule'),      icon: <CalIcon /> },
-        { key: 'communication', label: 'Communication', href: route('volunteer.communication'), icon: <ChatIcon /> },
-        { key: 'attendance',    label: 'Attendance',    href: route('volunteer.attendance'),    icon: <CheckIcon /> },
-        { key: 'documents',     label: '201',           href: route('volunteer.documents'),     icon: <FolderIcon /> },
+    const tabs = [
+        { key: 'compose',       label: 'Compose',       icon: <PencilIcon /> },
+        { key: 'inbox',         label: 'Inbox',         icon: <InboxIcon />,  badge: unreadReplies, badgeColor: RED },
+        { key: 'announcements', label: 'Announcements', icon: <MegaphoneIcon />, badge: announces.length, badgeColor: '#F59E0B' },
+        { key: 'sent',          label: 'Sent',          icon: <SendIcon /> },
     ];
 
     const tabStyle = (key) => ({
-        padding: '8px 16px', fontSize: '13px', fontWeight: activeTab === key ? '600' : '400',
-        color: activeTab === key ? '#ff0000' : '#6B7280',
-        borderBottom: activeTab === key ? '2px solid #ff0000' : '2px solid transparent',
+        display: 'flex', alignItems: 'center', gap: '7px',
+        padding: '13px 18px', fontSize: '13px',
+        fontWeight: activeTab === key ? '700' : '500',
+        color: activeTab === key ? RED : '#6B7280',
+        borderBottom: activeTab === key ? `2.5px solid ${RED}` : '2.5px solid transparent',
         background: 'none', border: 'none', cursor: 'pointer', whiteSpace: 'nowrap',
+        transition: 'color 0.15s',
     });
+
+    const inputStyle = (field, extra = {}) => ({
+        width: '100%', padding: '12px 15px',
+        border: focusedField === field ? `1.5px solid ${RED}` : '1.5px solid #E5E7EB',
+        borderRadius: '10px', fontSize: '13.5px', outline: 'none',
+        boxSizing: 'border-box', fontFamily: 'Montserrat', color: '#111827',
+        background: focusedField === field ? '#FFFFFF' : '#FAFAFA',
+        boxShadow: focusedField === field ? '0 0 0 4px rgba(255,0,0,0.08)' : 'none',
+        transition: 'border-color 0.15s, box-shadow 0.15s, background 0.15s',
+        ...extra,
+    });
+
+    const labelStyle = { fontSize: '12.5px', fontWeight: '600', color: '#374151', display: 'block', marginBottom: '7px', letterSpacing: '0.1px' };
 
     return (
         <>
             <Head title="Communication" />
-            <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+            <link href="https://fonts.googleapis.com/css2?family=monserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
 
             {/* ── INBOX MODAL ── */}
             {selectedInbox !== null && (
@@ -59,28 +73,28 @@ export default function VolunteerCommunication({ auth, sentEmails, announcements
                     onClick={() => setSelectedInbox(null)}
                     style={{
                         position: 'fixed', inset: 0, zIndex: 200,
-                        background: 'rgba(0,0,0,0.45)',
+                        background: 'rgba(17,17,17,0.5)', backdropFilter: 'blur(2px)',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        padding: '24px',
+                        padding: '24px', animation: 'fadeIn 0.15s ease-out',
                     }}
                 >
                     <div
                         onClick={e => e.stopPropagation()}
                         style={{
-                            background: 'white', borderRadius: '14px',
+                            background: 'white', borderRadius: '18px',
                             width: '100%', maxWidth: '560px',
                             maxHeight: '80vh', overflowY: 'auto',
-                            boxShadow: '0 24px 60px rgba(0,0,0,0.2)',
+                            boxShadow: '0 24px 60px rgba(0,0,0,0.25)',
+                            animation: 'popIn 0.18s ease-out',
                         }}
                     >
-                        {/* Modal header */}
                         <div style={{
-                            padding: '20px 24px 16px',
+                            padding: '22px 26px 18px',
                             borderBottom: '1px solid #F3F4F6',
                             display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px',
                         }}>
                             <div>
-                                <div style={{ fontSize: '16px', fontWeight: '700', color: '#111', marginBottom: '4px' }}>
+                                <div style={{ fontSize: '17px', fontWeight: '700', color: '#111', marginBottom: '5px' }}>
                                     {selectedInbox.subject}
                                 </div>
                                 <div style={{ fontSize: '12px', color: '#9CA3AF' }}>
@@ -92,41 +106,43 @@ export default function VolunteerCommunication({ auth, sentEmails, announcements
                             <button
                                 onClick={() => setSelectedInbox(null)}
                                 style={{
-                                    background: '#F3F4F6', border: 'none', borderRadius: '8px',
+                                    background: '#F3F4F6', border: 'none', borderRadius: '9px',
                                     width: '32px', height: '32px', cursor: 'pointer',
-                                    fontSize: '16px', color: '#6B7280', flexShrink: 0,
+                                    fontSize: '15px', color: '#6B7280', flexShrink: 0,
                                     display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    transition: 'background 0.15s',
                                 }}
+                                onMouseEnter={e => e.currentTarget.style.background = '#E5E7EB'}
+                                onMouseLeave={e => e.currentTarget.style.background = '#F3F4F6'}
                             >✕</button>
                         </div>
 
-                        {/* Your original message */}
-                        <div style={{ padding: '20px 24px' }}>
-                            <div style={{ fontSize: '11px', fontWeight: '600', color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px' }}>Your Message</div>
+                        <div style={{ padding: '20px 26px 4px' }}>
+                            <div style={{ fontSize: '11px', fontWeight: '700', color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: '9px' }}>Your Message</div>
                             <div style={{
                                 background: '#F9FAFB', border: '1px solid #E5E7EB',
-                                borderRadius: '10px', padding: '14px 16px',
+                                borderRadius: '12px', padding: '15px 17px',
                                 fontSize: '13px', color: '#374151', lineHeight: '1.7',
                             }}>
                                 {selectedInbox.message}
                             </div>
                         </div>
 
-                        {/* Admin reply */}
-                        <div style={{ padding: '0 24px 24px' }}>
-                            <div style={{ fontSize: '11px', fontWeight: '600', color: '#ff0000', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px' }}>Admin Reply</div>
+                        <div style={{ padding: '18px 26px 26px' }}>
+                            <div style={{ fontSize: '11px', fontWeight: '700', color: RED, textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: '9px' }}>Admin Reply</div>
                             <div style={{
                                 background: '#FEF2F2', border: '1px solid #FECACA',
-                                borderRadius: '10px', padding: '14px 16px',
+                                borderRadius: '12px', padding: '15px 17px',
                             }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '9px', marginBottom: '11px' }}>
                                     <div style={{
-                                        width: '28px', height: '28px', borderRadius: '50%',
-                                        background: '#ff0000', display: 'flex', alignItems: 'center',
+                                        width: '30px', height: '30px', borderRadius: '50%',
+                                        background: RED, display: 'flex', alignItems: 'center',
                                         justifyContent: 'center', color: 'white', fontSize: '11px', fontWeight: '700',
+                                        boxShadow: '0 2px 6px rgba(255,0,0,0.3)',
                                     }}>A</div>
                                     <div>
-                                        <div style={{ fontSize: '12px', fontWeight: '600', color: '#ff0000' }}>Admin</div>
+                                        <div style={{ fontSize: '12px', fontWeight: '700', color: RED }}>Admin</div>
                                         <div style={{ fontSize: '11px', color: '#9CA3AF' }}>Rizal Chapter · Muntinlupa</div>
                                     </div>
                                 </div>
@@ -143,34 +159,34 @@ export default function VolunteerCommunication({ auth, sentEmails, announcements
                     onClick={() => setSelectedAnnouncement(null)}
                     style={{
                         position: 'fixed', inset: 0, zIndex: 200,
-                        background: 'rgba(0,0,0,0.45)',
+                        background: 'rgba(17,17,17,0.5)', backdropFilter: 'blur(2px)',
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        padding: '24px',
+                        padding: '24px', animation: 'fadeIn 0.15s ease-out',
                     }}
                 >
                     <div
                         onClick={e => e.stopPropagation()}
                         style={{
-                            background: 'white', borderRadius: '14px',
+                            background: 'white', borderRadius: '18px',
                             width: '100%', maxWidth: '560px',
                             maxHeight: '80vh', overflowY: 'auto',
-                            boxShadow: '0 24px 60px rgba(0,0,0,0.2)',
+                            boxShadow: '0 24px 60px rgba(0,0,0,0.25)',
+                            animation: 'popIn 0.18s ease-out',
                         }}
                     >
-                        {/* Modal header */}
                         <div style={{
-                            padding: '20px 24px 16px',
+                            padding: '22px 26px 18px',
                             borderBottom: '1px solid #F3F4F6',
                             display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px',
                         }}>
                             <div>
                                 <span style={{
-                                    background: '#FEF2F2', color: '#ff0000',
+                                    background: '#FEF2F2', color: RED,
                                     fontSize: '10px', fontWeight: '700',
-                                    padding: '2px 8px', borderRadius: '10px',
-                                    display: 'inline-block', marginBottom: '8px',
+                                    padding: '3px 9px', borderRadius: '10px',
+                                    display: 'inline-block', marginBottom: '9px', letterSpacing: '0.3px',
                                 }}>ANNOUNCEMENT</span>
-                                <div style={{ fontSize: '16px', fontWeight: '700', color: '#111', marginBottom: '4px' }}>
+                                <div style={{ fontSize: '17px', fontWeight: '700', color: '#111', marginBottom: '5px' }}>
                                     {selectedAnnouncement.title}
                                 </div>
                                 <div style={{ fontSize: '12px', color: '#9CA3AF' }}>
@@ -181,16 +197,18 @@ export default function VolunteerCommunication({ auth, sentEmails, announcements
                             <button
                                 onClick={() => setSelectedAnnouncement(null)}
                                 style={{
-                                    background: '#F3F4F6', border: 'none', borderRadius: '8px',
+                                    background: '#F3F4F6', border: 'none', borderRadius: '9px',
                                     width: '32px', height: '32px', cursor: 'pointer',
-                                    fontSize: '16px', color: '#6B7280', flexShrink: 0,
+                                    fontSize: '15px', color: '#6B7280', flexShrink: 0,
                                     display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    transition: 'background 0.15s',
                                 }}
+                                onMouseEnter={e => e.currentTarget.style.background = '#E5E7EB'}
+                                onMouseLeave={e => e.currentTarget.style.background = '#F3F4F6'}
                             >✕</button>
                         </div>
 
-                        {/* Body */}
-                        <div style={{ padding: '20px 24px 28px' }}>
+                        <div style={{ padding: '20px 26px 30px' }}>
                             <div style={{ fontSize: '14px', color: '#374151', lineHeight: '1.8', whiteSpace: 'pre-wrap' }}>
                                 {selectedAnnouncement.body}
                             </div>
@@ -199,275 +217,277 @@ export default function VolunteerCommunication({ auth, sentEmails, announcements
                 </div>
             )}
 
-            <div style={{ display: 'flex', minHeight: '100vh', fontFamily: "'Inter', sans-serif", background: '#F3F4F6' }}>
-
-                {/* SIDEBAR */}
-                <aside style={{
-                    width: '160px', minHeight: '100vh', background: '#ff0000',
-                    display: 'flex', flexDirection: 'column', flexShrink: 0,
-                    position: 'fixed', left: 0, top: 0, bottom: 0, zIndex: 100,
-                }}>
-                    <div style={{ padding: '20px 16px 16px', borderBottom: '1px solid rgba(255,255,255,0.15)' }}>
-                        <div style={{ fontSize: '11px', fontWeight: '700', color: 'white', lineHeight: '1.4' }}>
-                            Rizal Chapter<br />
-                            <span style={{ fontWeight: '400', opacity: 0.85 }}>Muntinlupa City Branch</span>
-                        </div>
-                    </div>
-                    <nav style={{ flex: 1, paddingTop: '8px' }}>
-                        {sidebarLinks.map(item => {
-                            const isActive = item.key === 'communication';
-                            return (
-                                <Link key={item.key} href={item.href} style={{
-                                    display: 'flex', alignItems: 'center', gap: '10px',
-                                    padding: '11px 16px', textDecoration: 'none',
-                                    background: isActive ? 'rgba(0,0,0,0.18)' : 'transparent',
-                                    color: 'white', fontSize: '13px',
-                                    fontWeight: isActive ? '600' : '400',
-                                    borderLeft: isActive ? '3px solid white' : '3px solid transparent',
-                                }}>
-                                    <span style={{ opacity: isActive ? 1 : 0.7, flexShrink: 0 }}>{item.icon}</span>
-                                    {item.label}
-                                </Link>
-                            );
-                        })}
-                    </nav>
-                    <div style={{ padding: '14px 16px', borderTop: '1px solid rgba(255,255,255,0.15)' }}>
-                        <button onClick={handleLogout} style={{
-                            display: 'flex', alignItems: 'center', gap: '8px',
-                            background: 'transparent', border: 'none', cursor: 'pointer',
-                            color: 'rgba(255,255,255,0.75)', fontSize: '12px', padding: 0, width: '100%'
-                        }}>
-                            <span style={{ fontSize: '16px' }}>⏻</span> Log out
-                        </button>
-                    </div>
-                </aside>
-
-                {/* MAIN */}
-                <div style={{ marginLeft: '160px', flex: 1, display: 'flex', flexDirection: 'column' }}>
-
-                    {/* Topbar */}
-                    <header style={{
-                        background: 'white', padding: '0 28px', height: '52px',
-                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                        borderBottom: '1px solid #E5E7EB', position: 'sticky', top: 0, zIndex: 50
-                    }}>
-                        <div style={{ fontSize: '13px', fontWeight: '600', color: '#111' }}>Communication</div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                            <div title={volunteer?.name} style={{
-                                width: '30px', height: '30px', borderRadius: '50%',
-                                background: avatarUrl ? 'transparent' : '#ff0000',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                color: 'white', fontSize: '12px', fontWeight: '700',
-                                flexShrink: 0, overflow: 'hidden',
-                            }}>
-                                {avatarUrl
-                                    ? <img src={avatarUrl} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-                                    : initials
-                                }
-                            </div>
-                        </div>
-                    </header>
-
-                    {/* Tabs */}
-                    <div style={{ background: 'white', borderBottom: '1px solid #E5E7EB', padding: '0 28px', display: 'flex', gap: '4px' }}>
-                        <button style={tabStyle('compose')} onClick={() => setActiveTab('compose')}>✏️ Compose</button>
-                        <button style={tabStyle('inbox')} onClick={() => setActiveTab('inbox')}>
-                            📥 Inbox {unreadReplies > 0 && <span style={{ background: '#ff0000', color: 'white', borderRadius: '10px', padding: '1px 6px', fontSize: '10px', marginLeft: '4px' }}>{unreadReplies}</span>}
-                        </button>
-                        <button style={tabStyle('announcements')} onClick={() => setActiveTab('announcements')}>
-                            📢 Announcements {announces.length > 0 && <span style={{ background: '#F59E0B', color: 'white', borderRadius: '10px', padding: '1px 6px', fontSize: '10px', marginLeft: '4px' }}>{announces.length}</span>}
-                        </button>
-                        <button style={tabStyle('sent')} onClick={() => setActiveTab('sent')}>📤 Sent</button>
-                    </div>
-
-                    <main style={{ flex: 1, padding: '28px', overflowY: 'auto' }}>
-
-                        {activeTab === 'compose' && (
-                            <div style={{ maxWidth: '560px' }}>
-                                <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #E5E7EB', padding: '28px' }}>
-                                    <div style={{ fontSize: '14px', fontWeight: '600', color: '#111', marginBottom: '20px' }}>Send a Message to Admin</div>
-                                    <form onSubmit={handleSend}>
-                                        <div style={{ marginBottom: '16px' }}>
-                                            <label style={{ fontSize: '13px', fontWeight: '500', color: '#374151', display: 'block', marginBottom: '6px' }}>To:</label>
-                                            <input type="text" value={data.to} onChange={e => setData('to', e.target.value)}
-                                                style={{ width: '100%', padding: '10px 14px', border: '1px solid #E5E7EB', borderRadius: '8px', fontSize: '13px', outline: 'none', boxSizing: 'border-box', background: '#FAFAFA' }} />
-                                            {errors.to && <div style={{ fontSize: '11px', color: '#ff0000', marginTop: '4px' }}>{errors.to}</div>}
-                                        </div>
-                                        <div style={{ marginBottom: '16px' }}>
-                                            <label style={{ fontSize: '13px', fontWeight: '500', color: '#374151', display: 'block', marginBottom: '6px' }}>Subject</label>
-                                            <input type="text" value={data.subject} onChange={e => setData('subject', e.target.value)}
-                                                placeholder="e.g. Schedule Conflict"
-                                                style={{ width: '100%', padding: '10px 14px', border: '1px solid #E5E7EB', borderRadius: '8px', fontSize: '13px', outline: 'none', boxSizing: 'border-box' }} />
-                                            {errors.subject && <div style={{ fontSize: '11px', color: '#ff0000', marginTop: '4px' }}>{errors.subject}</div>}
-                                        </div>
-                                        <div style={{ marginBottom: '20px' }}>
-                                            <label style={{ fontSize: '13px', fontWeight: '500', color: '#374151', display: 'block', marginBottom: '6px' }}>Message</label>
-                                            <textarea value={data.message} onChange={e => setData('message', e.target.value)}
-                                                placeholder="Type your message here..." rows={6}
-                                                style={{ width: '100%', padding: '10px 14px', border: '1px solid #E5E7EB', borderRadius: '8px', fontSize: '13px', outline: 'none', resize: 'vertical', boxSizing: 'border-box', fontFamily: 'inherit' }} />
-                                            {errors.message && <div style={{ fontSize: '11px', color: '#ff0000', marginTop: '4px' }}>{errors.message}</div>}
-                                        </div>
-                                        <button type="submit" disabled={processing}
-                                            style={{ background: '#ff0000', color: 'white', border: 'none', borderRadius: '8px', padding: '10px 24px', fontSize: '13px', fontWeight: '600', cursor: processing ? 'not-allowed' : 'pointer', opacity: processing ? 0.7 : 1 }}>
-                                            {processing ? 'Sending...' : 'Send Message'}
-                                        </button>
-                                    </form>
-                                </div>
-                            </div>
+            {/* Tabs */}
+            <div style={{ background: 'white', borderBottom: '1px solid #E5E7EB', borderTop: '1px solid #E5E7EB', margin: '-28px -28px 0', padding: '0 28px', display: 'flex', gap: '6px' }}>
+                {tabs.map(t => (
+                    <button key={t.key} style={tabStyle(t.key)} onClick={() => setActiveTab(t.key)}>
+                        <span style={{ display: 'flex', opacity: activeTab === t.key ? 1 : 0.6 }}>{t.icon}</span>
+                        {t.label}
+                        {!!t.badge && (
+                            <span style={{
+                                background: t.badgeColor, color: 'white', borderRadius: '10px',
+                                padding: '1px 7px', fontSize: '10px', fontWeight: '700',
+                                minWidth: '17px', textAlign: 'center', lineHeight: '15px',
+                            }}>{t.badge}</span>
                         )}
-
-                        {/* INBOX — click to open modal */}
-                        {activeTab === 'inbox' && (
-                            <div style={{ maxWidth: '680px' }}>
-                                <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #E5E7EB', overflow: 'hidden' }}>
-                                    <div style={{ padding: '16px 20px', borderBottom: '1px solid #F3F4F6' }}>
-                                        <div style={{ fontSize: '14px', fontWeight: '600', color: '#111' }}>Admin Replies</div>
-                                    </div>
-                                    {repliedEmails.length === 0 ? (
-                                        <div style={{ padding: '48px', textAlign: 'center', color: '#9CA3AF', fontSize: '13px' }}>
-                                            <div style={{ fontSize: '32px', marginBottom: '8px' }}>📭</div>
-                                            No replies yet
-                                        </div>
-                                    ) : (
-                                        repliedEmails.map((email, i) => (
-                                            <div
-                                                key={i}
-                                                onClick={() => setSelectedInbox(email)}
-                                                style={{
-                                                    padding: '16px 20px',
-                                                    borderBottom: i < repliedEmails.length - 1 ? '1px solid #F3F4F6' : 'none',
-                                                    cursor: 'pointer', display: 'flex', alignItems: 'center',
-                                                    justifyContent: 'space-between', gap: '12px',
-                                                    transition: 'background 0.1s',
-                                                }}
-                                                onMouseEnter={e => e.currentTarget.style.background = '#FAFAFA'}
-                                                onMouseLeave={e => e.currentTarget.style.background = 'white'}
-                                            >
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: 0 }}>
-                                                    <div style={{
-                                                        width: '36px', height: '36px', borderRadius: '50%',
-                                                        background: '#FEF2F2', display: 'flex', alignItems: 'center',
-                                                        justifyContent: 'center', color: '#ff0000', fontSize: '14px',
-                                                        fontWeight: '700', flexShrink: 0,
-                                                    }}>A</div>
-                                                    <div style={{ flex: 1, minWidth: 0 }}>
-                                                        <div style={{ fontSize: '13px', fontWeight: '600', color: '#111' }}>{email.subject}</div>
-                                                        <div style={{ fontSize: '12px', color: '#9CA3AF', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                                            Admin: {email.reply}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <div style={{ fontSize: '11px', color: '#9CA3AF', flexShrink: 0 }}>
-                                                    {email.replied_at ? new Date(email.replied_at).toLocaleDateString('en-PH', { month: 'short', day: 'numeric' }) : ''}
-                                                </div>
-                                            </div>
-                                        ))
-                                    )}
-                                </div>
-                            </div>
-                        )}
-
-                        {/* ANNOUNCEMENTS — click to open modal */}
-                        {activeTab === 'announcements' && (
-                            <div style={{ maxWidth: '680px' }}>
-                                <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #E5E7EB', overflow: 'hidden' }}>
-                                    <div style={{ padding: '16px 20px', borderBottom: '1px solid #F3F4F6' }}>
-                                        <div style={{ fontSize: '14px', fontWeight: '600', color: '#111' }}>Announcements from Admin</div>
-                                    </div>
-                                    {announces.length === 0 ? (
-                                        <div style={{ padding: '48px', textAlign: 'center', color: '#9CA3AF', fontSize: '13px' }}>
-                                            <div style={{ fontSize: '32px', marginBottom: '8px' }}>📢</div>
-                                            No announcements yet
-                                        </div>
-                                    ) : (
-                                        announces.map((a, i) => (
-                                            <div
-                                                key={i}
-                                                onClick={() => setSelectedAnnouncement(a)}
-                                                style={{
-                                                    padding: '16px 20px',
-                                                    borderBottom: i < announces.length - 1 ? '1px solid #F3F4F6' : 'none',
-                                                    cursor: 'pointer', display: 'flex', alignItems: 'center',
-                                                    justifyContent: 'space-between', gap: '12px',
-                                                }}
-                                                onMouseEnter={e => e.currentTarget.style.background = '#FAFAFA'}
-                                                onMouseLeave={e => e.currentTarget.style.background = 'white'}
-                                            >
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: 0 }}>
-                                                    <div style={{
-                                                        width: '36px', height: '36px', borderRadius: '50%',
-                                                        background: '#FEF9C3', display: 'flex', alignItems: 'center',
-                                                        justifyContent: 'center', fontSize: '18px', flexShrink: 0,
-                                                    }}>📢</div>
-                                                    <div style={{ flex: 1, minWidth: 0 }}>
-                                                        <div style={{ fontSize: '13px', fontWeight: '600', color: '#111' }}>{a.title}</div>
-                                                        <div style={{ fontSize: '12px', color: '#9CA3AF', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                                            {a.body}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <div style={{ fontSize: '11px', color: '#9CA3AF', flexShrink: 0 }}>
-                                                    {new Date(a.created_at).toLocaleDateString('en-PH', { month: 'short', day: 'numeric' })}
-                                                </div>
-                                            </div>
-                                        ))
-                                    )}
-                                </div>
-                            </div>
-                        )}
-
-                        {activeTab === 'sent' && (
-                            <div style={{ maxWidth: '680px' }}>
-                                <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #E5E7EB', overflow: 'hidden' }}>
-                                    <div style={{ padding: '16px 20px', borderBottom: '1px solid #F3F4F6' }}>
-                                        <div style={{ fontSize: '14px', fontWeight: '600', color: '#111' }}>Sent Messages</div>
-                                    </div>
-                                    {emails.length === 0 ? (
-                                        <div style={{ padding: '48px', textAlign: 'center', color: '#9CA3AF', fontSize: '13px' }}>
-                                            <div style={{ fontSize: '32px', marginBottom: '8px' }}>📤</div>
-                                            No sent messages yet
-                                        </div>
-                                    ) : (
-                                        emails.map((email, i) => (
-                                            <div key={i} style={{ padding: '16px 20px', borderBottom: i < emails.length - 1 ? '1px solid #F3F4F6' : 'none' }}>
-                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                                    <div style={{ flex: 1 }}>
-                                                        <div style={{ fontSize: '13px', fontWeight: '600', color: '#111', marginBottom: '3px' }}>{email.subject}</div>
-                                                        <div style={{ fontSize: '12px', color: '#6B7280', marginBottom: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{email.message}</div>
-                                                        <div style={{ fontSize: '10px', color: '#9CA3AF' }}>
-                                                            {new Date(email.created_at).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}
-                                                        </div>
-                                                    </div>
-                                                    {email.reply && (
-                                                        <span style={{ background: '#DCFCE7', color: '#166534', fontSize: '10px', fontWeight: '600', padding: '2px 8px', borderRadius: '10px', flexShrink: 0, marginLeft: '12px' }}>Replied</span>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        ))
-                                    )}
-                                </div>
-                            </div>
-                        )}
-
-                    </main>
-                </div>
+                    </button>
+                ))}
             </div>
+
+            <div style={{ paddingTop: '28px' }}>
+
+                {activeTab === 'compose' && (
+                    <div style={{ maxWidth: '580px' }}>
+                        <div style={{
+                            background: 'white', borderRadius: '16px', border: '1px solid #E5E7EB',
+                            boxShadow: '0 1px 3px rgba(0,0,0,0.03)', overflow: 'hidden',
+                        }}>
+                            {/* Card header with accent */}
+                            <div style={{
+                                padding: '22px 28px', borderBottom: '1px solid #F3F4F6',
+                                display: 'flex', alignItems: 'center', gap: '13px',
+                            }}>
+                                <div style={{
+                                    width: 42, height: 42, borderRadius: '12px', flexShrink: 0,
+                                    background: 'linear-gradient(135deg, #ff0000, #cc0000)',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    boxShadow: '0 4px 10px rgba(255,0,0,0.25)',
+                                }}>
+                                    <SendIconWhite />
+                                </div>
+                                <div>
+                                    <div style={{ fontSize: '15px', fontWeight: '700', color: '#111' }}>Send a Message to Admin</div>
+                                    <div style={{ fontSize: '12px', color: '#9CA3AF', marginTop: '2px' }}>We typically reply within 1–2 business days</div>
+                                </div>
+                            </div>
+
+                            <form onSubmit={handleSend} style={{ padding: '26px 28px 28px' }}>
+                                <div style={{ marginBottom: '18px' }}>
+                                    <label style={labelStyle}>To</label>
+                                    <input
+                                        type="text" value={data.to} readOnly
+                                        onFocus={() => setFocusedField('to')}
+                                        onBlur={() => setFocusedField(null)}
+                                        style={inputStyle('to', { color: '#6B7280', cursor: 'default' })}
+                                    />
+                                    {errors.to && <div style={{ fontSize: '11px', color: RED, marginTop: '5px' }}>{errors.to}</div>}
+                                </div>
+                                <div style={{ marginBottom: '18px' }}>
+                                    <label style={labelStyle}>Subject</label>
+                                    <input
+                                        type="text" value={data.subject}
+                                        onChange={e => setData('subject', e.target.value)}
+                                        onFocus={() => setFocusedField('subject')}
+                                        onBlur={() => setFocusedField(null)}
+                                        placeholder="e.g. Schedule Conflict"
+                                        style={inputStyle('subject')}
+                                    />
+                                    {errors.subject && <div style={{ fontSize: '11px', color: RED, marginTop: '5px' }}>{errors.subject}</div>}
+                                </div>
+                                <div style={{ marginBottom: '24px' }}>
+                                    <label style={labelStyle}>Message</label>
+                                    <textarea
+                                        value={data.message}
+                                        onChange={e => setData('message', e.target.value)}
+                                        onFocus={() => setFocusedField('message')}
+                                        onBlur={() => setFocusedField(null)}
+                                        placeholder="Type your message here..." rows={6}
+                                        style={inputStyle('message', { resize: 'vertical' })}
+                                    />
+                                    {errors.message && <div style={{ fontSize: '11px', color: RED, marginTop: '5px' }}>{errors.message}</div>}
+                                </div>
+                                <button
+                                    type="submit" disabled={processing}
+                                    style={{
+                                        display: 'inline-flex', alignItems: 'center', gap: '8px',
+                                        background: processing ? '#F87171' : RED, color: 'white',
+                                        border: 'none', borderRadius: '10px', padding: '12px 26px',
+                                        fontSize: '13.5px', fontWeight: '700',
+                                        cursor: processing ? 'not-allowed' : 'pointer',
+                                        boxShadow: processing ? 'none' : '0 4px 12px rgba(255,0,0,0.28)',
+                                        transition: 'transform 0.1s, box-shadow 0.15s',
+                                    }}
+                                    onMouseEnter={e => { if (!processing) e.currentTarget.style.transform = 'translateY(-1px)'; }}
+                                    onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; }}
+                                >
+                                    {processing ? 'Sending...' : (<><SendIconWhite small /> Send Message</>)}
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                )}
+
+                {/* INBOX — click to open modal */}
+                {activeTab === 'inbox' && (
+                    <div style={{ maxWidth: '700px' }}>
+                        <div style={{ background: 'white', borderRadius: '16px', border: '1px solid #E5E7EB', boxShadow: '0 1px 3px rgba(0,0,0,0.03)', overflow: 'hidden' }}>
+                            <div style={{ padding: '18px 24px', borderBottom: '1px solid #F3F4F6' }}>
+                                <div style={{ fontSize: '14px', fontWeight: '700', color: '#111' }}>Admin Replies</div>
+                            </div>
+                            {repliedEmails.length === 0 ? (
+                                <EmptyState icon={<InboxIcon size={26} color="#D1D5DB" />} text="No replies yet" />
+                            ) : (
+                                repliedEmails.map((email, i) => (
+                                    <div
+                                        key={i}
+                                        onClick={() => setSelectedInbox(email)}
+                                        style={{
+                                            padding: '17px 24px',
+                                            borderBottom: i < repliedEmails.length - 1 ? '1px solid #F3F4F6' : 'none',
+                                            cursor: 'pointer', display: 'flex', alignItems: 'center',
+                                            justifyContent: 'space-between', gap: '12px',
+                                            transition: 'background 0.12s',
+                                        }}
+                                        onMouseEnter={e => e.currentTarget.style.background = '#FAFAFA'}
+                                        onMouseLeave={e => e.currentTarget.style.background = 'white'}
+                                    >
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '13px', flex: 1, minWidth: 0 }}>
+                                            <div style={{
+                                                width: '38px', height: '38px', borderRadius: '50%',
+                                                background: '#FEF2F2', display: 'flex', alignItems: 'center',
+                                                justifyContent: 'center', color: RED, fontSize: '14px',
+                                                fontWeight: '700', flexShrink: 0,
+                                            }}>A</div>
+                                            <div style={{ flex: 1, minWidth: 0 }}>
+                                                <div style={{ fontSize: '13.5px', fontWeight: '600', color: '#111' }}>{email.subject}</div>
+                                                <div style={{ fontSize: '12px', color: '#9CA3AF', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                    Admin: {email.reply}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+                                            <div style={{ fontSize: '11px', color: '#9CA3AF' }}>
+                                                {email.replied_at ? new Date(email.replied_at).toLocaleDateString('en-PH', { month: 'short', day: 'numeric' }) : ''}
+                                            </div>
+                                            <span style={{ color: '#D1D5DB', fontSize: '14px' }}>›</span>
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                {/* ANNOUNCEMENTS — click to open modal */}
+                {activeTab === 'announcements' && (
+                    <div style={{ maxWidth: '700px' }}>
+                        <div style={{ background: 'white', borderRadius: '16px', border: '1px solid #E5E7EB', boxShadow: '0 1px 3px rgba(0,0,0,0.03)', overflow: 'hidden' }}>
+                            <div style={{ padding: '18px 24px', borderBottom: '1px solid #F3F4F6' }}>
+                                <div style={{ fontSize: '14px', fontWeight: '700', color: '#111' }}>Announcements from Admin</div>
+                            </div>
+                            {announces.length === 0 ? (
+                                <EmptyState icon={<MegaphoneIcon size={26} color="#D1D5DB" />} text="No announcements yet" />
+                            ) : (
+                                announces.map((a, i) => (
+                                    <div
+                                        key={i}
+                                        onClick={() => setSelectedAnnouncement(a)}
+                                        style={{
+                                            padding: '17px 24px',
+                                            borderBottom: i < announces.length - 1 ? '1px solid #F3F4F6' : 'none',
+                                            cursor: 'pointer', display: 'flex', alignItems: 'center',
+                                            justifyContent: 'space-between', gap: '12px',
+                                            transition: 'background 0.12s',
+                                        }}
+                                        onMouseEnter={e => e.currentTarget.style.background = '#FAFAFA'}
+                                        onMouseLeave={e => e.currentTarget.style.background = 'white'}
+                                    >
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '13px', flex: 1, minWidth: 0 }}>
+                                            <div style={{
+                                                width: '38px', height: '38px', borderRadius: '50%',
+                                                background: '#FEF9C3', display: 'flex', alignItems: 'center',
+                                                justifyContent: 'center', flexShrink: 0,
+                                            }}>
+                                                <MegaphoneIcon size={16} color="#B45309" />
+                                            </div>
+                                            <div style={{ flex: 1, minWidth: 0 }}>
+                                                <div style={{ fontSize: '13.5px', fontWeight: '600', color: '#111' }}>{a.title}</div>
+                                                <div style={{ fontSize: '12px', color: '#9CA3AF', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                    {a.body}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+                                            <div style={{ fontSize: '11px', color: '#9CA3AF' }}>
+                                                {new Date(a.created_at).toLocaleDateString('en-PH', { month: 'short', day: 'numeric' })}
+                                            </div>
+                                            <span style={{ color: '#D1D5DB', fontSize: '14px' }}>›</span>
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                {activeTab === 'sent' && (
+                    <div style={{ maxWidth: '700px' }}>
+                        <div style={{ background: 'white', borderRadius: '16px', border: '1px solid #E5E7EB', boxShadow: '0 1px 3px rgba(0,0,0,0.03)', overflow: 'hidden' }}>
+                            <div style={{ padding: '18px 24px', borderBottom: '1px solid #F3F4F6' }}>
+                                <div style={{ fontSize: '14px', fontWeight: '700', color: '#111' }}>Sent Messages</div>
+                            </div>
+                            {emails.length === 0 ? (
+                                <EmptyState icon={<SendIcon size={26} color="#D1D5DB" />} text="No sent messages yet" />
+                            ) : (
+                                emails.map((email, i) => (
+                                    <div key={i} style={{ padding: '17px 24px', borderBottom: i < emails.length - 1 ? '1px solid #F3F4F6' : 'none' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
+                                            <div style={{ flex: 1, minWidth: 0 }}>
+                                                <div style={{ fontSize: '13.5px', fontWeight: '600', color: '#111', marginBottom: '4px' }}>{email.subject}</div>
+                                                <div style={{ fontSize: '12px', color: '#6B7280', marginBottom: '5px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{email.message}</div>
+                                                <div style={{ fontSize: '10.5px', color: '#9CA3AF' }}>
+                                                    {new Date(email.created_at).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                                </div>
+                                            </div>
+                                            {email.reply && (
+                                                <span style={{ background: '#DCFCE7', color: '#166534', fontSize: '10px', fontWeight: '700', padding: '3px 9px', borderRadius: '10px', flexShrink: 0 }}>Replied</span>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    </div>
+                )}
+
+            </div>
+
+            <style>{`
+                @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+                @keyframes popIn { from { opacity: 0; transform: scale(0.94); } to { opacity: 1; transform: scale(1); } }
+                input::placeholder, textarea::placeholder { color: #B0B5BD; }
+            `}</style>
         </>
     );
 }
 
-function GridIcon() {
-    return <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>;
+function EmptyState({ icon, text }) {
+    return (
+        <div style={{ padding: '52px 24px', textAlign: 'center', color: '#9CA3AF', fontSize: '13px' }}>
+            <div style={{ marginBottom: '10px', display: 'flex', justifyContent: 'center' }}>{icon}</div>
+            {text}
+        </div>
+    );
 }
-function CalIcon() {
-    return <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>;
+
+function PencilIcon({ size = 14 }) {
+    return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>;
 }
-function ChatIcon() {
-    return <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>;
+function InboxIcon({ size = 14, color = 'currentColor' }) {
+    return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11Z"/></svg>;
 }
-function CheckIcon() {
-    return <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>;
+function MegaphoneIcon({ size = 14, color = 'currentColor' }) {
+    return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 11l18-5v12L3 13v-2z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>;
 }
-function FolderIcon() {
-    return <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>;
+function SendIcon({ size = 14, color = 'currentColor' }) {
+    return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>;
 }
+function SendIconWhite({ small = false }) {
+    const size = small ? 14 : 19;
+    return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>;
+}
+
+// ✅ Ito ang susi — gagamitin na ang persistent VolunteerLayout, hindi na gagawa ng sarili niyang sidebar
+VolunteerCommunication.layout = (page) => <VolunteerLayout title="Communication">{page}</VolunteerLayout>;
+
+export default VolunteerCommunication;

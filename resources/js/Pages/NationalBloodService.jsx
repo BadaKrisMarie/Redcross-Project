@@ -41,7 +41,7 @@ const programs = [
 function SectionTitle({ children }) {
   return (
     <>
-      <h2 style={{ fontSize: 38, fontWeight: 800, color: RED, marginBottom: 12, fontFamily: "Georgia, serif" }}>
+      <h2 style={{ fontSize: 38, fontWeight: 800, color: RED, marginBottom: 12, fontFamily: "monserrat" }}>
         {children}
       </h2>
       <div style={{ width: 80, height: 2, background: "#ccc", marginBottom: 32 }} />
@@ -53,7 +53,7 @@ export default function NationalBloodService() {
   return (
     <>
       <Head title="National Blood Service - Philippine Red Cross" />
-      <div style={{ fontFamily: "'Source Sans 3', sans-serif", margin: 0, padding: 0 }}>
+      <div style={{ fontFamily: "'monserrat", margin: 0, padding: 0 }}>
 
         <SiteNavbar />
 
@@ -169,7 +169,7 @@ export default function NationalBloodService() {
           <div style={{ position: "relative", zIndex: 1 }}>
             <h2 style={{
               fontSize: 48, fontWeight: 800, color: "#ff0000",
-              marginBottom: 16, fontFamily: "Georgia, serif",
+              marginBottom: 16, fontFamily: "monserrat",
             }}>
               Save Lives. Join the Red Cross.
             </h2>

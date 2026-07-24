@@ -7,6 +7,7 @@ use App\Models\Activity;
 use App\Models\Attendance;
 use App\Models\Document;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
 class AdminController extends Controller
@@ -144,6 +145,73 @@ class AdminController extends Controller
             $activityStatsByYear[$year] = $monthly;
         }
 
+        // ── NEW: Flagged check-ins this week (geofence violations) ─────
+        $flaggedThisWeek = $this->countFlaggedThisWeek();
+
+        // ── NEW: Top 5 volunteers by total hours rendered ──────────────
+        $topVolunteers = DB::table('attendances as att')
+            ->join('users as u', 'u.id', '=', 'att.user_id')
+            ->select('u.id', 'u.name', 'u.photo', DB::raw('SUM(att.hours_rendered) as total_hours'))
+            ->groupBy('u.id', 'u.name', 'u.photo')
+            ->orderByDesc('total_hours')
+            ->take(5)
+            ->get()
+            ->map(fn($row) => [
+                'name'  => $row->name,
+                'photo' => $row->photo ? asset('storage/' . $row->photo) : null,
+                'initials' => collect(explode(' ', $row->name))
+                                ->map(fn($w) => strtoupper($w[0] ?? ''))
+                                ->take(2)
+                                ->join(''),
+                'hours' => round((float) $row->total_hours, 1),
+            ])
+            ->values()
+            ->toArray();
+
+        // ── NEW: Today's activities with assigned volunteer count ──────
+        $todaysActivities = Activity::whereDate('date', today())
+            ->orderBy('start_time')
+            ->get(['id', 'name', 'description', 'status', 'start_time', 'end_time', 'location_name'])
+            ->map(function ($a) {
+                $assignedVolunteers = DB::table('activity_volunteer as av')
+                    ->join('users as u', 'u.id', '=', 'av.user_id')
+                    ->where('av.activity_id', $a->id)
+                    ->pluck('u.name')
+                    ->values()
+                    ->toArray();
+
+                return [
+                    'id'             => $a->id,
+                    'name'           => $a->name,
+                    'description'    => $a->description,
+                    'status'         => $a->status,
+                    'time'           => $a->start_time && $a->end_time
+                        ? \Carbon\Carbon::parse($a->start_time)->format('h:i A') . ' – ' . \Carbon\Carbon::parse($a->end_time)->format('h:i A')
+                        : '—',
+                    'location'       => $a->location_name,
+                    'assignedCount'  => count($assignedVolunteers),
+                    'assignedNames'  => $assignedVolunteers,
+                ];
+            })
+            ->values()
+            ->toArray();
+
+        // ── NEW: Volunteer count per branch ─────────────────────────────
+        $branchBreakdown = User::role('volunteer')
+            ->select('branch', DB::raw('count(*) as total'))
+            ->groupBy('branch')
+            ->orderByDesc('total')
+            ->get()
+            ->map(fn($row) => [
+                'branch' => $row->branch ?: 'Unspecified',
+                'total'  => $row->total,
+            ])
+            ->values()
+            ->toArray();
+
+        // ── NEW: Recent activity log (approvals/rejections + new activities) ──
+        $recentActivityLog = $this->buildRecentActivityLog();
+
         return Inertia::render('Admin/Dashboard', [
             'pendingCount'         => $pendingCount,
             'totalVolunteers'      => $totalVolunteers,
@@ -154,6 +222,109 @@ class AdminController extends Controller
             'upcomingEvents'       => $upcomingEvents,
             'quickStats'           => $quickStats,
             'activityStatsByYear'  => $activityStatsByYear,
+            'flaggedThisWeek'      => $flaggedThisWeek,
+            'topVolunteers'        => $topVolunteers,
+            'todaysActivities'     => $todaysActivities,
+            'branchBreakdown'      => $branchBreakdown,
+            'recentActivityLog'    => $recentActivityLog,
         ]);
+    }
+
+    /**
+     * Counts attendances this week whose scan location falls outside
+     * the activity's geofence radius. Mirrors the flagging logic used
+     * in Admin\ReportController.
+     */
+    private function countFlaggedThisWeek(): int
+    {
+        $from = now()->startOfWeek()->toDateString();
+        $to = now()->endOfWeek()->toDateString();
+
+        $rows = DB::table('attendances as att')
+            ->join('activities as a', 'a.id', '=', 'att.activity_id')
+            ->whereBetween('a.date', [$from, $to])
+            ->whereNotNull('att.latitude')
+            ->whereNotNull('a.latitude')
+            ->select(
+                'att.latitude as scan_lat',
+                'att.longitude as scan_lng',
+                'a.latitude as activity_lat',
+                'a.longitude as activity_lng',
+                'a.radius_meters'
+            )
+            ->get();
+
+        $flagged = 0;
+
+        foreach ($rows as $row) {
+            $distance = $this->distanceMeters(
+                (float) $row->scan_lat,
+                (float) $row->scan_lng,
+                (float) $row->activity_lat,
+                (float) $row->activity_lng
+            );
+
+            if ($distance > ($row->radius_meters ?? 100)) {
+                $flagged++;
+            }
+        }
+
+        return $flagged;
+    }
+
+    /**
+     * Haversine distance in meters between two lat/lng points.
+     */
+    private function distanceMeters(float $lat1, float $lng1, float $lat2, float $lng2): float
+    {
+        $earthRadius = 6371000;
+
+        $dLat = deg2rad($lat2 - $lat1);
+        $dLng = deg2rad($lng2 - $lng1);
+
+        $a = sin($dLat / 2) ** 2
+            + cos(deg2rad($lat1)) * cos(deg2rad($lat2)) * sin($dLng / 2) ** 2;
+
+        $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
+
+        return $earthRadius * $c;
+    }
+
+    /**
+     * Combines recently approved/rejected volunteers and recently created
+     * activities into a single reverse-chronological feed of the last 6 events.
+     */
+    private function buildRecentActivityLog(): array
+    {
+        $recentStatusChanges = User::role('volunteer')
+            ->whereIn('status', ['approved', 'rejected'])
+            ->latest('updated_at')
+            ->take(5)
+            ->get(['name', 'status', 'updated_at'])
+            ->map(fn($u) => [
+                'text' => $u->status === 'approved'
+                    ? "{$u->name}'s application was approved"
+                    : "{$u->name}'s application was rejected",
+                'timestamp' => $u->updated_at,
+            ]);
+
+        $recentActivities = Activity::latest('created_at')
+            ->take(5)
+            ->get(['name', 'created_at'])
+            ->map(fn($a) => [
+                'text' => "New activity created: {$a->name}",
+                'timestamp' => $a->created_at,
+            ]);
+
+        return $recentStatusChanges
+            ->concat($recentActivities)
+            ->sortByDesc('timestamp')
+            ->take(6)
+            ->map(fn($item) => [
+                'text' => $item['text'],
+                'time' => \Carbon\Carbon::parse($item['timestamp'])->diffForHumans(),
+            ])
+            ->values()
+            ->toArray();
     }
 }

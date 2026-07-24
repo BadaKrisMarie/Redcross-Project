@@ -116,7 +116,7 @@ export default function Donate() {
   return (
     <>
       <Head title="Ways to Donate - Philippine Red Cross" />
-      <div style={{ fontFamily: "'Source Sans 3', sans-serif" }}>
+      <div style={{ fontFamily: "'monserrat', 'monserrat'" }}>
 
         <SiteNavbar />
 
@@ -129,7 +129,7 @@ export default function Donate() {
         }}>
           <div style={{ position: 'absolute', inset: 0, backgroundImage: "url('/images/training-hero.jpg')", backgroundSize: 'cover', backgroundPosition: 'center' }} />
           <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(rgba(255,0,0,0.25), rgba(255,0,0,0.25))' }} />
-          <h1 style={{ position: 'relative', zIndex: 2, color: 'white', fontWeight: 900, fontSize: 64, letterSpacing: 1, textTransform: 'uppercase', textAlign: 'center', fontFamily: "Oswald, sans-serif", margin: 0, padding: '0 24px' }}>
+          <h1 style={{ position: 'relative', zIndex: 2, color: 'white', fontWeight: 900, fontSize: 64, letterSpacing: 1, textTransform: 'uppercase', textAlign: 'center', fontFamily: "monserrat, monserrat", margin: 0, padding: '0 24px' }}>
             Ways to Donate
           </h1>
         </section>
@@ -286,7 +286,7 @@ backgroundSize: 'cover', backgroundPosition: 'center',
             opacity: 0.12,
           }} />
           <div style={{ position: 'relative', zIndex: 1 }}>
-            <h2 style={{ fontSize: 48, fontWeight: 800, color: '#ff0000', marginBottom: 16, fontFamily: 'Georgia, serif' }}>
+            <h2 style={{ fontSize: 48, fontWeight: 800, color: '#ff0000', marginBottom: 16, fontFamily: 'monserrat, monserrat' }}>
               Save Lives. Join the Red Cross.
             </h2>
             <p style={{ fontSize: 15, color: '#6b7280', maxWidth: 560, margin: '0 auto 32px', lineHeight: 1.7 }}>

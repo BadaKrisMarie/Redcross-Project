@@ -19,7 +19,7 @@ export default function DisasterAlertsBanner() {
       {alerts.map((alert) => {
         const isEarthquake = alert.type === "earthquake";
         return (
-          <div key={alert.id} style={{ background: RED, fontFamily: "'Inter', sans-serif" }}>
+          <div key={alert.id} style={{ background: RED, fontFamily: "'monserrat, monserrat" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 20, padding: "18px 36px" }}>
               <div style={{ width: 52, height: 52, background: "white", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, fontWeight: 900, color: RED, flexShrink: 0 }}>+</div>
               <div style={{ flex: 1 }}>

@@ -40,40 +40,21 @@ export default function ForgotPassword({ status }) {
 
                     {/* Brand Header */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '2rem' }}>
-                        <div style={{
-                            width: '38px',
-                            height: '38px',
-                            backgroundColor: '#CC2222',
-                            borderRadius: '8px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            color: 'white',
-                            fontSize: '20px',
-                            fontWeight: '700',
-                            flexShrink: 0,
-                        }}>+</div>
+                        <img
+                            src="/images/redcross-logo.png"
+                            alt="Philippine Red Cross - Muntinlupa City Branch"
+                            style={{
+                                width: '38px',
+                                height: '38px',
+                                objectFit: 'cover',
+                                clipPath: 'circle(50%)',
+                                flexShrink: 0,
+                            }}
+                        />
                         <div>
                             <div style={{ fontSize: '14px', fontWeight: '600', color: '#111' }}>Rizal Chapter</div>
                             <div style={{ fontSize: '12px', color: '#6b7280' }}>Muntinlupa City Branch</div>
                         </div>
-                    </div>
-
-                    {/* Icon */}
-                    <div style={{
-                        width: '52px',
-                        height: '52px',
-                        backgroundColor: '#FEF2F2',
-                        borderRadius: '50%',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        marginBottom: '1.25rem',
-                    }}>
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#CC2222" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-                            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-                        </svg>
                     </div>
 
                     {/* Title */}
@@ -157,7 +138,7 @@ export default function ForgotPassword({ status }) {
                             style={{
                                 width: '100%',
                                 padding: '11px',
-                                backgroundColor: processing ? '#e5a0a0' : '#CC2222',
+                                backgroundColor: processing ? '#e5a0a0' : '#ff0000',
                                 color: 'white',
                                 border: 'none',
                                 borderRadius: '8px',
@@ -167,8 +148,8 @@ export default function ForgotPassword({ status }) {
                                 marginTop: '0.25rem',
                                 transition: 'background-color 0.2s',
                             }}
-                            onMouseEnter={e => { if (!processing) e.target.style.backgroundColor = '#aa1a1a'; }}
-                            onMouseLeave={e => { if (!processing) e.target.style.backgroundColor = '#CC2222'; }}
+                            onMouseEnter={e => { if (!processing) e.target.style.backgroundColor = '#ff0000'; }}
+                            onMouseLeave={e => { if (!processing) e.target.style.backgroundColor = '#ff0000'; }}
                         >
                             {processing ? 'Sending...' : 'Send Password Reset Link'}
                         </button>

@@ -65,7 +65,7 @@ export default function Contact() {
                     --charcoal: #1c1c1c; --gray: #6b6b6b;
                     --light-gray: #e5e5e5; --navy: #1a2744;
                 }
-                body { font-family: 'Barlow', sans-serif; background: var(--white); color: var(--charcoal); overflow-x: hidden; }
+                body { font-family: 'monserrat, monserrat'; background: var(--white); color: var(--charcoal); overflow-x: hidden; }
 
                 .main-nav {
                     width: 100%;
@@ -78,7 +78,7 @@ export default function Contact() {
                     position: sticky;
                     top: 0;
                     z-index: 100;
-                    font-family: Inter, sans-serif;
+                    font-family: 'monserrat, monserrat';
                 }
                 .nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
                 .nav-logo-icon { width: 34px; height: 34px; background: #ff0000; border-radius: 4px; display: flex; align-items: center; justify-content: center; color: white; font-size: 20px; font-weight: 900; }
@@ -95,8 +95,8 @@ export default function Contact() {
                 .contact-hero-grid { position: absolute; inset: 0; opacity: 0.05; background-image: repeating-linear-gradient(0deg, #fff 0, #fff 1px, transparent 1px, transparent 40px), repeating-linear-gradient(90deg, #fff 0, #fff 1px, transparent 1px, transparent 40px); z-index: 0; }
                 .contact-hero-ring1 { position: absolute; right: -40px; top: 50%; transform: translateY(-50%); width: 500px; height: 500px; border: 60px solid rgba(220,38,38,0.12); border-radius: 50%; z-index: 0; }
                 .contact-hero-ring2 { position: absolute; right: 60px; top: 50%; transform: translateY(-50%); width: 320px; height: 320px; border: 1.5px solid rgba(220,38,38,0.25); border-radius: 50%; z-index: 0; }
-                .hero-tag { display: inline-flex; align-items: center; gap: 8px; background: rgba(220,38,38,0.15); border: 1px solid rgba(220,38,38,0.35); color: #fca5a5; font-family: 'Barlow Condensed', sans-serif; font-size: 12px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; padding: 5px 16px; border-radius: 100px; margin-bottom: 18px; position: relative; z-index: 1; }
-                .contact-hero h1 { font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: clamp(52px, 7vw, 80px); line-height: 0.92; color: white; text-transform: uppercase; margin-bottom: 14px; position: relative; z-index: 1; }
+                .hero-tag { display: inline-flex; align-items: center; gap: 8px; background: rgba(220,38,38,0.15); border: 1px solid rgba(220,38,38,0.35); color: #fca5a5; font-family: 'monserrat, monserrat'; font-size: 12px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; padding: 5px 16px; border-radius: 100px; margin-bottom: 18px; position: relative; z-index: 1; }
+                .contact-hero h1 { font-family: 'monserrat, monserrat'; font-weight: 900; font-size: clamp(52px, 7vw, 80px); line-height: 0.92; color: white; text-transform: uppercase; margin-bottom: 14px; position: relative; z-index: 1; }
                 .contact-hero p { color: rgba(255,255,255,0.6); font-size: 15px; font-weight: 300; line-height: 1.7; max-width: 460px; margin: 0 auto; position: relative; z-index: 1; }
 
                 .breadcrumb { padding: 13px 60px; background: var(--offwhite); border-bottom: 1px solid var(--light-gray); display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--gray); }
@@ -109,7 +109,7 @@ export default function Contact() {
                 .ccard:hover { border-color: rgba(220,38,38,0.3); box-shadow: 0 10px 36px rgba(0,0,0,0.08); transform: translateY(-3px); }
                 .ccard.featured { border: 2px solid var(--red); box-shadow: 0 4px 24px rgba(220,38,38,0.1); }
                 .ccard-icon { width: 56px; height: 56px; border-radius: 50%; background: rgba(220,38,38,0.08); display: flex; align-items: center; justify-content: center; margin-bottom: 16px; font-size: 24px; }
-                .ccard h3 { font-family: 'Barlow Condensed', sans-serif; font-size: 22px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--charcoal); margin-bottom: 18px; }
+                .ccard h3 { font-family: 'monserrat, monserrat'; font-size: 22px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--charcoal); margin-bottom: 18px; }
                 .ccard-divider { width: 100%; height: 1px; background: var(--light-gray); margin: 14px 0; }
                 .ccard-desc { font-size: 13px; color: var(--gray); line-height: 1.7; margin-bottom: 16px; }
 
@@ -123,17 +123,17 @@ export default function Contact() {
                 .address-block strong { display: block; font-size: 14px; color: var(--charcoal); margin-bottom: 4px; }
 
                 .form-group { display: flex; flex-direction: column; gap: 8px; width: 100%; margin-bottom: 10px; }
-                .form-group input, .form-group textarea { width: 100%; padding: 10px 14px; font-family: 'Barlow', sans-serif; font-size: 13px; color: var(--charcoal); background: var(--offwhite); border: 1px solid var(--light-gray); border-radius: 6px; outline: none; transition: border-color 0.2s; }
+                .form-group input, .form-group textarea { width: 100%; padding: 10px 14px; font-family: 'monserrat, monserrat'; font-size: 13px; color: var(--charcoal); background: var(--offwhite); border: 1px solid var(--light-gray); border-radius: 6px; outline: none; transition: border-color 0.2s; }
                 .form-group input:focus, .form-group textarea:focus { border-color: var(--red); background: var(--white); }
                 .form-group textarea { height: 80px; resize: none; }
                 .field-error { font-size: 11px; color: var(--red); margin-top: 2px; text-align: left; }
-                .btn-submit { width: 100%; background: var(--red); color: white; padding: 12px 24px; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 14px; letter-spacing: 0.1em; text-transform: uppercase; border: none; cursor: pointer; border-radius: 6px; display: flex; align-items: center; justify-content: center; gap: 8px; transition: background 0.2s, transform 0.2s; margin-top: 4px; }
+                .btn-submit { width: 100%; background: var(--red); color: white; padding: 12px 24px; font-family: 'monserrat, monserrat'; font-weight: 700; font-size: 14px; letter-spacing: 0.1em; text-transform: uppercase; border: none; cursor: pointer; border-radius: 6px; display: flex; align-items: center; justify-content: center; gap: 8px; transition: background 0.2s, transform 0.2s; margin-top: 4px; }
                 .btn-submit:hover:not(:disabled) { background: var(--red-dark); transform: translateY(-1px); }
                 .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; }
                 .success-msg { background: rgba(34,139,34,0.08); border: 1px solid rgba(34,139,34,0.2); border-radius: 6px; padding: 12px 16px; font-size: 13px; color: #1a7a1a; font-weight: 500; text-align: center; width: 100%; }
 
                 .map-section { margin-top: 0; }
-                .map-label { font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: var(--gray); margin-bottom: 12px; }
+                .map-label { font-family: 'monserrat, monserrat'; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: var(--gray); margin-bottom: 12px; }
                 .map-wrapper { position: relative; width: 100%; height: 320px; border-radius: 12px; overflow: hidden; border: 1px solid var(--light-gray); box-shadow: 0 4px 20px rgba(0,0,0,0.06); }
                 .map-wrapper iframe { width: 100%; height: 100%; border: 0; display: block; }
                 .map-open-btn { position: absolute; bottom: 14px; right: 14px; background: var(--red); color: white; padding: 9px 18px; border-radius: 8px; font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; text-decoration: none; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 16px rgba(220,38,38,0.35); transition: background 0.2s, transform 0.15s; z-index: 10; }
@@ -143,10 +143,11 @@ export default function Contact() {
                 .footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 40px; padding-bottom: 40px; border-bottom: 1px solid rgba(255,255,255,0.08); margin-bottom: 28px; }
                 .footer-brand .logo-row { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
                 .footer-brand .logo-icon { width: 36px; height: 36px; background: var(--red); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-family: 'Barlow Condensed', sans-serif; font-size: 20px; font-weight: 900; color: white; }
-                .footer-brand .logo-text strong { display: block; font-family: 'Barlow Condensed', sans-serif; font-size: 16px; font-weight: 700; color: white; }
+                .footer-brand .logo-text strong { display: block; font-family: 'monserrat, monserrat'; font-size: 16px; font-weight: 700; color: white; }
                 .footer-brand .logo-text span { font-size: 11px; color: rgba(255,255,255,0.4); }
                 .footer-brand p { font-size: 13px; color: rgba(255,255,255,0.45); line-height: 1.7; max-width: 240px; }
-                .footer-col h4 { font-family: 'Barlow Condensed', sans-serif; font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: rgba(255,255,255,0.5); margin-bottom: 16px; }
+                .footer-col h4 { font-family: 'monserrat, monserrat
+                ; font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: rgba(255,255,255,0.5); margin-bottom: 16px; }
                 .footer-col ul { list-style: none; display: flex; flex-direction: column; gap: 10px; }
                 .footer-col ul li a { font-size: 13px; color: rgba(255,255,255,0.6); text-decoration: none; transition: color 0.2s; }
                 .footer-col ul li a:hover { color: var(--red); }
@@ -252,7 +253,7 @@ export default function Contact() {
 
                     {/* Visit Us */}
                     <div className="ccard">
-                        <div className="ccard-icon">üìç</div>
+                        <div className="ccard-icon"></div>
                         <h3>Visit Us</h3>
                         <p className="ccard-desc">Drop by our office in Muntinlupa and see how we're helping the community firsthand.</p>
                         <div className="ccard-divider"></div>
@@ -265,7 +266,7 @@ export default function Contact() {
 
                     {/* Call Us */}
                     <div className="ccard featured">
-                        <div className="ccard-icon">üìû</div>
+                        <div className="ccard-icon"></div>
                         <h3>Call Us Now</h3>
                         {phones.map((p, i) => (
                             <div className="phone-row" key={i}>
@@ -343,7 +344,7 @@ export default function Contact() {
                             rel="noopener noreferrer"
                             className="map-open-btn"
                         >
-                            üìç Open in Google Maps
+                             Open in Google Maps
                         </a>
                     </div>
                 </div>
@@ -390,7 +391,7 @@ export default function Contact() {
                     </div>
                 </div>
                 <div className="footer-bottom">
-                    <p style={{ fontSize: 16, fontWeight: 800, color: "rgba(255,255,255,1)", fontFamily: "'Source Sans 3', sans-serif" }}>© 2026 Philippine Red Cross ñ Muntinlupa City Branch. All rights reserved.</p>
+                    <p style={{ fontSize: 16, fontWeight: 800, color: "rgba(255,255,255,1)", fontFamily: "'monserrat', monserrat" }}> 2026 Philippine Red Cross Muntinlupa City Branch. All rights reserved.</p>
                     <div className="footer-socials">
                         <button className="social">FB</button>
                         <button className="social">TW</button>

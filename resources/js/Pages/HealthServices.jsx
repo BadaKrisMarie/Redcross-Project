@@ -34,7 +34,7 @@ const programs = [
 function SectionTitle({ children }) {
   return (
     <>
-      <h2 style={{ fontSize: 38, fontWeight: 800, color: RED, marginBottom: 12, fontFamily: "Georgia, serif" }}>
+      <h2 style={{ fontSize: 38, fontWeight: 800, color: RED, marginBottom: 12, fontFamily: "monserrat, monserrat" }}>
         {children}
       </h2>
       <div style={{ width: 80, height: 2, background: "#ccc", marginBottom: 32 }} />
@@ -46,7 +46,7 @@ export default function HealthServices() {
   return (
     <>
       <Head title="Health Services - Philippine Red Cross" />
-      <div style={{ fontFamily: "'Source Sans 3', sans-serif", margin: 0, padding: 0 }}>
+      <div style={{ fontFamily: "'monserrat', 'monserrat'", margin: 0, padding: 0 }}>
 
         <SiteNavbar />
 
@@ -66,7 +66,7 @@ export default function HealthServices() {
           <h1 style={{
             position: "relative", zIndex: 1, color: "white",
             fontSize: 52, fontWeight: 800, textAlign: "center",
-            fontFamily: "Georgia, serif", padding: "0 24px", margin: 0,
+            fontFamily: "monserrat, monserrat", padding: "0 24px", margin: 0,
           }}>
             Health Services
           </h1>
@@ -190,7 +190,7 @@ export default function HealthServices() {
           <div style={{ position: "relative", zIndex: 1 }}>
             <h2 style={{
               fontSize: 48, fontWeight: 800, color: "#ff0000",
-              marginBottom: 16, fontFamily: "Georgia, serif",
+              marginBottom: 16, fontFamily: "monserrat, monserrat",
             }}>
               Save Lives. Join the Red Cross.
             </h2>
