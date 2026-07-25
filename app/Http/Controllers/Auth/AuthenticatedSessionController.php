@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
+use App\Models\Attendance;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -81,7 +82,26 @@ class AuthenticatedSessionController extends Controller
         // ✅ Mark offline BEFORE logging out (kailangan habang meron pang authenticated user)
         $user = Auth::user();
         if ($user) {
+            // Kung may bukas na attendance record ngayong araw (naka-time-in pero
+            // walang time-out), isara na ito ngayon — para tama ang "Not checked in"
+            // status sa dashboard sa susunod na pag-login, hindi na nakabase lang
+            // sa manual face-scan time-out.
+            $openRecords = Attendance::where('user_id', $user->id)
+                ->whereDate('date', today())
+                ->whereNotNull('time_in')
+                ->whereNull('time_out')
+                ->get();
+
+            foreach ($openRecords as $record) {
+                $timeOut = now();
+                $record->update([
+                    'time_out'       => $timeOut,
+                    'hours_rendered' => round($record->time_in->diffInMinutes($timeOut) / 60, 2),
+                ]);
+            }
+
             $user->is_online = false;
+            $user->is_available = false; // hindi na dapat "Available" kung naka-logout na
             $user->last_active_at = now();
             $user->save();
         }

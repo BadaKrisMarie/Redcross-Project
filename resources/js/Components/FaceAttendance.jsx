@@ -465,11 +465,6 @@ export default function FaceAttendance({ todayRecords, activities, hasFaceDescri
         const target = !alreadyTimedIn ? 'timein' : (!alreadyTimedOut ? 'timeout' : null);
 
         if (!target || !selectedActivity) {
-            // Either fully done for today, or no activity picked yet — either way,
-            // close the scanning panel cleanly and return to the normal
-            // "Face Time In / Face Time Out" buttons instead of leaving a
-            // half-open panel with stale status text. The volunteer can pick
-            // an activity and tap the button themselves when ready.
             stopCamera();
             setCameraOn(false);
             setMode(null);
@@ -489,7 +484,8 @@ export default function FaceAttendance({ todayRecords, activities, hasFaceDescri
         processingRef.current = false;
         setScanProgress(0);
         setVerified(false);
-        setInfoStatus(''); // clear any leftover status text (e.g. "Your face has been verified!" from a just-finished register step)
+        setLivePositive(false);
+        setInfoStatus('');
         primeLocation();
 
         const tick = async () => {
@@ -511,6 +507,7 @@ export default function FaceAttendance({ todayRecords, activities, hasFaceDescri
                 if (!result) {
                     stableCounterRef.current = 0;
                     setScanProgress(0);
+                    setLivePositive(false);
                     setInfoStatus('No face detected. Make sure the area is well lit.');
                     return;
                 }
@@ -523,10 +520,16 @@ export default function FaceAttendance({ todayRecords, activities, hasFaceDescri
                 if (wellPositioned) {
                     stableCounterRef.current += 1;
                     setScanProgress(Math.min(stableCounterRef.current / STABLE_FRAMES_REQUIRED, 1));
+                    // ✅ FIXED: dati, hindi na-uupdate ang livePositive dito, kaya laging
+                    // kulay-abo ang progress ring kahit tama na ang posisyon ng mukha.
+                    // Ngayon, sumusunod na ito sa parehong pattern ng register flow —
+                    // magiging berde ang ring habang tama ang detection.
+                    setLivePositive(true);
                     setInfoStatus('Hold still...');
                 } else {
                     stableCounterRef.current = 0;
                     setScanProgress(0);
+                    setLivePositive(false);
                     setInfoStatus('Move a little closer or further from the camera');
                 }
 
@@ -739,7 +742,6 @@ export default function FaceAttendance({ todayRecords, activities, hasFaceDescri
                     </div>
 
                     <div style={{ position: 'relative', width: '260px', height: '268px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        {/* Left turn arrow */}
                         {showArrow && currentArrow === 'left' && (
                             <div key={`arrow-${liveStep}`} style={{ position: 'absolute', left: '-6px', zIndex: 2 }}>
                                 <svg width="52" height="52" viewBox="0 0 24 24" fill="none" style={{ animation: 'arrowAppear 0.4s ease-out' }}>
@@ -766,7 +768,6 @@ export default function FaceAttendance({ todayRecords, activities, hasFaceDescri
                                             style={{ width: '100%', height: '100%', objectFit: 'cover', transform: 'scaleX(-1)', display: 'block' }}
                                         />
                                     </foreignObject>
-                                    {/* Ring drawn in the same SVG, sharing the exact same ellipse geometry as the clip — no cross-engine mismatch possible */}
                                     {activeProgress > 0 && (
                                         <ellipse
                                             cx="104" cy="134" rx="100" ry="130" fill="none"
@@ -781,7 +782,6 @@ export default function FaceAttendance({ todayRecords, activities, hasFaceDescri
                                 </svg>
                             )}
 
-                            {/* Clean single ring + checkmark once verified — video hidden, no duplicate border */}
                             {showCheckmark && (
                                 <>
                                     <svg width="208" height="268" style={{ position: 'absolute', top: 0, left: 0, pointerEvents: 'none' }}>
@@ -802,7 +802,6 @@ export default function FaceAttendance({ todayRecords, activities, hasFaceDescri
                             )}
                         </div>
 
-                        {/* Right turn arrow */}
                         {showArrow && currentArrow === 'right' && (
                             <div key={`arrow-${liveStep}`} style={{ position: 'absolute', right: '-6px', zIndex: 2 }}>
                                 <svg width="52" height="52" viewBox="0 0 24 24" fill="none" style={{ animation: 'arrowAppear 0.4s ease-out' }}>

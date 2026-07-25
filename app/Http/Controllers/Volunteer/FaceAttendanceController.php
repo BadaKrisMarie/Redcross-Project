@@ -134,6 +134,22 @@ class FaceAttendanceController extends Controller
             ->where('activity_id', $request->activity_id)
             ->delete();
 
+        // ✅ Auto-off ang Availability toggle sa sandaling mag-time-out ang volunteer.
+        // Ang Availability ay dapat naka-link sa aktwal na check-in/check-out status,
+        // hindi na dapat independent switch na hiwalay ang state.
+        // I-check muna kung meron pa siyang ibang activity na naka-time-in pero
+        // hindi pa naka-time-out ngayong araw — kung meron, huwag munang i-off
+        // ang availability dahil "checked in" pa rin siya doon.
+        $stillCheckedInElsewhere = Attendance::where('user_id', $user->id)
+            ->whereDate('date', today())
+            ->whereNotNull('time_in')
+            ->whereNull('time_out')
+            ->exists();
+
+        if (!$stillCheckedInElsewhere) {
+            $user->update(['is_available' => false]);
+        }
+
         return response()->json(['message' => "Time out recorded! Hours rendered: {$hours}"]);
     }
 

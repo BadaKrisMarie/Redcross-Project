@@ -17,8 +17,8 @@ export default function AdminAttendance({ attendances, volunteers, activities, f
     const [statusFilter, setStatusFilter] = useState(null);
 
     // ✅ NEW: datatable state — sorting + pagination
-    const [sortField, setSortField] = useState('volunteer');
-    const [sortDirection, setSortDirection] = useState('desc');
+   const [sortField, setSortField] = useState('date');
+const [sortDirection, setSortDirection] = useState('desc');
     const [pageSize, setPageSize] = useState(PAGE_SIZE_OPTIONS[0]);
     const [currentPage, setCurrentPage] = useState(1);
 
