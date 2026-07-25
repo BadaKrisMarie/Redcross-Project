@@ -9,8 +9,6 @@ use App\Http\Controllers\Volunteer\FaceAttendanceController;
 use App\Http\Controllers\Volunteer\LocationPingController;
 use App\Http\Controllers\Volunteer\DocumentController;
 use App\Http\Controllers\Volunteer\CommunicationController;
-use App\Http\Controllers\WebAuthn\WebAuthnRegisterController;
-use App\Http\Controllers\WebAuthn\WebAuthnAttendanceController;
 use App\Http\Controllers\Admin\ActivityController;
 use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\Admin\AdminProfileController;
