@@ -25,6 +25,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use App\Http\Controllers\Admin\ReportController;
+use App\Http\Controllers\Admin\NotificationController;
+use App\Http\Controllers\Volunteer\AvailabilityController;
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [
@@ -448,5 +450,10 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
+
+Route::post('admin/notifications/mark-read', [NotificationController::class, 'markRead'])
+    ->name('admin.notifications.markRead');
+
+    Route::patch('/availability', [AvailabilityController::class, 'update'])->name('availability.update');
 
 require __DIR__.'/auth.php';

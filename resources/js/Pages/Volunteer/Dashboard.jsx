@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Head, Link } from '@inertiajs/react';
 import axios from 'axios';
 import VolunteerLayout from '@/Layouts/VolunteerLayout';
@@ -11,6 +11,7 @@ if (csrfToken) axios.defaults.headers.common['X-CSRF-TOKEN'] = csrfToken;
 const RED = '#ff0000';
 
 // -- localStorage helpers for persisting read activity IDs ------------------
+// (parehong LS_KEY gamit ng bell sa VolunteerLayout, para magka-sync ang "read" state)
 const LS_KEY = 'volunteer_read_notif_ids';
 function getReadIds() {
     try { return new Set(JSON.parse(localStorage.getItem(LS_KEY) || '[]')); }
@@ -34,28 +35,66 @@ function getReadAnnIds() {
 function saveReadAnnIds(set) {
     try { localStorage.setItem(ANN_LS_KEY, JSON.stringify([...set])); } catch {}
 }
+
+// -- localStorage helper for tracking when a notif was first seen (for 24h expiry) --
+// Ginagamit ito para sa mga notif na walang real "posted" timestamp galing backend
+// (hal. yung auto-generated na "Upcoming: [activity]" notifs). Once un-first-seen dito
+// sa dashboard, nag-i-start na ang 24-hour countdown papunta sa pagkawala nito.
+const NOTIF_SEEN_KEY = 'volunteer_notif_first_seen';
+function getFirstSeenMap() {
+    try { return JSON.parse(localStorage.getItem(NOTIF_SEEN_KEY) || '{}'); }
+    catch { return {}; }
+}
+function saveFirstSeenMap(map) {
+    try { localStorage.setItem(NOTIF_SEEN_KEY, JSON.stringify(map)); } catch {}
+}
 // ---------------------------------------------------------------------------
 
 function VolunteerDashboard({ auth, totalHours, totalDays, monthDays, assignedActivities, recentAttendance, announcements }) {
     const volunteer = auth.user;
     const [currentTime, setCurrentTime] = useState(new Date());
-    const [availability, setAvailability] = useState(false);
+    // ✅ FIXED: initialize from the real saved value (auth.user.is_available) instead of
+    // always starting at false — dati local-state lang ito, kaya laging "Offline" ang
+    // nakikita sa admin dashboard kahit naka-toggle na "Available" dito.
+    const [availability, setAvailability] = useState(!!volunteer.is_available);
+    const [savingAvailability, setSavingAvailability] = useState(false);
     const [notifications, setNotifications] = useState([]);
     const [unreadCount, setUnreadCount] = useState(0);
-    const [showBellNotifs, setShowBellNotifs] = useState(false);
-    const [expandedId, setExpandedId] = useState(null);
     const [dashExpandedId, setDashExpandedId] = useState(null);
     const [selectedAnnouncement, setSelectedAnnouncement] = useState(null);
     const [readAnnIds, setReadAnnIds] = useState(() => getReadAnnIds());
-    const bellRef = useRef();
+    // ✅ NEW: selected upcoming-schedule activity, for the click-to-open detail box
+    const [selectedActivity, setSelectedActivity] = useState(null);
 
     useEffect(() => {
         const timer = setInterval(() => setCurrentTime(new Date()), 1000);
         return () => clearInterval(timer);
     }, []);
 
+    // ✅ NEW: pag na-click ang toggle, i-save agad sa database gamit ang bagong
+    // /volunteer/availability endpoint. Optimistic update muna sa UI, tapos i-revert
+    // kung nag-fail ang request.
+    const toggleAvailability = async () => {
+        const next = !availability;
+        setAvailability(next);
+        setSavingAvailability(true);
+        try {
+            await axios.patch(route('volunteer.availability.update'), { is_available: next });
+        } catch {
+            setAvailability(!next); // revert kung hindi na-save
+        } finally {
+            setSavingAvailability(false);
+        }
+    };
+
+    // ✅ UPDATED: notifications now expire 24 hours after they're first seen/posted.
+    // Kung may real `created_at` galing sa backend, doon babatay ang 24h window.
+    // Kung wala (mga auto-generated na "Upcoming: [activity]" notifs), i-track na lang
+    // namin sa localStorage kung kailan una itong lumitaw dito sa dashboard.
     const fetchNotifications = useCallback(async () => {
         const readIds = getReadIds();
+        const DAY_MS = 24 * 60 * 60 * 1000;
+        const now = Date.now();
 
         const activityNotifs = (assignedActivities || [])
             .filter(a => new Date(a.date) >= new Date())
@@ -64,55 +103,74 @@ function VolunteerDashboard({ auth, totalHours, totalDays, monthDays, assignedAc
                 id: `activity-${a.id}`,
                 message: `Upcoming: ${a.name}`,
                 created_at: new Date(a.date).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' }),
+                created_at_raw: null, // walang real "posted" timestamp; first-seen tracking na lang
                 is_read: readIds.has(`activity-${a.id}`),
                 type: 'activity',
                 activity: a,
             }));
 
+        let apiNotifs = [];
         try {
             const res = await axios.get('/volunteer/notifications');
-            const apiNotifs = (res.data.notifications || []).map(n => ({
+            apiNotifs = (res.data.notifications || []).map(n => ({
                 ...n,
                 type: n.type || 'general',
+                created_at_raw: n.created_at || null, // real timestamp galing backend, kung meron
                 is_read: n.is_read || readIds.has(String(n.id)),
             }));
-            const allNotifs = [...activityNotifs, ...apiNotifs];
-            setNotifications(allNotifs);
-            const unread = allNotifs.filter(n => !n.is_read).length;
-            setUnreadCount(unread);
         } catch {
-            setNotifications(activityNotifs);
-            setUnreadCount(activityNotifs.filter(n => !n.is_read).length);
+            apiNotifs = [];
         }
+
+        const allRaw = [...activityNotifs, ...apiNotifs];
+
+        // 24-hour expiry filter
+        const seenMap = getFirstSeenMap();
+        let seenChanged = false;
+
+        const allNotifs = allRaw.filter(n => {
+            const key = String(n.id);
+            const serverTs = n.created_at_raw ? new Date(n.created_at_raw).getTime() : NaN;
+
+            let firstSeen = seenMap[key];
+            if (!firstSeen) {
+                firstSeen = !isNaN(serverTs) ? serverTs : now;
+                seenMap[key] = firstSeen;
+                seenChanged = true;
+            }
+
+            return (now - firstSeen) < DAY_MS;
+        });
+
+        if (seenChanged) saveFirstSeenMap(seenMap);
+
+        setNotifications(allNotifs);
+        setUnreadCount(allNotifs.filter(n => !n.is_read).length);
     }, [assignedActivities]);
 
     useEffect(() => { fetchNotifications(); }, [fetchNotifications]);
 
+    // ✅ NEW: re-check expirations every minute kahit di nagre-refresh ang page,
+    // para talagang "mawawala" yung notif sa UI 24h after, hindi lang pag-reload.
     useEffect(() => {
-        const handler = (e) => {
-            if (bellRef.current && !bellRef.current.contains(e.target)) {
-                setShowBellNotifs(false);
-                setExpandedId(null);
-            }
-        };
-        document.addEventListener('mousedown', handler);
-        return () => document.removeEventListener('mousedown', handler);
-    }, []);
-
-    const handleBellToggle = () => {
-        const willOpen = !showBellNotifs;
-        setShowBellNotifs(willOpen);
-        setExpandedId(null);
-
-        if (willOpen && unreadCount > 0) {
+        const expiryTimer = setInterval(() => {
+            const DAY_MS = 24 * 60 * 60 * 1000;
+            const now = Date.now();
+            const seenMap = getFirstSeenMap();
             setNotifications(prev => {
-                markIdsRead(prev.map(n => n.id));
-                return prev.map(n => ({ ...n, is_read: true }));
+                const filtered = prev.filter(n => {
+                    const firstSeen = seenMap[String(n.id)];
+                    if (!firstSeen) return true;
+                    return (now - firstSeen) < DAY_MS;
+                });
+                if (filtered.length !== prev.length) {
+                    setUnreadCount(filtered.filter(n => !n.is_read).length);
+                }
+                return filtered;
             });
-            setUnreadCount(0);
-            axios.patch('/volunteer/notifications/read-all').catch(() => {});
-        }
-    };
+        }, 60 * 1000);
+        return () => clearInterval(expiryTimer);
+    }, []);
 
     const markAllRead = async () => {
         setNotifications(prev => {
@@ -121,10 +179,6 @@ function VolunteerDashboard({ auth, totalHours, totalDays, monthDays, assignedAc
         });
         setUnreadCount(0);
         try { await axios.patch('/volunteer/notifications/read-all'); } catch {}
-    };
-
-    const handleNotifClick = (id) => {
-        setExpandedId(prev => prev === id ? null : id);
     };
 
     const handleDashNotifClick = (id) => {
@@ -158,9 +212,6 @@ function VolunteerDashboard({ auth, totalHours, totalDays, monthDays, assignedAc
         new Date(r.date).toDateString() === new Date().toDateString() && r.time_in && !r.time_out
     );
 
-    const bellTaskNotifs    = notifications.filter(n => n.type === 'activity');
-    const bellGeneralNotifs = notifications.filter(n => n.type !== 'activity');
-    const bellUnreadCount = unreadCount;
     const announces = announcements || [];
     const unreadAnnCount = announces.filter(a => !readAnnIds.has(String(a.id))).length;
     const upcomingActivities = (assignedActivities || [])
@@ -175,98 +226,10 @@ function VolunteerDashboard({ auth, totalHours, totalDays, monthDays, assignedAc
                 <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet" />
             </Head>
 
-            {/* Date + Bell row */}
+            {/* Date row — bell nasa VolunteerLayout topbar na (katabi ng profile), persistent sa lahat ng pages */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '18px' }}>
                 <div style={{ fontSize: '13px', color: '#6B7280', fontWeight: '500' }}>
                     {currentTime.toLocaleDateString('en-PH', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-                </div>
-
-                <div style={{ position: 'relative' }} ref={bellRef}>
-                    <button
-                        onClick={handleBellToggle}
-                        aria-label="Notifications"
-                        style={{ width: '36px', height: '36px', borderRadius: '50%', background: '#F3F4F6', border: '1px solid #E5E7EB', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', transition: 'background 0.15s' }}
-                        onMouseEnter={e => e.currentTarget.style.background = '#EDEEF0'}
-                        onMouseLeave={e => e.currentTarget.style.background = '#F3F4F6'}
-                    >
-                        <BellIcon />
-                        {bellUnreadCount > 0 && (
-                            <span style={{ position: 'absolute', top: -2, right: -2, background: RED, color: 'white', fontSize: '9px', fontWeight: '700', width: '16px', height: '16px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid white', pointerEvents: 'none' }}>
-                                {bellUnreadCount > 9 ? '9+' : bellUnreadCount}
-                            </span>
-                        )}
-                    </button>
-
-                    {showBellNotifs && (
-                        <div style={{ position: 'absolute', right: 0, top: 44, width: 340, background: 'white', border: '1px solid #E5E7EB', borderRadius: '14px', zIndex: 200, boxShadow: '0 10px 32px rgba(0,0,0,0.14)', overflow: 'hidden', animation: 'popIn 0.15s ease-out' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '13px 16px', borderBottom: '1px solid #F3F4F6' }}>
-                                <span style={{ fontSize: '13px', fontWeight: '700', color: '#111' }}>Notifications</span>
-                                <span style={{ fontSize: '11px', color: '#9CA3AF' }}>Click to expand</span>
-                            </div>
-
-                            <div style={{ maxHeight: '480px', overflowY: 'auto' }}>
-                                <div style={{ padding: '11px 16px 4px', fontSize: '10px', fontWeight: '700', color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Tasks</div>
-                                {bellTaskNotifs.length === 0 ? (
-                                    <div style={{ padding: '10px 16px 14px', fontSize: '12px', color: '#D1D5DB', textAlign: 'center' }}>No tasks assigned</div>
-                                ) : bellTaskNotifs.map(n => {
-                                    const isExpanded = expandedId === n.id;
-                                    const act = n.activity || {};
-                                    return (
-                                        <div key={n.id} style={{ borderBottom: '1px solid #F9FAFB' }}>
-                                            <div onClick={() => handleNotifClick(n.id)} style={{ display: 'flex', gap: '10px', padding: '10px 16px', background: isExpanded ? '#FFF5F5' : 'white', cursor: 'pointer', transition: 'background 0.15s' }}>
-                                                <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: RED, flexShrink: 0, marginTop: '5px' }} />
-                                                <div style={{ flex: 1, minWidth: 0 }}>
-                                                    <div style={{ fontSize: '12px', fontWeight: '600', color: '#111' }}>{n.message}</div>
-                                                    <div style={{ fontSize: '11px', color: '#9CA3AF', marginTop: '2px' }}>{n.created_at}</div>
-                                                </div>
-                                                <span style={{ color: '#9CA3AF', fontSize: '12px', alignSelf: 'center', transform: isExpanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', flexShrink: 0 }}>▾</span>
-                                            </div>
-                                            {isExpanded && (
-                                                <div style={{ padding: '0 16px 14px 33px', background: '#FAFAFA', borderTop: '1px solid #F3F4F6' }}>
-                                                    {act.name && <div style={{ fontSize: '13px', fontWeight: '700', color: '#111', marginBottom: '8px', paddingTop: '10px' }}>{act.name}</div>}
-                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                                                        {act.date && <div style={{ display: 'flex', gap: '8px', fontSize: '12px' }}><span style={{ color: '#9CA3AF', width: '60px', flexShrink: 0 }}>Date</span><span style={{ color: '#374151', fontWeight: '500' }}>{new Date(act.date).toLocaleDateString('en-PH', { weekday: 'short', month: 'long', day: 'numeric', year: 'numeric' })}</span></div>}
-                                                        {act.start_time && <div style={{ display: 'flex', gap: '8px', fontSize: '12px' }}><span style={{ color: '#9CA3AF', width: '60px', flexShrink: 0 }}>Time</span><span style={{ color: '#374151', fontWeight: '500' }}>{act.start_time.substring(0, 5)}{act.end_time ? ` – ${act.end_time.substring(0, 5)}` : ''}</span></div>}
-                                                        {act.location_name && <div style={{ display: 'flex', gap: '8px', fontSize: '12px' }}><span style={{ color: '#9CA3AF', width: '60px', flexShrink: 0 }}>Location</span><span style={{ color: '#374151', fontWeight: '500' }}>{act.location_name}</span></div>}
-                                                        {act.description && <div style={{ display: 'flex', gap: '8px', fontSize: '12px', marginTop: '2px' }}><span style={{ color: '#9CA3AF', width: '60px', flexShrink: 0 }}>Details</span><span style={{ color: '#6B7280', lineHeight: '1.5' }}>{act.description}</span></div>}
-                                                    </div>
-                                                    <Link href={route('volunteer.schedule')} onClick={() => setShowBellNotifs(false)} style={{ display: 'inline-block', marginTop: '10px', fontSize: '11px', fontWeight: '600', color: RED, textDecoration: 'none' }}>View in Schedule →</Link>
-                                                </div>
-                                            )}
-                                        </div>
-                                    );
-                                })}
-
-                                <div style={{ height: '1px', background: '#E5E7EB', margin: '4px 0' }} />
-
-                                <div style={{ padding: '11px 16px 4px', fontSize: '10px', fontWeight: '700', color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Announcements</div>
-                                {bellGeneralNotifs.length === 0 ? (
-                                    <div style={{ padding: '10px 16px 18px', fontSize: '12px', color: '#D1D5DB', textAlign: 'center' }}>No announcements yet</div>
-                                ) : bellGeneralNotifs.map(n => {
-                                    const isExpanded = expandedId === n.id;
-                                    return (
-                                        <div key={n.id} style={{ borderBottom: '1px solid #F9FAFB' }}>
-                                            <div onClick={() => handleNotifClick(n.id)} style={{ display: 'flex', gap: '10px', padding: '10px 16px', background: isExpanded ? '#F9FAFB' : 'white', cursor: 'pointer', transition: 'background 0.15s' }}>
-                                                <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#D1D5DB', flexShrink: 0, marginTop: '5px' }} />
-                                                <div style={{ flex: 1, minWidth: 0 }}>
-                                                    <div style={{ fontSize: '12px', fontWeight: '600', color: '#111', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{n.title || n.message}</div>
-                                                    <div style={{ fontSize: '11px', color: '#9CA3AF', marginTop: '2px' }}>{n.created_at}</div>
-                                                </div>
-                                                <span style={{ color: '#9CA3AF', fontSize: '12px', alignSelf: 'center', transform: isExpanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', flexShrink: 0 }}>▾</span>
-                                            </div>
-                                            {isExpanded && (
-                                                <div style={{ padding: '0 16px 14px 33px', background: '#FAFAFA', borderTop: '1px solid #F3F4F6' }}>
-                                                    {n.title && <div style={{ fontSize: '13px', fontWeight: '700', color: '#111', marginBottom: '6px', paddingTop: '10px' }}>{n.title}</div>}
-                                                    <div style={{ fontSize: '12px', color: '#374151', lineHeight: '1.6', paddingTop: n.title ? 0 : '10px' }}>{n.message}</div>
-                                                    <div style={{ fontSize: '11px', color: '#9CA3AF', marginTop: '6px' }}>{n.created_at}</div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        </div>
-                    )}
                 </div>
             </div>
 
@@ -282,7 +245,10 @@ function VolunteerDashboard({ auth, totalHours, totalDays, monthDays, assignedAc
                 <div style={{ background: 'white', borderRadius: '14px', padding: '18px 20px', border: '1px solid #E5E7EB', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
                     <div style={{ fontSize: '11px', color: '#9CA3AF', fontWeight: '600', marginBottom: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Availability</div>
                     <div style={{ fontSize: '12.5px', fontWeight: '600', color: availability ? '#22C55E' : '#6B7280', marginBottom: '8px' }}>{availability ? 'Available' : 'Not Available'}</div>
-                    <div onClick={() => setAvailability(!availability)} style={{ width: '42px', height: '23px', borderRadius: '12px', background: availability ? '#22C55E' : '#D1D5DB', position: 'relative', cursor: 'pointer', transition: 'background 0.2s' }}>
+                    <div
+                        onClick={savingAvailability ? undefined : toggleAvailability}
+                        style={{ width: '42px', height: '23px', borderRadius: '12px', background: availability ? '#22C55E' : '#D1D5DB', position: 'relative', cursor: savingAvailability ? 'wait' : 'pointer', transition: 'background 0.2s', opacity: savingAvailability ? 0.6 : 1 }}
+                    >
                         <div style={{ position: 'absolute', top: '3px', left: availability ? '22px' : '3px', width: '17px', height: '17px', borderRadius: '50%', background: 'white', transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.25)' }} />
                     </div>
                 </div>
@@ -455,6 +421,7 @@ function VolunteerDashboard({ auth, totalHours, totalDays, monthDays, assignedAc
                             return (
                                 <div
                                     key={act.id}
+                                    onClick={() => setSelectedActivity(act)}
                                     style={{
                                         display: 'flex', alignItems: 'center', gap: '16px',
                                         padding: '14px 16px',
@@ -462,6 +429,7 @@ function VolunteerDashboard({ auth, totalHours, totalDays, monthDays, assignedAc
                                         background: '#FAFAFA',
                                         transition: 'border-color 0.15s, background 0.15s',
                                         minWidth: 0, boxSizing: 'border-box',
+                                        cursor: 'pointer',
                                     }}
                                     onMouseEnter={e => { e.currentTarget.style.borderColor = RED; e.currentTarget.style.background = '#FFF9F9'; }}
                                     onMouseLeave={e => { e.currentTarget.style.borderColor = '#E5E7EB'; e.currentTarget.style.background = '#FAFAFA'; }}
@@ -494,12 +462,9 @@ function VolunteerDashboard({ auth, totalHours, totalDays, monthDays, assignedAc
                                         </div>
                                     </div>
 
-                                    <Link
-                                        href={route('volunteer.schedule')}
-                                        style={{ fontSize: '11px', fontWeight: '700', color: RED, textDecoration: 'none', flexShrink: 0, whiteSpace: 'nowrap' }}
-                                    >
+                                    <span style={{ fontSize: '11px', fontWeight: '700', color: RED, flexShrink: 0, whiteSpace: 'nowrap' }}>
                                         Details ›
-                                    </Link>
+                                    </span>
                                 </div>
                             );
                         })}
@@ -652,6 +617,68 @@ function VolunteerDashboard({ auth, totalHours, totalDays, monthDays, assignedAc
                 </div>
             )}
 
+            {/* ✅ NEW: Schedule detail modal - opens when an Upcoming Schedule card is clicked */}
+            {selectedActivity && (
+                <div
+                    onClick={() => setSelectedActivity(null)}
+                    style={{
+                        position: 'fixed', inset: 0, background: 'rgba(17,17,17,0.5)', backdropFilter: 'blur(2px)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        zIndex: 1000, padding: '20px', animation: 'fadeIn 0.15s ease-out',
+                    }}
+                >
+                    <div
+                        onClick={e => e.stopPropagation()}
+                        style={{
+                            background: 'white', borderRadius: '18px', width: '100%', maxWidth: '420px',
+                            boxShadow: '0 24px 60px rgba(0,0,0,0.25)', overflow: 'hidden',
+                            animation: 'popIn 0.18s ease-out',
+                        }}
+                    >
+                        <div style={{ padding: '22px 24px', borderBottom: '1px solid #F3F4F6', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '10px' }}>
+                            <div>
+                                <div style={{ fontSize: '10px', fontWeight: '700', color: RED, textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>
+                                    Task
+                                </div>
+                                <div style={{ fontSize: '16px', fontWeight: '800', color: '#111' }}>{selectedActivity.name}</div>
+                            </div>
+                            <button onClick={() => setSelectedActivity(null)} style={{ background: '#F3F4F6', border: 'none', borderRadius: '50%', width: 28, height: 28, color: '#6B7280', fontSize: '15px', cursor: 'pointer', flexShrink: 0 }}>×</button>
+                        </div>
+                        <div style={{ padding: '20px 24px' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                {selectedActivity.date && (
+                                    <div style={{ display: 'flex', gap: '8px', fontSize: '12.5px' }}>
+                                        <span style={{ color: '#9CA3AF', width: '64px', flexShrink: 0 }}>Date</span>
+                                        <span style={{ color: '#374151', fontWeight: '500' }}>{new Date(selectedActivity.date).toLocaleDateString('en-PH', { weekday: 'short', month: 'long', day: 'numeric', year: 'numeric' })}</span>
+                                    </div>
+                                )}
+                                {selectedActivity.start_time && (
+                                    <div style={{ display: 'flex', gap: '8px', fontSize: '12.5px' }}>
+                                        <span style={{ color: '#9CA3AF', width: '64px', flexShrink: 0 }}>Time</span>
+                                        <span style={{ color: '#374151', fontWeight: '500' }}>{selectedActivity.start_time.substring(0, 5)}{selectedActivity.end_time ? ` – ${selectedActivity.end_time.substring(0, 5)}` : ''}</span>
+                                    </div>
+                                )}
+                                {selectedActivity.location_name && (
+                                    <div style={{ display: 'flex', gap: '8px', fontSize: '12.5px' }}>
+                                        <span style={{ color: '#9CA3AF', width: '64px', flexShrink: 0 }}>Location</span>
+                                        <span style={{ color: '#374151', fontWeight: '500' }}>{selectedActivity.location_name}</span>
+                                    </div>
+                                )}
+                                {selectedActivity.description && (
+                                    <div style={{ display: 'flex', gap: '8px', fontSize: '12.5px', marginTop: '2px' }}>
+                                        <span style={{ color: '#9CA3AF', width: '64px', flexShrink: 0 }}>Details</span>
+                                        <span style={{ color: '#6B7280', lineHeight: '1.6' }}>{selectedActivity.description}</span>
+                                    </div>
+                                )}
+                                <Link href={route('volunteer.schedule')} style={{ marginTop: '8px', fontSize: '12px', fontWeight: '700', color: RED, textDecoration: 'none' }}>
+                                    View in Schedule →
+                                </Link>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <style>{`
                 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
                 @keyframes popIn { from { opacity: 0; transform: scale(0.94); } to { opacity: 1; transform: scale(1); } }
@@ -669,7 +696,6 @@ function VolunteerDashboard({ auth, totalHours, totalDays, monthDays, assignedAc
     );
 }
 
-function BellIcon() { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6B7280" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>; }
 function MegaphoneIcon({ color = '#ff0000' }) { return <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 11l18-5v12L3 13v-2z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>; }
 function ClockIcon() { return <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>; }
 function PinIcon() { return <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>; }

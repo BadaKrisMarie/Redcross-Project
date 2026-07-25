@@ -2,11 +2,105 @@ import React, { useState } from 'react';
 import { Head, router, usePage } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 
+/* ────────────────────────────────────────────────────────────────
+   Icon set — hand-drawn strokes (lucide-style), 1.75px stroke,
+   consistent 18px grid so every action button lines up perfectly.
+   ──────────────────────────────────────────────────────────────── */
+const Icon = {
+    eye: (p) => (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" {...p}>
+            <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z" />
+            <circle cx="12" cy="12" r="3" />
+        </svg>
+    ),
+    check: (p) => (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" {...p}>
+            <path d="M20 6 9 17l-5-5" />
+        </svg>
+    ),
+    x: (p) => (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" {...p}>
+            <path d="M18 6 6 18M6 6l12 12" />
+        </svg>
+    ),
+    undo: (p) => (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" {...p}>
+            <path d="M3 7v6h6" />
+            <path d="M3 13a9 9 0 1 0 3-6.7L3 9" />
+        </svg>
+    ),
+    trash: (p) => (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" {...p}>
+            <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6h16Z" />
+            <path d="M10 11v6M14 11v6" />
+        </svg>
+    ),
+    search: (p) => (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" {...p}>
+            <circle cx="11" cy="11" r="7" />
+            <path d="m21 21-4.3-4.3" />
+        </svg>
+    ),
+    chevron: (p) => (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" {...p}>
+            <path d="m9 18 6-6-6-6" />
+        </svg>
+    ),
+    clock: (p) => (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" {...p}>
+            <circle cx="12" cy="12" r="9" />
+            <path d="M12 7v5l3 3" />
+        </svg>
+    ),
+    userCheck: (p) => (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" {...p}>
+            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+            <circle cx="9" cy="7" r="4" />
+            <path d="m17 11 2 2 4-4" />
+        </svg>
+    ),
+    userX: (p) => (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" {...p}>
+            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+            <circle cx="9" cy="7" r="4" />
+            <path d="M17 8 22 13M22 8l-5 5" />
+        </svg>
+    ),
+    close: (p) => (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" {...p}>
+            <path d="M18 6 6 18M6 6l12 12" />
+        </svg>
+    ),
+};
+
+/* ── Design tokens ─────────────────────────────────────────────── */
+const T = {
+    red: '#C8102E',       // Philippine Red Cross red
+    redDark: '#A00D25',
+    redSoft: '#FDECEE',
+    ink: '#151922',
+    ink2: '#3D4351',
+    muted: '#78808F',
+    faint: '#A6ACB8',
+    border: '#E7E9EE',
+    borderSoft: '#F0F1F4',
+    surface: '#FFFFFF',
+    surfaceAlt: '#FAFBFC',
+    success: '#1A8245',
+    successSoft: '#E9F7EF',
+    warning: '#B4700A',
+    warningSoft: '#FDF3E0',
+    info: '#1D4ED8',
+    infoSoft: '#EAF0FE',
+    dangerSoft: '#FCEBEC',
+};
+
 function Volunteers({ volunteers }) {
     const { flash } = usePage().props;
     const [search, setSearch] = useState('');
     const [selectedVolunteer, setSelectedVolunteer] = useState(null);
     const [toDelete, setToDelete] = useState(null);
+    const [toRevoke, setToRevoke] = useState(null);
 
     const approve = (e, id) => {
         e.stopPropagation();
@@ -16,6 +110,12 @@ function Volunteers({ volunteers }) {
     const reject = (e, id) => {
         e.stopPropagation();
         router.patch(route('admin.volunteers.reject', id));
+    };
+
+    const confirmRevoke = () => {
+        router.patch(route('admin.volunteers.reject', toRevoke.id), {
+            onSuccess: () => setToRevoke(null),
+        });
     };
 
     const viewProfile = (id) => {
@@ -44,160 +144,265 @@ function Volunteers({ volunteers }) {
         name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
 
     const avatarColors = [
-        '#9f1239', '#5b21b6', '#0f766e', '#b45309', '#1e40af', '#065f46', '#6b21a8'
+        ['#FDECEE', '#A00D25'], ['#EAF0FE', '#1D4ED8'], ['#E9F7EF', '#1A8245'],
+        ['#FDF3E0', '#B4700A'], ['#F1EEFB', '#5B3FBF'], ['#E6F6F6', '#0E7C86'],
+        ['#FBEAF3', '#B02E7A'],
     ];
     const getAvatarColor = (name) =>
         avatarColors[name.charCodeAt(0) % avatarColors.length];
 
-    const statusBadge = (status) => {
-        const styles = {
-            pending:  { background: '#fef3c7', color: '#92400e' },
-            approved: { background: '#dcfce7', color: '#166534' },
-            rejected: { background: '#fee2e2', color: '#ff0000' },
-        };
-        const s = styles[status] || styles.pending;
+    const fmtDate = (d, opts) =>
+        new Date(d).toLocaleDateString('en-PH', opts || { year: 'numeric', month: 'short', day: 'numeric' });
+
+    const StatusBadge = ({ status }) => {
+        const s = {
+            pending:  { bg: T.warningSoft, fg: T.warning, label: 'Pending' },
+            approved: { bg: T.successSoft, fg: T.success, label: 'Approved' },
+            rejected: { bg: T.dangerSoft,  fg: T.red,     label: 'Rejected' },
+        }[status] || { bg: T.borderSoft, fg: T.muted, label: status };
+
         return (
             <span style={{
-                ...s,
-                padding: '3px 10px',
-                borderRadius: '20px',
-                fontSize: '11px',
-                fontWeight: '500',
-                textTransform: 'capitalize',
-            }}>{status}</span>
+                display: 'inline-flex', alignItems: 'center', gap: '5px',
+                background: s.bg, color: s.fg,
+                padding: '3px 10px 3px 8px', borderRadius: '999px',
+                fontSize: '11.5px', fontWeight: 600, letterSpacing: '0.1px',
+            }}>
+                <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: s.fg, flexShrink: 0 }} />
+                {s.label}
+            </span>
         );
     };
 
-    const btnView = {
-        background: '#1d4ed8', color: 'white',
-        border: 'none', padding: '7px 16px',
-        borderRadius: '4px', fontSize: '12px',
-        fontWeight: '600', cursor: 'pointer',
+    const Avatar = ({ v, size = 38 }) => {
+        const [bg, fg] = getAvatarColor(v.name);
+        const src = v.profile_photo_url || v.avatar || v.photo;
+        return (
+            <div style={{
+                width: size, height: size, borderRadius: '50%', flexShrink: 0,
+                background: bg, color: fg,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: size * 0.36, fontWeight: 700, overflow: 'hidden',
+                border: '1px solid rgba(0,0,0,0.04)',
+            }}>
+                {src
+                    ? <img src={src} alt={v.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={e => { e.target.style.display = 'none'; }} />
+                    : getInitials(v.name)}
+            </div>
+        );
     };
 
-    const btnDelete = (v) => (
-        <button
-            onClick={e => { e.stopPropagation(); setToDelete(v); }}
-            style={{
-                background: 'white', color: '#ff0000',
-                border: '1px solid #fca5a5', padding: '7px 16px',
-                borderRadius: '4px', fontSize: '12px',
-                fontWeight: '600', cursor: 'pointer',
-            }}
-        >Delete</button>
-    );
+    /* ── Icon action button with CSS tooltip ─────────────────────── */
+    const IconBtn = ({ icon, label, tone = 'neutral', onClick }) => {
+        const tones = {
+            neutral: { fg: T.ink2,   bg: T.surface,    border: T.border, hoverBg: T.surfaceAlt },
+            primary: { fg: T.info,   bg: T.infoSoft,   border: 'transparent', hoverBg: '#DCE7FD' },
+            success: { fg: T.success, bg: T.successSoft, border: 'transparent', hoverBg: '#D9F1E3' },
+            danger:  { fg: T.red,    bg: T.dangerSoft, border: 'transparent', hoverBg: '#FADBDE' },
+            warning: { fg: T.warning, bg: T.warningSoft, border: 'transparent', hoverBg: '#FBE8C6' },
+        };
+        const c = tones[tone];
+        return (
+            <button
+                onClick={onClick}
+                className="icon-btn"
+                style={{
+                    '--fg': c.fg, '--bg': c.bg, '--hoverBg': c.hoverBg, '--border': c.border,
+                }}
+                data-tooltip={label}
+                aria-label={label}
+                type="button"
+            >
+                {icon({ width: 16, height: 16 })}
+            </button>
+        );
+    };
 
-    const clickableRow = {
-        borderTop: '1px solid #f0f0f0',
-        cursor: 'pointer',
+    const btnPrimaryText = {
+        background: T.ink, color: '#fff',
+        border: 'none', padding: '7px 14px',
+        borderRadius: '6px', fontSize: '12.5px',
+        fontWeight: 600, cursor: 'pointer',
+        display: 'inline-flex', alignItems: 'center', gap: '6px',
         transition: 'background 0.15s',
     };
 
-    // ✅ CHANGED: row click now opens the quick-view modal (setSelectedVolunteer)
-    // instead of jumping straight to the full profile page.
-    // "View Profile" button still goes straight there (it has stopPropagation already).
+    const clickableRow = {
+        borderTop: `1px solid ${T.borderSoft}`,
+        cursor: 'pointer',
+        transition: 'background 0.12s',
+    };
+
     const VolunteerRow = ({ v, actions }) => (
         <tr
             key={v.id}
             style={clickableRow}
             onClick={() => setSelectedVolunteer(v)}
-            onMouseEnter={e => e.currentTarget.style.background = '#f8faff'}
+            onMouseEnter={e => e.currentTarget.style.background = T.surfaceAlt}
             onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
         >
-            <td style={{ padding: '14px 24px', fontSize: '14px', color: '#111', fontWeight: '500' }}>
-                {v.name}
+            <td style={{ padding: '13px 20px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '11px' }}>
+                    <Avatar v={v} size={32} />
+                    <span style={{ fontSize: '13.5px', color: T.ink, fontWeight: 600 }}>{v.name}</span>
+                </div>
             </td>
-            <td style={{ padding: '14px 24px', fontSize: '13px', color: '#666' }}>
+            <td style={{ padding: '13px 20px', fontSize: '13px', color: T.muted }}>
                 {v.email}
             </td>
-            <td style={{ padding: '14px 24px', fontSize: '13px', color: '#999' }}>
-                {new Date(v.created_at).toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' })}
+            <td style={{ padding: '13px 20px', fontSize: '12.5px', color: T.faint }}>
+                {fmtDate(v.created_at)}
             </td>
-            <td style={{ padding: '14px 24px' }} onClick={e => e.stopPropagation()}>
-                <div style={{ display: 'flex', gap: '8px' }}>
+            <td style={{ padding: '13px 20px' }} onClick={e => e.stopPropagation()}>
+                <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
                     {actions(v)}
                 </div>
             </td>
         </tr>
     );
 
-    const TableShell = ({ headers, children, emptyMsg }) => (
-        children.length === 0
-            ? <div style={{ padding: '32px', textAlign: 'center', color: '#aaa', fontSize: '13px' }}>{emptyMsg}</div>
-            : (
+    const SectionCard = ({ dotColor, title, count, headers, rows, emptyMsg, renderActions }) => (
+        <div style={{
+            background: T.surface, borderRadius: '10px', border: `1px solid ${T.border}`,
+            marginBottom: '20px', overflow: 'hidden',
+        }}>
+            <div style={{
+                padding: '16px 20px', borderBottom: `1px solid ${T.borderSoft}`,
+                display: 'flex', alignItems: 'center', gap: '9px', background: T.surfaceAlt,
+            }}>
+                <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: dotColor, flexShrink: 0 }} />
+                <span style={{
+                    fontFamily: "'Oswald', sans-serif", fontSize: '13px', fontWeight: 600,
+                    color: T.ink, textTransform: 'uppercase', letterSpacing: '0.6px',
+                }}>{title}</span>
+                <span style={{
+                    fontSize: '11.5px', fontWeight: 700, color: T.muted,
+                    background: T.borderSoft, padding: '1px 8px', borderRadius: '999px',
+                }}>{count}</span>
+            </div>
+            {rows.length === 0 ? (
+                <div style={{ padding: '36px', textAlign: 'center', color: T.faint, fontSize: '13px' }}>{emptyMsg}</div>
+            ) : (
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                     <thead>
-                        <tr style={{ background: '#fafafa' }}>
-                            {headers.map(h => (
-                                <th key={h} style={{ padding: '12px 24px', textAlign: 'left', fontSize: '11px', fontWeight: '600', color: '#888', textTransform: 'uppercase', letterSpacing: '1px' }}>{h}</th>
+                        <tr>
+                            {headers.map((h, i) => (
+                                <th key={h} style={{
+                                    padding: '10px 20px', textAlign: i === headers.length - 1 ? 'right' : 'left',
+                                    fontSize: '10.5px', fontWeight: 700, color: T.faint,
+                                    textTransform: 'uppercase', letterSpacing: '0.7px',
+                                }}>{h}</th>
                             ))}
                         </tr>
                     </thead>
-                    <tbody>{children}</tbody>
+                    <tbody>
+                        {rows.map(v => <VolunteerRow key={v.id} v={v} actions={renderActions} />)}
+                    </tbody>
                 </table>
-            )
+            )}
+        </div>
     );
 
     return (
         <>
             <Head title="Manage Volunteers" />
-            <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Source+Sans+3:wght@300;400;600&display=swap" rel="stylesheet" />
+            <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
 
             <style>{`
                 * { box-sizing: border-box; }
+                body { font-family: 'Inter', sans-serif; }
 
-                /* Recent Volunteers scrollable list + custom scrollbar */
-                .vol-list-scroll { max-height: 220px; overflow-y: scroll; }
+                .vol-list-scroll { max-height: 300px; overflow-y: auto; }
                 .vol-list-scroll::-webkit-scrollbar { width: 6px; }
-                .vol-list-scroll::-webkit-scrollbar-track { background: #f0f0f0; border-radius: 999px; margin: 4px 0; }
-                .vol-list-scroll::-webkit-scrollbar-thumb { background-color: #4B4B4B; border-radius: 999px; }
-                .vol-list-scroll::-webkit-scrollbar-thumb:hover { background-color: #2E2E2E; }
-                .vol-list-scroll { scrollbar-width: thin; scrollbar-color: #4B4B4B #f0f0f0; }
+                .vol-list-scroll::-webkit-scrollbar-track { background: transparent; }
+                .vol-list-scroll::-webkit-scrollbar-thumb { background-color: #C7CBD3; border-radius: 999px; }
+                .vol-list-scroll::-webkit-scrollbar-thumb:hover { background-color: #9AA0AC; }
+                .vol-list-scroll { scrollbar-width: thin; scrollbar-color: #C7CBD3 transparent; }
+
+                .icon-btn {
+                    position: relative;
+                    width: 30px; height: 30px;
+                    display: inline-flex; align-items: center; justify-content: center;
+                    background: var(--bg); color: var(--fg);
+                    border: 1px solid var(--border);
+                    border-radius: 6px; cursor: pointer;
+                    transition: background 0.12s ease, transform 0.08s ease;
+                }
+                .icon-btn:hover { background: var(--hoverBg); }
+                .icon-btn:active { transform: scale(0.94); }
+
+                .icon-btn::after {
+                    content: attr(data-tooltip);
+                    position: absolute;
+                    bottom: calc(100% + 7px);
+                    left: 50%;
+                    transform: translateX(-50%) translateY(2px);
+                    background: #1A1E27;
+                    color: #fff;
+                    font-size: 11px;
+                    font-weight: 500;
+                    font-family: 'Inter', sans-serif;
+                    padding: 5px 9px;
+                    border-radius: 5px;
+                    white-space: nowrap;
+                    opacity: 0;
+                    pointer-events: none;
+                    transition: opacity 0.12s ease, transform 0.12s ease;
+                    z-index: 20;
+                }
+                .icon-btn::before {
+                    content: '';
+                    position: absolute;
+                    bottom: calc(100% + 3px);
+                    left: 50%;
+                    transform: translateX(-50%);
+                    border: 4px solid transparent;
+                    border-top-color: #1A1E27;
+                    opacity: 0;
+                    pointer-events: none;
+                    transition: opacity 0.12s ease;
+                    z-index: 20;
+                }
+                .icon-btn:hover::after { opacity: 1; transform: translateX(-50%) translateY(0); }
+                .icon-btn:hover::before { opacity: 1; }
+
+                .search-input:focus { border-color: ${T.ink} !important; background: #fff !important; }
+                .primary-btn:hover { background: #262B36 !important; }
             `}</style>
 
             {/* ── DELETE CONFIRMATION MODAL ── */}
             {toDelete && (
-                <div
-                    onClick={() => setToDelete(null)}
-                    style={{
-                        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        zIndex: 1100,
-                    }}
-                >
-                    <div
-                        onClick={e => e.stopPropagation()}
-                        style={{
-                            background: 'white', borderRadius: '12px',
-                            width: '380px', maxWidth: '90vw',
-                            padding: '28px 32px',
-                            boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
-                        }}
-                    >
-                        <h3 style={{
-                            fontFamily: 'Oswald, sans-serif', fontSize: '20px',
-                            color: '#111', marginBottom: '10px'
-                        }}>Delete Volunteer?</h3>
-                        <p style={{ fontSize: '14px', color: '#666', marginBottom: '24px' }}>
-                            Are you sure you want to delete <strong>{toDelete.name}</strong>? This action cannot be undone.
+                <div onClick={() => setToDelete(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(15,17,23,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100 }}>
+                    <div onClick={e => e.stopPropagation()} style={{ background: T.surface, borderRadius: '12px', width: '400px', maxWidth: '90vw', padding: '28px 30px', boxShadow: '0 24px 64px rgba(15,17,23,0.22)' }}>
+                        <div style={{ width: '44px', height: '44px', borderRadius: '10px', background: T.dangerSoft, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px' }}>
+                            <Icon.trash width={20} height={20} style={{ color: T.red }} />
+                        </div>
+                        <h3 style={{ fontFamily: "'Oswald', sans-serif", fontSize: '18px', fontWeight: 600, color: T.ink, marginBottom: '8px' }}>Delete this volunteer?</h3>
+                        <p style={{ fontSize: '13.5px', color: T.muted, lineHeight: 1.6, marginBottom: '24px' }}>
+                            <strong style={{ color: T.ink }}>{toDelete.name}</strong> and their records will be permanently removed. This can't be undone.
                         </p>
                         <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-                            <button
-                                onClick={() => setToDelete(null)}
-                                style={{
-                                    background: 'white', border: '1px solid #ddd',
-                                    padding: '8px 20px', borderRadius: '6px',
-                                    fontSize: '13px', cursor: 'pointer', color: '#444'
-                                }}
-                            >Cancel</button>
-                            <button
-                                onClick={deleteVolunteer}
-                                style={{
-                                    background: '#ff0000', color: 'white', border: 'none',
-                                    padding: '8px 20px', borderRadius: '6px',
-                                    fontSize: '13px', fontWeight: '600', cursor: 'pointer'
-                                }}
-                            >Delete</button>
+                            <button onClick={() => setToDelete(null)} style={{ background: T.surface, border: `1px solid ${T.border}`, padding: '9px 18px', borderRadius: '7px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', color: T.ink2 }}>Cancel</button>
+                            <button onClick={deleteVolunteer} style={{ background: T.red, color: '#fff', border: 'none', padding: '9px 18px', borderRadius: '7px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>Delete volunteer</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ── REVOKE CONFIRMATION MODAL ── */}
+            {toRevoke && (
+                <div onClick={() => setToRevoke(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(15,17,23,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100 }}>
+                    <div onClick={e => e.stopPropagation()} style={{ background: T.surface, borderRadius: '12px', width: '400px', maxWidth: '90vw', padding: '28px 30px', boxShadow: '0 24px 64px rgba(15,17,23,0.22)' }}>
+                        <div style={{ width: '44px', height: '44px', borderRadius: '10px', background: T.warningSoft, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px' }}>
+                            <Icon.undo width={20} height={20} style={{ color: T.warning }} />
+                        </div>
+                        <h3 style={{ fontFamily: "'Oswald', sans-serif", fontSize: '18px', fontWeight: 600, color: T.ink, marginBottom: '8px' }}>Revoke access?</h3>
+                        <p style={{ fontSize: '13.5px', color: T.muted, lineHeight: 1.6, marginBottom: '24px' }}>
+                            <strong style={{ color: T.ink }}>{toRevoke.name}</strong> will move to Rejected and lose volunteer access. You can re-approve them later.
+                        </p>
+                        <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                            <button onClick={() => setToRevoke(null)} style={{ background: T.surface, border: `1px solid ${T.border}`, padding: '9px 18px', borderRadius: '7px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', color: T.ink2 }}>Cancel</button>
+                            <button onClick={confirmRevoke} style={{ background: T.warning, color: '#fff', border: 'none', padding: '9px 18px', borderRadius: '7px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>Revoke access</button>
                         </div>
                     </div>
                 </div>
@@ -205,146 +410,97 @@ function Volunteers({ volunteers }) {
 
             {/* ── VOLUNTEER QUICK-VIEW MODAL ── */}
             {selectedVolunteer && (
-                <div
-                    onClick={() => setSelectedVolunteer(null)}
-                    style={{
-                        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        zIndex: 1000,
-                    }}
-                >
-                    <div
-                        onClick={e => e.stopPropagation()}
-                        style={{
-                            background: 'white', borderRadius: '12px',
-                            width: '480px', maxWidth: '90vw',
-                            boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
-                            overflow: 'hidden',
-                        }}
-                    >
-                        <div style={{ padding: '20px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #f0f0f0' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                                <div style={{
-                                    width: '48px', height: '48px', borderRadius: '50%',
-                                    background: getAvatarColor(selectedVolunteer.name),
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    fontSize: '16px', fontWeight: '600', color: 'white',
-                                    overflow: 'hidden', flexShrink: 0,
-                                }}>
-                                    {selectedVolunteer.profile_photo_url || selectedVolunteer.avatar || selectedVolunteer.photo ? (
-                                        <img src={selectedVolunteer.profile_photo_url || selectedVolunteer.avatar || selectedVolunteer.photo} alt={selectedVolunteer.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={e => { e.target.style.display = 'none'; }} />
-                                    ) : getInitials(selectedVolunteer.name)}
-                                </div>
-                                <div>
-                                    <div style={{ fontFamily: 'Oswald, sans-serif', fontSize: '18px', fontWeight: '600', color: '#111', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{selectedVolunteer.name}</div>
-                                    <div style={{ fontSize: '12px', color: '#ff0000', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px', marginTop: '2px' }}>
-                                        {selectedVolunteer.branch || 'Muntinlupa City Branch'}
-                                    </div>
-                                </div>
-                            </div>
-                            <button onClick={() => setSelectedVolunteer(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '20px', color: '#aaa', lineHeight: 1 }}>✕</button>
+                <div onClick={() => setSelectedVolunteer(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(15,17,23,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px' }}>
+                    <div onClick={e => e.stopPropagation()} style={{ background: T.surface, borderRadius: '14px', width: '460px', maxWidth: '100%', boxShadow: '0 24px 64px rgba(15,17,23,0.28)', overflow: 'hidden' }}>
+                        <div style={{ padding: '22px 24px 0', display: 'flex', justifyContent: 'flex-end' }}>
+                            <button onClick={() => setSelectedVolunteer(null)} style={{ background: T.surfaceAlt, border: `1px solid ${T.border}`, width: '28px', height: '28px', borderRadius: '7px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: T.muted }}>
+                                <Icon.close width={14} height={14} />
+                            </button>
                         </div>
 
-                        <div style={{ padding: '24px' }}>
-                            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
-                                <div style={{
-                                    width: '110px', height: '110px', borderRadius: '50%',
-                                    background: getAvatarColor(selectedVolunteer.name),
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    fontSize: '32px', fontWeight: '600', color: 'white',
-                                    overflow: 'hidden',
-                                }}>
-                                    {selectedVolunteer.profile_photo_url || selectedVolunteer.avatar || selectedVolunteer.photo ? (
-                                        <img src={selectedVolunteer.profile_photo_url || selectedVolunteer.avatar || selectedVolunteer.photo} alt={selectedVolunteer.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={e => { e.target.style.display = 'none'; }} />
-                                    ) : getInitials(selectedVolunteer.name)}
-                                </div>
-                            </div>
+                        <div style={{ padding: '4px 24px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+                            <Avatar v={selectedVolunteer} size={84} />
+                            <div style={{ fontFamily: "'Oswald', sans-serif", fontSize: '19px', fontWeight: 600, color: T.ink, marginTop: '14px' }}>{selectedVolunteer.name}</div>
+                            <div style={{ fontSize: '12.5px', color: T.faint, marginTop: '2px', marginBottom: '10px' }}>{selectedVolunteer.branch || 'Muntinlupa City Branch'}</div>
+                            <StatusBadge status={selectedVolunteer.status} />
+                        </div>
 
-                            <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-                                <div style={{ fontFamily: 'Oswald, sans-serif', fontSize: '20px', fontWeight: '600', color: '#111' }}>{selectedVolunteer.name}</div>
-                                <div style={{ fontSize: '13px', color: '#999', marginTop: '2px' }}>{selectedVolunteer.branch || 'Muntinlupa City Branch'}</div>
-                            </div>
-
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '20px' }}>
+                        <div style={{ padding: '0 24px 24px' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '22px' }}>
                                 {[
                                     { label: 'Email',      value: selectedVolunteer.email },
-                                    { label: 'Status',     value: selectedVolunteer.status, badge: true },
                                     { label: 'Phone',      value: selectedVolunteer.phone || selectedVolunteer.contact_number || '—' },
                                     { label: 'Address',    value: selectedVolunteer.address || '—' },
-                                    { label: 'Registered', value: new Date(selectedVolunteer.created_at).toLocaleDateString('en-PH', { year: 'numeric', month: 'long', day: 'numeric' }) },
-                                    { label: 'Document',   value: selectedVolunteer.document_type || selectedVolunteer.document || '—' },
-                                ].map(({ label, value, badge }) => (
-                                    <div key={label} style={{ background: '#fafafa', borderRadius: '8px', padding: '12px 14px' }}>
-                                        <div style={{ fontSize: '10px', fontWeight: '600', color: '#bbb', textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: '4px' }}>{label}</div>
-                                        {badge ? statusBadge(value) : <div style={{ fontSize: '13px', color: '#333', wordBreak: 'break-word' }}>{value}</div>}
+                                    { label: 'Registered', value: fmtDate(selectedVolunteer.created_at, { year: 'numeric', month: 'long', day: 'numeric' }) },
+                                ].map(({ label, value }) => (
+                                    <div key={label} style={{ background: T.surfaceAlt, border: `1px solid ${T.borderSoft}`, borderRadius: '9px', padding: '11px 13px' }}>
+                                        <div style={{ fontSize: '10px', fontWeight: 700, color: T.faint, textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: '4px' }}>{label}</div>
+                                        <div style={{ fontSize: '12.5px', color: T.ink2, wordBreak: 'break-word', fontWeight: 500 }}>{value}</div>
                                     </div>
                                 ))}
                             </div>
 
-                            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-                                <button onClick={() => setSelectedVolunteer(null)} style={{ padding: '9px 20px', background: 'white', border: '1px solid #e0e0e0', borderRadius: '6px', fontSize: '13px', cursor: 'pointer', color: '#555' }}>Close</button>
-                                <button onClick={() => { setSelectedVolunteer(null); viewProfile(selectedVolunteer.id); }} style={{ padding: '9px 20px', background: '#1d4ed8', color: 'white', border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}>View Full Profile →</button>
+                            <div style={{ display: 'flex', gap: '10px' }}>
+                                <button onClick={() => setSelectedVolunteer(null)} style={{ flex: 1, padding: '10px', background: T.surface, border: `1px solid ${T.border}`, borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', color: T.ink2 }}>Close</button>
+                                <button onClick={() => { setSelectedVolunteer(null); viewProfile(selectedVolunteer.id); }} className="primary-btn" style={{ flex: 1.4, padding: '10px', background: T.ink, color: '#fff', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', transition: 'background 0.15s' }}>
+                                    View full profile <Icon.chevron width={14} height={14} />
+                                </button>
                             </div>
                         </div>
                     </div>
                 </div>
             )}
 
-            <div style={{ fontFamily: "'monserrat', monserrat" }}>
+            <div style={{ fontFamily: "'Inter', sans-serif" }}>
 
-                
+                {/* Page heading */}
+                <div style={{ marginBottom: '22px' }}>
+                    <h1 style={{ fontFamily: "'Oswald', sans-serif", fontSize: '22px', fontWeight: 600, color: T.ink, textTransform: 'uppercase', letterSpacing: '0.4px', margin: 0 }}>Volunteers</h1>
+                    <p style={{ fontSize: '13px', color: T.muted, marginTop: '4px' }}>Review applications, manage access, and keep the roster up to date.</p>
+                </div>
 
                 {/* Flash */}
                 {flash?.success && (
-                    <div style={{
-                        marginBottom: '24px', padding: '12px 16px',
-                        background: '#f0fdf4', border: '1px solid #bbf7d0',
-                        borderRadius: '8px', fontSize: '13px', color: '#16a34a'
-                    }}>{flash.success}</div>
+                    <div style={{ marginBottom: '20px', padding: '12px 16px', background: T.successSoft, border: '1px solid #C4E9D3', borderRadius: '8px', fontSize: '13px', color: T.success, fontWeight: 500, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <Icon.check width={15} height={15} />
+                        {flash.success}
+                    </div>
                 )}
 
                 {/* Stats */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginBottom: '32px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '14px', marginBottom: '24px' }}>
                     {[
-                        { label: 'Pending Approval', value: pending.length,  color: '#f59e0b' },
-                        { label: 'Approved',         value: approved.length, color: '#16a34a' },
-                        { label: 'Rejected',         value: rejected.length, color: '#ff0000' },
-                    ].map(({ label, value, color }) => (
-                        <div key={label} style={{
-                            background: 'white', padding: '24px',
-                            borderRadius: '8px', border: '1px solid #e8e8e8'
-                        }}>
-                            <div style={{ fontFamily: 'monserrat', fontSize: '36px', color, fontWeight: '600' }}>{value}</div>
-                            <div style={{ fontSize: '13px', color: '#888', marginTop: '4px' }}>{label}</div>
+                        { label: 'Pending Approval', value: pending.length },
+                        { label: 'Approved',         value: approved.length },
+                        { label: 'Rejected',         value: rejected.length },
+                    ].map(({ label, value }) => (
+                        <div key={label} style={{ background: T.surface, padding: '20px', borderRadius: '10px', border: `1px solid ${T.border}` }}>
+                            <div style={{ fontFamily: "'Oswald', sans-serif", fontSize: '28px', color: T.ink, fontWeight: 600, lineHeight: 1 }}>{value}</div>
+                            <div style={{ fontSize: '12.5px', color: T.muted, marginTop: '6px', fontWeight: 500 }}>{label}</div>
                         </div>
                     ))}
                 </div>
 
                 {/* ── RECENT VOLUNTEERS ── */}
-                <div style={{ background: 'white', borderRadius: '8px', border: '1px solid #e8e8e8', marginBottom: '32px' }}>
-                    <div style={{
-                        padding: '20px 24px', borderBottom: '1px solid #f0f0f0',
-                        display: 'flex', alignItems: 'center', justifyContent: 'space-between'
-                    }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#ff0000' }}></div>
-                            <span style={{ fontFamily: 'monserrat', fontSize: '16px', fontWeight: '600', color: '#111', textTransform: 'uppercase' }}>Recent Volunteers</span>
+                <div style={{ background: T.surface, borderRadius: '10px', border: `1px solid ${T.border}`, marginBottom: '24px', overflow: 'hidden' }}>
+                    <div style={{ padding: '16px 20px', borderBottom: `1px solid ${T.borderSoft}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: T.surfaceAlt, flexWrap: 'wrap', gap: '10px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '9px' }}>
+                            <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: T.red }} />
+                            <span style={{ fontFamily: "'Oswald', sans-serif", fontSize: '13px', fontWeight: 600, color: T.ink, textTransform: 'uppercase', letterSpacing: '0.6px' }}>Recent Volunteers</span>
                         </div>
                         <div style={{ position: 'relative' }}>
-                            <svg style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', width: '14px', height: '14px', color: '#aaa' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
-                            </svg>
+                            <Icon.search width={14} height={14} style={{ position: 'absolute', left: '11px', top: '50%', transform: 'translateY(-50%)', color: T.faint }} />
                             <input
                                 type="text"
-                                placeholder="Search volunteers..."
+                                placeholder="Search by name or email…"
                                 value={search}
                                 onChange={e => setSearch(e.target.value)}
+                                className="search-input"
                                 style={{
-                                    paddingLeft: '30px', paddingRight: '12px',
-                                    paddingTop: '7px', paddingBottom: '7px',
-                                    fontSize: '13px', border: '1px solid #e8e8e8',
-                                    borderRadius: '6px', outline: 'none',
-                                    width: '220px', color: '#111', background: '#fafafa',
+                                    paddingLeft: '32px', paddingRight: '12px', paddingTop: '8px', paddingBottom: '8px',
+                                    fontSize: '13px', border: `1px solid ${T.border}`, borderRadius: '7px', outline: 'none',
+                                    width: '240px', color: T.ink, background: T.surface, transition: 'border-color 0.12s',
+                                    fontFamily: 'Inter, sans-serif',
                                 }}
                             />
                         </div>
@@ -352,56 +508,35 @@ function Volunteers({ volunteers }) {
 
                     <div className="vol-list-scroll">
                         {recent.length === 0 ? (
-                            <div style={{ padding: '32px', textAlign: 'center', color: '#aaa', fontSize: '13px' }}>No volunteers match your search.</div>
+                            <div style={{ padding: '36px', textAlign: 'center', color: T.faint, fontSize: '13px' }}>No volunteers match your search.</div>
                         ) : (
                             recent.map((v, i) => (
                                 <div
                                     key={v.id}
                                     style={{
-                                        display: 'flex', alignItems: 'center',
-                                        justifyContent: 'space-between',
-                                        padding: '14px 24px',
-                                        borderTop: i === 0 ? 'none' : '1px solid #f5f5f5',
-                                        cursor: 'pointer', transition: 'background 0.15s',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                        padding: '13px 20px',
+                                        borderTop: i === 0 ? 'none' : `1px solid ${T.borderSoft}`,
+                                        cursor: 'pointer', transition: 'background 0.12s',
                                     }}
                                     onClick={() => setSelectedVolunteer(v)}
-                                    onMouseEnter={e => e.currentTarget.style.background = '#fafafa'}
+                                    onMouseEnter={e => e.currentTarget.style.background = T.surfaceAlt}
                                     onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                                 >
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0, flex: 1 }}>
-                                        <div style={{
-                                            width: '38px', height: '38px', borderRadius: '50%',
-                                            background: getAvatarColor(v.name),
-                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                            fontSize: '13px', fontWeight: '600', color: 'white',
-                                            flexShrink: 0, overflow: 'hidden',
-                                        }}>
-                                            {v.profile_photo_url || v.avatar || v.photo ? (
-                                                <img src={v.profile_photo_url || v.avatar || v.photo} alt={v.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} onError={e => { e.target.style.display = 'none'; }} />
-                                            ) : getInitials(v.name)}
-                                        </div>
-                                        <div>
-                                            <div style={{ fontSize: '14px', fontWeight: '500', color: '#111' }}>{v.name}</div>
-                                            <div style={{ fontSize: '12px', color: '#999', marginTop: '1px' }}>{v.email}</div>
+                                        <Avatar v={v} size={36} />
+                                        <div style={{ minWidth: 0 }}>
+                                            <div style={{ fontSize: '13.5px', fontWeight: 600, color: T.ink }}>{v.name}</div>
+                                            <div style={{ fontSize: '12px', color: T.faint, marginTop: '1px' }}>{v.email}</div>
                                         </div>
                                     </div>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexShrink: 0 }}>
-                                        <span style={{ fontSize: '12px', color: '#bbb' }}>
-                                            {new Date(v.created_at).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}
-                                        </span>
-                                        {statusBadge(v.status)}
-                                        <button
-                                            onClick={e => { e.stopPropagation(); setToDelete(v); }}
-                                            style={{
-                                                background: 'white', color: '#991b1b',
-                                                border: '1px solid #fca5a5', padding: '4px 12px',
-                                                borderRadius: '4px', fontSize: '11px',
-                                                fontWeight: '600', cursor: 'pointer',
-                                            }}
-                                        >Delete</button>
-                                        <svg style={{ width: '14px', height: '14px', color: '#ccc' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 18l6-6-6-6" />
-                                        </svg>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexShrink: 0 }}>
+                                        <span style={{ fontSize: '12px', color: T.faint }}>{fmtDate(v.created_at)}</span>
+                                        <StatusBadge status={v.status} />
+                                        <div onClick={e => e.stopPropagation()}>
+                                            <IconBtn icon={Icon.trash} label="Delete" tone="danger" onClick={() => setToDelete(v)} />
+                                        </div>
+                                        <Icon.chevron width={14} height={14} style={{ color: T.faint }} />
                                     </div>
                                 </div>
                             ))
@@ -409,69 +544,57 @@ function Volunteers({ volunteers }) {
                     </div>
                 </div>
 
-                {/* ── PENDING TABLE ── */}
-                <div style={{ background: 'white', borderRadius: '8px', border: '1px solid #e8e8e8', marginBottom: '24px' }}>
-                    <div style={{ padding: '20px 24px', borderBottom: '1px solid #f0f0f0', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#f59e0b' }}></div>
-                        <span style={{ fontFamily: 'monserrat', fontSize: '16px', fontWeight: '600', color: '#111', textTransform: 'uppercase' }}>
-                            Pending Approval ({pending.length})
-                        </span>
-                    </div>
-                    <TableShell headers={['Name', 'Email', 'Registered', 'Actions']} children={pending} emptyMsg="No pending volunteers">
-                        {pending.map(v => (
-                            <VolunteerRow key={v.id} v={v} actions={v => (
-                                <>
-                                    <button onClick={e => { e.stopPropagation(); viewProfile(v.id); }} style={btnView}>View Profile</button>
-                                    <button onClick={e => approve(e, v.id)} style={{ background: '#16a34a', color: 'white', border: 'none', padding: '7px 16px', borderRadius: '4px', fontSize: '12px', fontWeight: '600', cursor: 'pointer' }}>Approve</button>
-                                    <button onClick={e => reject(e, v.id)} style={{ background: 'white', color: '#ff0000', border: '1px solid #ff0000', padding: '7px 16px', borderRadius: '4px', fontSize: '12px', fontWeight: '600', cursor: 'pointer' }}>Reject</button>
-                                    {btnDelete(v)}
-                                </>
-                            )} />
-                        ))}
-                    </TableShell>
-                </div>
+                {/* ── PENDING ── */}
+                <SectionCard
+                    dotColor={T.warning}
+                    title="Pending Approval"
+                    count={pending.length}
+                    headers={['Name', 'Email', 'Registered', 'Actions']}
+                    rows={pending}
+                    emptyMsg="No pending volunteers"
+                    renderActions={v => (
+                        <>
+                            <IconBtn icon={Icon.eye} label="View profile" tone="neutral" onClick={() => viewProfile(v.id)} />
+                            <IconBtn icon={Icon.check} label="Approve" tone="success" onClick={e => approve(e, v.id)} />
+                            <IconBtn icon={Icon.x} label="Reject" tone="danger" onClick={e => reject(e, v.id)} />
+                            <IconBtn icon={Icon.trash} label="Delete" tone="danger" onClick={() => setToDelete(v)} />
+                        </>
+                    )}
+                />
 
-                {/* ── APPROVED TABLE ── */}
-                <div style={{ background: 'white', borderRadius: '8px', border: '1px solid #e8e8e8', marginBottom: '24px' }}>
-                    <div style={{ padding: '20px 24px', borderBottom: '1px solid #f0f0f0', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#16a34a' }}></div>
-                        <span style={{ fontFamily: 'monserrat', fontSize: '16px', fontWeight: '600', color: '#111', textTransform: 'uppercase' }}>
-                            Approved Volunteers ({approved.length})
-                        </span>
-                    </div>
-                    <TableShell headers={['Name', 'Email', 'Registered', 'Actions']} children={approved} emptyMsg="No approved volunteers yet">
-                        {approved.map(v => (
-                            <VolunteerRow key={v.id} v={v} actions={v => (
-                                <>
-                                    <button onClick={e => { e.stopPropagation(); viewProfile(v.id); }} style={btnView}>View Profile</button>
-                                    <button onClick={e => reject(e, v.id)} style={{ background: 'white', color: '#ff0000', border: '1px solid #ff0000', padding: '7px 16px', borderRadius: '4px', fontSize: '12px', fontWeight: '600', cursor: 'pointer' }}>Revoke</button>
-                                    {btnDelete(v)}
-                                </>
-                            )} />
-                        ))}
-                    </TableShell>
-                </div>
+                {/* ── APPROVED ── */}
+                <SectionCard
+                    dotColor={T.success}
+                    title="Approved Volunteers"
+                    count={approved.length}
+                    headers={['Name', 'Email', 'Registered', 'Actions']}
+                    rows={approved}
+                    emptyMsg="No approved volunteers yet"
+                    renderActions={v => (
+                        <>
+                            <IconBtn icon={Icon.eye} label="View profile" tone="neutral" onClick={() => viewProfile(v.id)} />
+                            <IconBtn icon={Icon.undo} label="Revoke access" tone="warning" onClick={() => setToRevoke(v)} />
+                            <IconBtn icon={Icon.trash} label="Delete" tone="danger" onClick={() => setToDelete(v)} />
+                        </>
+                    )}
+                />
 
-                {/* ── REJECTED TABLE ── */}
-                <div style={{ background: 'white', borderRadius: '8px', border: '1px solid #e8e8e8' }}>
-                    <div style={{ padding: '20px 24px', borderBottom: '1px solid #f0f0f0', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#ff0000' }}></div>
-                        <span style={{ fontFamily: 'monserrat', fontSize: '16px', fontWeight: '600', color: '#111', textTransform: 'uppercase' }}>
-                            Rejected Volunteers ({rejected.length})
-                        </span>
-                    </div>
-                    <TableShell headers={['Name', 'Email', 'Registered', 'Actions']} children={rejected} emptyMsg="No rejected volunteers">
-                        {rejected.map(v => (
-                            <VolunteerRow key={v.id} v={v} actions={v => (
-                                <>
-                                    <button onClick={e => { e.stopPropagation(); viewProfile(v.id); }} style={btnView}>View Profile</button>
-                                    <button onClick={e => approve(e, v.id)} style={{ background: '#16a34a', color: 'white', border: 'none', padding: '7px 16px', borderRadius: '4px', fontSize: '12px', fontWeight: '600', cursor: 'pointer' }}>Re-approve</button>
-                                    {btnDelete(v)}
-                                </>
-                            )} />
-                        ))}
-                    </TableShell>
-                </div>
+                {/* ── REJECTED ── */}
+                <SectionCard
+                    dotColor={T.red}
+                    title="Rejected Volunteers"
+                    count={rejected.length}
+                    headers={['Name', 'Email', 'Registered', 'Actions']}
+                    rows={rejected}
+                    emptyMsg="No rejected volunteers"
+                    renderActions={v => (
+                        <>
+                            <IconBtn icon={Icon.eye} label="View profile" tone="neutral" onClick={() => viewProfile(v.id)} />
+                            <IconBtn icon={Icon.userCheck} label="Re-approve" tone="success" onClick={e => approve(e, v.id)} />
+                            <IconBtn icon={Icon.trash} label="Delete" tone="danger" onClick={() => setToDelete(v)} />
+                        </>
+                    )}
+                />
 
             </div>
         </>

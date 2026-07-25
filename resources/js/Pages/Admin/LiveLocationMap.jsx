@@ -5,7 +5,7 @@ const DEFAULT_CENTER = [14.4081, 121.0415]; // Muntinlupa City, PH - used before
 const LEAFLET_CSS_URL = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
 const LEAFLET_JS_URL = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
 
-// Volunteer is considered "nasa lokasyon" once they're within this many meters
+// Volunteer is considered "at location" once they're within this many meters
 // of the activity's registered coordinates. GPS on phones can easily drift
 // 20-50m indoors/under trees, so 100m is a forgiving-but-still-useful radius.
 const GEOFENCE_RADIUS_METERS = 100;
@@ -78,15 +78,17 @@ function makeFlagIcon() {
     });
 }
 
+// ✅ UPDATED: "on the way" (blue) status removed. A volunteer is treated as
+// being AT the location the moment their location starts being tracked
+// (i.e. right after they log in / check in for the activity). They only
+// flip to "left" if a later ping shows them outside the geofence radius.
 const STATUS_COLORS = {
-    inside: '#16a34a',    // green -on location
-    outside: '#2563eb',   // blue - on the way
-    left: '#dc2626',      // red - exit the location (was inside, now isn't)
+    inside: '#0000ff',    // blue - at location
+    left: '#dc2626',      // red - left the location (moved outside the radius)
 };
 
 const STATUS_LABELS = {
-    inside: 'On Location',
-    outside: 'On the Way',
+    inside: 'At Location',
     left: 'Left Location',
 };
 
@@ -101,7 +103,7 @@ export default function LiveLocationMap() {
     const [mapReady, setMapReady] = useState(false);
     const [mapError, setMapError] = useState(false);
     const [activeCount, setActiveCount] = useState(0);
-    const [statusCounts, setStatusCounts] = useState({ inside: 0, outside: 0, left: 0 });
+    const [statusCounts, setStatusCounts] = useState({ inside: 0, left: 0 });
     const [lastUpdated, setLastUpdated] = useState(null);
 
     // Load Leaflet, then initialize the map once.
@@ -170,7 +172,7 @@ export default function LiveLocationMap() {
         const L = window.L;
         const seenUserIds = new Set();
         const seenActivityIds = new Set();
-        const counts = { inside: 0, outside: 0, left: 0 };
+        const counts = { inside: 0, left: 0 };
 
         locations.forEach((loc) => {
             seenUserIds.add(loc.user_id);
@@ -179,19 +181,16 @@ export default function LiveLocationMap() {
             const destLatLng = hasDestination ? [loc.activity_latitude, loc.activity_longitude] : null;
 
             const existing = markersRef.current[loc.user_id];
-            const wasInside = existing?.prevStatus === 'inside';
 
-            // Work out geofence status for this ping.
-            let status = 'outside';
+            // ✅ UPDATED: no more "outside/on the way" state. Volunteers are
+            // assumed to be at location the moment they're tracked; they only
+            // become "left" once a ping shows them past the geofence radius.
+            let status = 'inside';
             let distanceLabel = '';
             if (hasDestination) {
                 const meters = distanceInMeters(loc.latitude, loc.longitude, loc.activity_latitude, loc.activity_longitude);
                 distanceLabel = meters >= 1000 ? `${(meters / 1000).toFixed(1)}km` : `${Math.round(meters)}m`;
-                if (meters <= GEOFENCE_RADIUS_METERS) {
-                    status = 'inside';
-                } else {
-                    status = wasInside ? 'left' : 'outside';
-                }
+                status = meters <= GEOFENCE_RADIUS_METERS ? 'inside' : 'left';
             }
             counts[status] += 1;
 
@@ -200,7 +199,7 @@ export default function LiveLocationMap() {
                     <strong>${loc.user_name}</strong><br/>
                     ${loc.activity_name} — ${loc.location_name}<br/>
                     <span style="color:${STATUS_COLORS[status]}; font-weight:600;">${STATUS_LABELS[status]}</span>
-                    ${hasDestination ? ` · ${distanceLabel} mula sa lokasyon` : ''}<br/>
+                    ${hasDestination ? ` · ${distanceLabel} from location` : ''}<br/>
                     <span style="color:#888;">Last update: ${loc.last_ping_at}</span>
                 </div>
             `;
@@ -318,19 +317,17 @@ export default function LiveLocationMap() {
                 </div>
             </div>
 
+            {/* ✅ UPDATED: legend now shows only 2 statuses (At Location / Left Location) in English,
+                "On the Way" removed entirely per requirement. */}
             {mapReady && activeCount > 0 && (
                 <div style={{ padding: '10px 24px', borderBottom: '1px solid #f0f0f0', display: 'flex', gap: '16px', fontSize: '12px', flexWrap: 'wrap' }}>
                     <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                         <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: STATUS_COLORS.inside, display: 'inline-block' }} />
-                        Nasa lokasyon: <strong>{statusCounts.inside}</strong>
-                    </span>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: STATUS_COLORS.outside, display: 'inline-block' }} />
-                        Papunta pa: <strong>{statusCounts.outside}</strong>
+                        At Location: <strong>{statusCounts.inside}</strong>
                     </span>
                     <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                         <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: STATUS_COLORS.left, display: 'inline-block' }} />
-                        Lumabas: <strong>{statusCounts.left}</strong>
+                        Left Location: <strong>{statusCounts.left}</strong>
                     </span>
                 </div>
             )}

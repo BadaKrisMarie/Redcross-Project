@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link, router, usePage } from '@inertiajs/react';
 
 /**
@@ -34,9 +34,19 @@ const NavAvatar = ({ photoUrl, initials, size = 32, fontSize = 12 }) => (
     </div>
 );
 
+// ⚠️ Idinefine OUTSIDE ng parent component din, kasabay ng NavAvatar convention.
+const BellIcon = () => (
+    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
+        <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+    </svg>
+);
+
 export default function AdminLayout({ children, title = 'Dashboard' }) {
-    const { auth } = usePage().props;
+    const { auth, notifications } = usePage().props;
     const [sidebarOpen, setSidebarOpen] = useState(true);
+    const [notifOpen, setNotifOpen] = useState(false);
+    const notifRef = useRef(null);
 
     // ✅ Dynamic active-link detection base sa current Inertia route
     // (gumagana kahit anong page ang binisita — hindi na naka-hardcode ang "active")
@@ -55,6 +65,36 @@ export default function AdminLayout({ children, title = 'Dashboard' }) {
     const photoUrl = admin?.photo ? `/storage/${admin.photo}` : null;
 
     const handleLogout = () => router.post(route('logout'));
+
+    // ⚠️ Ang notifications ay galing sa pending documents (backend, see
+    // HandleInertiaRequests::share()). Ang unread count ay base na sa
+    // 'read_at' (admin_viewed_at) — mawawala pag nabuksan na ang dropdown,
+    // kahit hindi pa na-approve/reject ang document.
+    const notifList = notifications ?? [];
+    const unreadCount = notifList.filter(n => !n.read_at).length;
+
+    // ✅ BAGO: i-mark bilang 'viewed' pag binuksan ang dropdown, para mawala
+    // ang badge number kahit hindi pa na-approve/reject ang document.
+    const handleToggleNotif = () => {
+        const opening = !notifOpen;
+        setNotifOpen(opening);
+        if (opening && unreadCount > 0) {
+            router.post(route('admin.notifications.markRead'), {}, {
+                preserveScroll: true,
+                preserveState: true,
+                only: ['notifications'],
+            });
+        }
+    };
+
+    // Close the dropdown pag nag-click sa labas nito
+    useEffect(() => {
+        const onClick = (e) => {
+            if (notifRef.current && !notifRef.current.contains(e.target)) setNotifOpen(false);
+        };
+        document.addEventListener('mousedown', onClick);
+        return () => document.removeEventListener('mousedown', onClick);
+    }, []);
 
     return (
         <>
@@ -92,6 +132,25 @@ export default function AdminLayout({ children, title = 'Dashboard' }) {
                 .menu-btn { background: none; border: none; cursor: pointer; color: var(--ink); display: flex; align-items: center; padding: 4px; }
                 .page-title { font-family: Montserrat; font-size: 20px; font-weight: 700; color: var(--ink); letter-spacing: .3px; text-transform: uppercase; line-height: 1; }
                 .content { flex: 1; padding: 28px; }
+                /* ✅ Right-side topbar cluster (bell + profile) */
+                .topbar-right { display: flex; align-items: center; gap: 6px; }
+                .notif-wrap { position: relative; }
+                .notif-btn { position: relative; background: none; border: none; cursor: pointer; color: var(--ink); width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; transition: background 0.15s; }
+                .notif-btn:hover { background: #f5f5f5; }
+                /* ✅ BAGO: numbered badge sa halip na dot lang, para makita agad ang bilang */
+                .notif-badge { position: absolute; top: 3px; right: 3px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 999px; background: var(--red); color: #fff; font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center; border: 1.5px solid #fff; line-height: 1; }
+                .notif-dropdown { position: absolute; right: 0; top: 44px; width: 320px; background: #fff; border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.12); overflow: hidden; z-index: 200; }
+                .notif-header { padding: 12px 16px; border-bottom: 1px solid var(--border); font-size: 13px; font-weight: 700; color: var(--ink); display: flex; align-items: center; justify-content: space-between; }
+                .notif-header-count { font-size: 11px; font-weight: 600; color: var(--red); background: #fee2e2; padding: 2px 8px; border-radius: 20px; }
+                .notif-list { max-height: 320px; overflow-y: auto; }
+                .notif-item { display: block; padding: 12px 16px; border-bottom: 1px solid #f5f5f5; text-decoration: none; color: inherit; }
+                .notif-item:hover { background: #fafafa; }
+                .notif-item:last-child { border-bottom: none; }
+                .notif-title { font-size: 13px; font-weight: 600; color: var(--ink); margin-bottom: 2px; }
+                .notif-time { font-size: 11px; color: var(--muted); }
+                .notif-empty { padding: 28px 16px; text-align: center; font-size: 12.5px; color: var(--muted); }
+                .notif-footer { padding: 10px 16px; text-align: center; border-top: 1px solid #f5f5f5; }
+                .notif-footer a { font-size: 12px; font-weight: 600; color: var(--red); text-decoration: none; }
                 /* ✅ Right-side topbar profile — dito na ngayon ma-eedit ang profile */
                 .topbar-profile { display: flex; align-items: center; gap: 10px; text-decoration: none; padding: 4px 8px; border-radius: 8px; transition: background 0.15s; cursor: pointer; }
                 .topbar-profile:hover { background: #f5f5f5; }
@@ -119,7 +178,10 @@ export default function AdminLayout({ children, title = 'Dashboard' }) {
                         {navLinksManage.map(({ label, route: r, badge }) => (
                             <Link key={label} href={route(r)} className={`nav-item ${isActive(r) ? 'active' : ''}`}>
                                 <div className="nav-dot" />{label}
-                                {badge && <span className="nav-badge">{badge}</span>}
+                                {/* ✅ Extra: numbered badge din sa "201 Files" link kapag may pending documents */}
+                                {r === 'admin.documents.index' && unreadCount > 0
+                                    ? <span className="nav-badge">{unreadCount}</span>
+                                    : (badge && <span className="nav-badge">{badge}</span>)}
                             </Link>
                         ))}
                     </nav>
@@ -141,11 +203,55 @@ export default function AdminLayout({ children, title = 'Dashboard' }) {
                             <span className="page-title">{title}</span>
                         </div>
 
-                        {/* ✅ Dito na ngayon papunta sa admin.profile para ma-edit */}
-                        <Link href={route('admin.profile')} className="topbar-profile">
-                            <NavAvatar photoUrl={photoUrl} initials={initials} size={28} fontSize={10} />
-                            <span className="topbar-profile-name">{admin?.name ?? 'Admin'}</span>
-                        </Link>
+                        <div className="topbar-right">
+                            {/* ✅ Notification bell — numbered badge na, hindi lang dot */}
+                            <div className="notif-wrap" ref={notifRef}>
+                                <button className="notif-btn" onClick={handleToggleNotif} aria-label="Notifications">
+                                    <BellIcon />
+                                    {unreadCount > 0 && (
+                                        <span className="notif-badge">{unreadCount > 9 ? '9+' : unreadCount}</span>
+                                    )}
+                                </button>
+                                {notifOpen && (
+                                    <div className="notif-dropdown">
+                                        <div className="notif-header">
+                                            <span>Notifications</span>
+                                            {unreadCount > 0 && <span className="notif-header-count">{unreadCount} pending</span>}
+                                        </div>
+                                        <div className="notif-list">
+                                            {notifList.length === 0 ? (
+                                                <div className="notif-empty">Wala pang bagong notification.</div>
+                                            ) : (
+                                                notifList.map((n, i) => (
+                                                    <Link
+                                                        key={n.id ?? i}
+                                                        href={route('admin.documents.index')}
+                                                        className="notif-item"
+                                                        onClick={() => setNotifOpen(false)}
+                                                    >
+                                                        <div className="notif-title">{n.title ?? n.message}</div>
+                                                        {n.created_at && <div className="notif-time">{n.created_at}</div>}
+                                                    </Link>
+                                                ))
+                                            )}
+                                        </div>
+                                        {notifList.length > 0 && (
+                                            <div className="notif-footer">
+                                                <Link href={route('admin.documents.index')} onClick={() => setNotifOpen(false)}>
+                                                    View all in 201 Files →
+                                                </Link>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* ✅ Dito na ngayon papunta sa admin.profile para ma-edit */}
+                            <Link href={route('admin.profile')} className="topbar-profile">
+                                <NavAvatar photoUrl={photoUrl} initials={initials} size={28} fontSize={10} />
+                                <span className="topbar-profile-name">{admin?.name ?? 'Admin'}</span>
+                            </Link>
+                        </div>
                     </div>
 
                     <div className="content">

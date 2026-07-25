@@ -53,7 +53,7 @@ function VolunteerCommunication({ sentEmails, announcements }) {
         width: '100%', padding: '12px 15px',
         border: focusedField === field ? `1.5px solid ${RED}` : '1.5px solid #E5E7EB',
         borderRadius: '10px', fontSize: '13.5px', outline: 'none',
-        boxSizing: 'border-box', fontFamily: 'Montserrat', color: '#111827',
+        boxSizing: 'border-box', fontFamily: "'Montserrat', sans-serif", color: '#111827',
         background: focusedField === field ? '#FFFFFF' : '#FAFAFA',
         boxShadow: focusedField === field ? '0 0 0 4px rgba(255,0,0,0.08)' : 'none',
         transition: 'border-color 0.15s, box-shadow 0.15s, background 0.15s',
@@ -63,9 +63,14 @@ function VolunteerCommunication({ sentEmails, announcements }) {
     const labelStyle = { fontSize: '12.5px', fontWeight: '600', color: '#374151', display: 'block', marginBottom: '7px', letterSpacing: '0.1px' };
 
     return (
-        <>
+        // ✅ FIXED: dating <> fragment, ngayon <div> na may fontFamily para lumaganap
+        // ang Montserrat sa LAHAT ng text sa page — headers, tabs, modals, list items —
+        // hindi lang sa inputs.
+        <div style={{ fontFamily: "'Montserrat', sans-serif" }}>
             <Head title="Communication" />
-            <link href="https://fonts.googleapis.com/css2?family=monserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+            {/* ✅ FIXED: "monserrat" (typo, lowercase) -> "Montserrat" (case-sensitive sa Google Fonts,
+                kaya dati hindi talaga naglo-load ang tamang font) */}
+            <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
 
             {/* ── INBOX MODAL ── */}
             {selectedInbox !== null && (
@@ -457,7 +462,7 @@ function VolunteerCommunication({ sentEmails, announcements }) {
                 @keyframes popIn { from { opacity: 0; transform: scale(0.94); } to { opacity: 1; transform: scale(1); } }
                 input::placeholder, textarea::placeholder { color: #B0B5BD; }
             `}</style>
-        </>
+        </div>
     );
 }
 

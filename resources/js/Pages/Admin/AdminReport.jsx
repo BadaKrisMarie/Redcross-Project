@@ -51,7 +51,8 @@ function AdminReport({ records = [], totals = {}, weeklyTrend = [], filters = {}
         if (status === 'present') return { background: '#dcfce7', color: '#166534', label: 'Present' };
         if (status === 'ongoing') return { background: '#fef3c7', color: '#92400e', label: 'On duty' };
         if (status === 'absent') return { background: '#fee2e2', color: '#991b1b', label: 'Absent' };
-        if (status === 'flagged') return { background: '#ede9fe', color: '#5b21b6', label: 'Flagged' };
+        // ✅ changed from purple (#ede9fe / #5b21b6) to blue
+        if (status === 'flagged') return { background: '#dbeafe', color: '#1e40af', label: 'Flagged' };
         return { background: '#f5f5f5', color: '#555', label: status };
     };
 

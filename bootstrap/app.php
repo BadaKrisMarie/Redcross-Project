@@ -12,10 +12,11 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        $middleware->web(append: [
-            \App\Http\Middleware\HandleInertiaRequests::class,
-            \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
-        ]);
+    $middleware->web(append: [
+        \App\Http\Middleware\HandleInertiaRequests::class,
+        \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
+        \App\Http\Middleware\UpdateLastActive::class,
+    ]);
 
         // ← FIXED: API routes now share the web middleware group
         //   so Laravel session cookies work for authentication

@@ -30,6 +30,9 @@ class User extends Authenticatable
         'face_descriptor',
         'skills',        // ✅ NEW — array of trainings e.g. First Aid, CPR
         'skills_notes',  // ✅ NEW — free-text notes about skills/trainings
+        'is_available',
+        'last_active_at',
+        'is_online',     // ✅ NEW — true habang naka-login, false pag naka-logout
     ];
 
     protected $hidden = [
@@ -43,6 +46,9 @@ class User extends Authenticatable
         'face_descriptor'   => 'array',
         'skills'            => 'array', // ✅ NEW — auto encode/decode as JSON array
         'birthdate'         => 'date',  // ✅ NEW — lets us format/compute age cleanly
+        'is_available'      => 'boolean',
+        'last_active_at'    => 'datetime',
+        'is_online'         => 'boolean', // ✅ NEW
     ];
 
     protected $appends = ['avatar_url'];

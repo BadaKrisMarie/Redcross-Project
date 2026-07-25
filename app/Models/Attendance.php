@@ -15,6 +15,7 @@ class Attendance extends Model
         'hours_rendered',
         'latitude',
         'longitude',
+        'method',
     ];
 
     protected $casts = [

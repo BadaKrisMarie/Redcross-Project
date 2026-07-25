@@ -26,22 +26,26 @@ class AdminController extends Controller
             ->count();
 
         // ── Recent volunteers (latest 5) ──────────────────────────────
+        // "Online" ay base na sa is_online column (login/logout event-driven),
+        // hindi na sa oras ng last_active_at — kaya persistent hanggang mag-logout.
         $recentVolunteers = User::role('volunteer')
             ->latest()
-            ->get(['id', 'name', 'email', 'status', 'photo'])
+            ->get(['id', 'name', 'email', 'status', 'photo', 'is_available', 'is_online'])
             ->map(fn($user) => [
                 'initials' => collect(explode(' ', $user->name))
                                 ->map(fn($w) => strtoupper($w[0] ?? ''))
                                 ->take(2)
                                 ->join(''),
-                'name'   => $user->name,
-                'branch' => 'Muntinlupa City Branch',
-                'status' => match($user->status) {
+                'name'         => $user->name,
+                'branch'       => 'Muntinlupa City Branch',
+                'status'       => match($user->status) {
                     'approved' => 'Active',
                     'pending'  => 'Incomplete docs',
                     default    => 'Inactive',
                 },
-                'photo'  => $user->photo ? asset('storage/' . $user->photo) : null,
+                'photo'        => $user->photo ? asset('storage/' . $user->photo) : null,
+                'is_available' => (bool) $user->is_available,
+                'is_online'    => (bool) $user->is_online,
             ])
             ->values()
             ->toArray();
@@ -87,19 +91,33 @@ class AdminController extends Controller
             ->latest()
             ->take(5)
             ->get()
-            ->map(fn($doc) => [
-                'id'        => $doc->id,
-                'user_id'   => $doc->user_id,
-                'name'      => $doc->user->name,
-                'type'      => strtoupper($doc->type),
-                'file_url'  => $doc->file_path ? route('admin.documents.file', $doc->id) : null, // ← BINAGO
-                'photo'     => $doc->user->photo ? asset('storage/' . $doc->user->photo) : null,
-                'initials'  => collect(explode(' ', $doc->user->name))
-                                ->map(fn($w) => strtoupper($w[0] ?? ''))
-                                ->take(2)
-                                ->join(''),
-                'color_id'  => $doc->user_id % 5,
-            ])
+            ->map(function ($doc) {
+                // ✅ Detect mime_type from actual file on disk (kagaya ng sa DocumentController@index)
+                // Kailangan ito para malaman ng frontend kung image, PDF, o iba pang uri ng file
+                // ang dapat i-preview sa modal, dahil ang file_url galing sa route (walang extension).
+                $mimeType = null;
+                if ($doc->file_path) {
+                    $path = storage_path('app/public/' . $doc->file_path);
+                    if (file_exists($path)) {
+                        $mimeType = mime_content_type($path);
+                    }
+                }
+
+                return [
+                    'id'        => $doc->id,
+                    'user_id'   => $doc->user_id,
+                    'name'      => $doc->user->name,
+                    'type'      => strtoupper($doc->type),
+                    'file_url'  => $doc->file_path ? route('admin.documents.file', $doc->id) : null,
+                    'mime_type' => $mimeType, // ✅ BAGO — ginagamit ng frontend para malaman kung image/PDF
+                    'photo'     => $doc->user->photo ? asset('storage/' . $doc->user->photo) : null,
+                    'initials'  => collect(explode(' ', $doc->user->name))
+                                    ->map(fn($w) => strtoupper($w[0] ?? ''))
+                                    ->take(2)
+                                    ->join(''),
+                    'color_id'  => $doc->user_id % 5,
+                ];
+            })
             ->values()
             ->toArray();
 

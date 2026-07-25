@@ -46,10 +46,20 @@ class AuthenticatedSessionController extends Controller
         }
 
         if ($user->hasRole('admin')) {
+            // ✅ Mark online on successful login
+            $user->is_online = true;
+            $user->last_active_at = now();
+            $user->save();
+
             return redirect()->route('admin.dashboard');
         }
 
         if ($user->hasRole('volunteer')) {
+            // ✅ Mark online on successful login
+            $user->is_online = true;
+            $user->last_active_at = now();
+            $user->save();
+
             return redirect()->route('volunteer.dashboard');
         }
 
@@ -68,6 +78,14 @@ class AuthenticatedSessionController extends Controller
      */
     public function destroy(Request $request): RedirectResponse
     {
+        // ✅ Mark offline BEFORE logging out (kailangan habang meron pang authenticated user)
+        $user = Auth::user();
+        if ($user) {
+            $user->is_online = false;
+            $user->last_active_at = now();
+            $user->save();
+        }
+
         Auth::guard('web')->logout();
 
         $request->session()->invalidate();

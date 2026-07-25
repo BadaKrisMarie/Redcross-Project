@@ -4,6 +4,29 @@ import AdminLayout from '@/Layouts/AdminLayout';
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50];
 
+// ✅ plain line-icon components — replacing emoji, no color changes elsewhere
+const IconPin = ({ size = 11 }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a2 2 0 01-2.828 0l-4.243-4.243a8 8 0 1111.314 0z"/>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+    </svg>
+);
+const IconTable = ({ size = 13 }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <rect x="3" y="4" width="18" height="16" rx="1"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="9" y1="10" x2="9" y2="20"/>
+    </svg>
+);
+const IconGrid = ({ size = 13 }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+    </svg>
+);
+const IconClipboard = ({ size = 28 }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+        <rect x="6" y="4" width="12" height="17" rx="1.5"/><path d="M9 4V3a1 1 0 011-1h4a1 1 0 011 1v1"/><line x1="9" y1="10" x2="15" y2="10"/><line x1="9" y1="14" x2="15" y2="14"/>
+    </svg>
+);
+
 function Index({ activities = [] }) {
     const [view, setView] = useState('table');
     const [search, setSearch] = useState('');
@@ -110,7 +133,7 @@ function Index({ activities = [] }) {
                 .btn-del { background: #fee2e2; border: none; color: #991b1b; padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: 500; cursor: pointer; transition: background 0.15s; white-space: nowrap; }
                 .btn-del:hover { background: #fecaca; }
                 .view-toggle { display: flex; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
-                .view-toggle button { background: none; border: none; padding: 7px 12px; cursor: pointer; color: var(--muted); font-size: 12px; transition: all 0.15s; font-family: 'DM Sans', sans-serif; }
+                .view-toggle button { background: none; border: none; padding: 7px 12px; cursor: pointer; color: var(--muted); font-size: 12px; transition: all 0.15s; font-family: 'DM Sans', sans-serif; display: flex; align-items: center; gap: 6px; }
                 .view-toggle button.active { background: var(--white); color: var(--ink); font-weight: 500; }
                 .filter-select { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 7px 10px; font-size: 12px; color: var(--ink); font-family: 'DM Sans', sans-serif; outline: none; cursor: pointer; }
                 .new-btn { background: var(--red); color: #fff; border: none; border-radius: 8px; padding: 9px 18px; font-size: 13px; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; transition: background 0.15s; font-family: 'DM Sans', sans-serif; }
@@ -197,10 +220,10 @@ function Index({ activities = [] }) {
                     </select>
                     <div className="view-toggle">
                         <button className={view === 'table' ? 'active' : ''} onClick={() => setView('table')}>
-                            ☰ Table
+                            <IconTable /> Table
                         </button>
                         <button className={view === 'cards' ? 'active' : ''} onClick={() => setView('cards')}>
-                            ⊞ Cards
+                            <IconGrid /> Cards
                         </button>
                     </div>
                     <Link href={route('admin.activities.create')} className="new-btn">
@@ -215,7 +238,7 @@ function Index({ activities = [] }) {
 
             {filtered.length === 0 ? (
                 <div className="card empty-state">
-                    <div style={{ fontSize: '32px', marginBottom: '12px' }}>📋</div>
+                    <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '12px', color: '#c7c7c7' }}><IconClipboard /></div>
                     <div style={{ fontSize: '15px', fontWeight: '500', marginBottom: '6px', color: 'var(--ink)' }}>No activities found</div>
                     <div style={{ fontSize: '13px', marginBottom: '16px' }}>
                         {search || filterStatus !== 'all' ? 'Try adjusting your filters.' : 'Create your first activity to get started.'}
@@ -288,7 +311,9 @@ function Index({ activities = [] }) {
                                     <tr key={activity.id}>
                                         <td>
                                             <div style={{ fontWeight: '500', color: 'var(--ink)', fontSize: '13px' }}>{activity.name}</div>
-                                            <div style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '2px' }}>📍 {activity.location_name ?? '—'}</div>
+                                            <div style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                <IconPin /> {activity.location_name ?? '—'}
+                                            </div>
                                         </td>
                                         <td style={{ whiteSpace: 'nowrap' }}>
                                             <div style={{ fontSize: '12px', color: 'var(--ink)' }}>{activity.date}</div>

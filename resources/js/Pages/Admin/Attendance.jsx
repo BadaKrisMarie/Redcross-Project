@@ -13,6 +13,9 @@ export default function AdminAttendance({ attendances, volunteers, activities, f
     const [dateFilter, setDateFilter] = useState(filters?.date || '');
     const [selectedRecord, setSelectedRecord] = useState(null);
 
+    // ✅ NEW: clickable status legend filter
+    const [statusFilter, setStatusFilter] = useState(null);
+
     // ✅ NEW: datatable state — sorting + pagination
     const [sortField, setSortField] = useState('volunteer');
     const [sortDirection, setSortDirection] = useState('desc');
@@ -180,7 +183,14 @@ export default function AdminAttendance({ attendances, volunteers, activities, f
         </div>
     );
 
-    const totalHours = attendances.reduce((sum, a) => sum + parseFloat(a.hours_rendered || 0), 0);
+    // ✅ NEW: apply the clickable status legend filter BEFORE computing totals/sorting
+    const filteredAttendances = useMemo(() => {
+        if (!statusFilter) return attendances;
+        return attendances.filter(r => getAttendanceStatuses(r).includes(statusFilter));
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [attendances, statusFilter]);
+
+    const totalHours = filteredAttendances.reduce((sum, a) => sum + parseFloat(a.hours_rendered || 0), 0);
 
     // ✅ NEW: datatable column definitions — accessor pulls a comparable value out of each record
     const columns = [
@@ -194,11 +204,11 @@ export default function AdminAttendance({ attendances, volunteers, activities, f
         { key: 'status',    label: 'Status',    sortable: true, accessor: (r) => getAttendanceStatuses(r)[0] ?? '' },
     ];
 
-    // ✅ NEW: sort the full record set before paginating
+    // ✅ NEW: sort the filtered record set before paginating
     const sortedAttendances = useMemo(() => {
         const col = columns.find((c) => c.key === sortField);
-        if (!col) return attendances;
-        const copy = [...attendances];
+        if (!col) return filteredAttendances;
+        const copy = [...filteredAttendances];
         copy.sort((a, b) => {
             const valA = col.accessor(a);
             const valB = col.accessor(b);
@@ -213,7 +223,7 @@ export default function AdminAttendance({ attendances, volunteers, activities, f
         });
         return copy;
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [attendances, sortField, sortDirection]);
+    }, [filteredAttendances, sortField, sortDirection]);
 
     const totalPages = Math.max(1, Math.ceil(sortedAttendances.length / pageSize));
     const safePage = Math.min(currentPage, totalPages);
@@ -234,14 +244,22 @@ export default function AdminAttendance({ attendances, volunteers, activities, f
         return sortDirection === 'asc' ? '↑' : '↓';
     };
 
+    // ✅ NEW: toggle a status filter on click; clicking the active one again clears it
+    const handleStatusClick = (label) => {
+        setStatusFilter(prev => (prev === label ? null : label));
+        setCurrentPage(1);
+    };
+
     return (
         <div>
             <Head title="Attendance Records" />
-            <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;900&display=swap" rel="stylesheet" />
 
             <style>{`
                 * { box-sizing: border-box; }
                 html, body { margin: 0; padding: 0; }
+
+                /* ✅ System font stack — walang external request, di na aasa sa fonts.googleapis.com */
+                .at-montserrat { font-family: 'Segoe UI', Roboto, -apple-system, BlinkMacSystemFont, sans-serif; }
 
                 /* ✅ NEW: datatable-specific styles */
                 .at-table-scroll { overflow-x: auto; }
@@ -257,21 +275,27 @@ export default function AdminAttendance({ attendances, volunteers, activities, f
                 .at-page-btn:hover:not(:disabled) { border-color: #ccc; }
                 .at-page-btn:disabled { opacity: .4; cursor: not-allowed; }
                 .at-page-info { font-size: 12px; color: #6b7280; }
+
+                /* ✅ NEW: clickable legend pill states */
+                .at-legend-pill { border: none; cursor: pointer; transition: transform .1s ease, box-shadow .15s ease; }
+                .at-legend-pill:hover { transform: translateY(-1px); }
+                .at-legend-pill.active { box-shadow: 0 0 0 2px currentColor inset; }
+                .at-clear-status { background: transparent; border: none; color: #9ca3af; font-size: 12px; font-weight: 600; cursor: pointer; padding: 5px 10px; text-decoration: underline; }
             `}</style>
 
-            <div style={{ minHeight: '100vh', background: '#f5f5f5', fontFamily: "'Montserrat', sans-serif" }}>
+            <div className="at-montserrat" style={{ minHeight: '100vh', background: '#f5f5f5' }}>
 
                 <div style={{ padding: 0 }}>
 
                     <div style={{ marginBottom: '24px' }}>
                         <div style={{ fontSize: '11px', fontWeight: '600', letterSpacing: '2px', textTransform: 'uppercase', color: '#ff0000', marginBottom: '6px' }}>Admin Panel</div>
-                        <h1 style={{ fontFamily: "'Montserrat', sans-serif", fontSize: '32px', color: '#111', fontWeight: '600', textTransform: 'uppercase', margin: 0 }}>Attendance Records</h1>
+                        <h1 style={{ fontSize: '32px', color: '#111', fontWeight: '600', textTransform: 'uppercase', margin: 0 }}>Attendance Records</h1>
                     </div>
 
                     <LiveLocationMap />
 
                     <div style={{ background: 'white', borderRadius: '8px', border: '1px solid #e8e8e8', padding: '20px 24px', marginBottom: '24px' }}>
-                        <div style={{ fontFamily: "'Montserrat', sans-serif", fontSize: '14px', fontWeight: '600', textTransform: 'uppercase', marginBottom: '16px', color: '#111' }}>Filter Records</div>
+                        <div style={{ fontSize: '14px', fontWeight: '600', textTransform: 'uppercase', marginBottom: '16px', color: '#111' }}>Filter Records</div>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr auto auto', gap: '12px', alignItems: 'end' }}>
                             <div>
                                 <label style={{ fontSize: '12px', fontWeight: '600', color: '#6b7280', display: 'block', marginBottom: '6px' }}>VOLUNTEER</label>
@@ -303,7 +327,7 @@ export default function AdminAttendance({ attendances, volunteers, activities, f
                     <div style={{ background: 'white', borderRadius: '8px', border: '1px solid #e8e8e8', overflow: 'hidden' }}>
                         <div style={{ padding: '20px 24px', borderBottom: '1px solid #e8e8e8' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-                                <div style={{ fontFamily: "'Montserrat', sans-serif", fontSize: '16px', color: '#111', fontWeight: '600', textTransform: 'uppercase' }}>
+                                <div style={{ fontSize: '16px', color: '#111', fontWeight: '600', textTransform: 'uppercase' }}>
                                     All Attendance Records
                                 </div>
                                 <button
@@ -323,23 +347,35 @@ export default function AdminAttendance({ attendances, volunteers, activities, f
                                 </button>
                             </div>
 
-                            {/* ✅ NEW: legend pills like Attendance History */}
-                            <div style={{ display: 'flex', gap: '8px' }}>
+                            {/* ✅ UPDATED: legend pills are now clickable filters */}
+                            <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
                                 {['Early In', 'On Time', 'Late', 'Early Out', 'Absent'].map(label => {
                                     const style = statusStyles[label];
+                                    const isActive = statusFilter === label;
                                     return (
-                                        <span key={label} style={{
-                                            padding: '5px 14px',
-                                            borderRadius: '999px',
-                                            fontSize: '12px',
-                                            fontWeight: '600',
-                                            background: style.bg,
-                                            color: style.color,
-                                        }}>
+                                        <button
+                                            key={label}
+                                            onClick={() => handleStatusClick(label)}
+                                            className={`at-legend-pill ${isActive ? 'active' : ''}`}
+                                            style={{
+                                                padding: '5px 14px',
+                                                borderRadius: '999px',
+                                                fontSize: '12px',
+                                                fontWeight: '600',
+                                                background: style.bg,
+                                                color: style.color,
+                                                opacity: statusFilter && !isActive ? 0.55 : 1,
+                                            }}
+                                        >
                                             {label}
-                                        </span>
+                                        </button>
                                     );
                                 })}
+                                {statusFilter && (
+                                    <button className="at-clear-status" onClick={() => setStatusFilter(null)}>
+                                        Clear status filter
+                                    </button>
+                                )}
                             </div>
                         </div>
 

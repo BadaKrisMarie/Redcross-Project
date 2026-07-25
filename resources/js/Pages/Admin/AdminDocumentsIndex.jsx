@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
-import { Head, Link, router } from '@inertiajs/react';
+import React, { useState, useMemo } from 'react';
+import { Head, router } from '@inertiajs/react';
+import AdminLayout from '../../Layouts/AdminLayout';
 
-// ✅ NEW: standalone Avatar component (defined OUTSIDE AdminDocumentsIndex).
+// ✅ standalone Avatar component (defined OUTSIDE AdminDocumentsIndex).
 // Falls back to initials if the image fails to load, or if it "silently" loads
 // broken (0-byte / corrupt response with no error event, checked via naturalWidth).
 // Keeping this outside the parent component prevents it from being re-created
@@ -30,27 +31,22 @@ function Avatar({ src, initials, bg = '#ff0000', color = 'white', size = 32, fon
     );
 }
 
-export default function AdminDocumentsIndex({ auth, documents = [] }) {
+function AdminDocumentsIndex({ documents = [] }) {
     const [previewDoc, setPreviewDoc] = useState(null);
     const [filter, setFilter] = useState('pending');
-    const [sidebarOpen, setSidebarOpen] = useState(true);
-
-    const admin = auth?.user;
-    const photoUrl = admin?.photo ? `/storage/${admin.photo}` : null;
-    const initials = admin?.name
-        ? admin.name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
-        : 'AD';
+    const [query, setQuery] = useState('');
+    const [typeFilter, setTypeFilter] = useState(null); // active "folder"
 
     const avatarColors = [
         ['#fee2e2', '#991b1b'], ['#dbeafe', '#1e40af'],
         ['#dcfce7', '#166534'], ['#ede9fe', '#5b21b6'], ['#fef3c7', '#92400e'],
     ];
 
-    // ✅ BAGO: gamitin ang mime_type, hindi extension ng URL
+    // ✅ gamitin ang mime_type, hindi extension ng URL
     const isImageDoc = (doc) => doc.mime_type && doc.mime_type.startsWith('image/');
     const isPdfDoc   = (doc) => doc.mime_type === 'application/pdf';
 
-    // ✅ NEW: file type label/color based on mime_type, for quick recognition without opening
+    // ✅ file type label/color based on mime_type, for quick recognition without opening
     const getFileTypeInfo = (doc) => {
         if (isPdfDoc(doc))   return { label: 'PDF', color: '#ff0000' };
         if (isImageDoc(doc)) {
@@ -60,7 +56,7 @@ export default function AdminDocumentsIndex({ auth, documents = [] }) {
         return { label: doc.mime_type ? doc.mime_type.split('/')[1]?.toUpperCase() : 'FILE', color: '#6B7280' };
     };
 
-    // ✅ NEW: format bytes into readable KB/MB
+    // ✅ format bytes into readable KB/MB
     const formatFileSize = (bytes) => {
         if (bytes == null) return null;
         if (bytes < 1024) return `${bytes} B`;
@@ -91,7 +87,30 @@ export default function AdminDocumentsIndex({ auth, documents = [] }) {
     const handleApprove = (id) => router.patch(route('admin.documents.approve', id));
     const handleReject  = (id) => router.patch(route('admin.documents.reject', id));
 
-    const filtered = filter === 'all' ? documents : documents.filter(d => d.status === filter);
+    // ✅ "Folders" = unique document types, e.g. NBI Clearance, Medical Certificate.
+    // Ito yung ginawang cards sa itaas, parang sa screenshot, pero derived
+    // straight from `documents` imbes na hard-coded — kasi galing sa maraming
+    // volunteer ang mga ito, hindi lang sa isang tao.
+    const folders = useMemo(() => {
+        const map = new Map();
+        documents.forEach((d) => {
+            map.set(d.type, (map.get(d.type) || 0) + 1);
+        });
+        return Array.from(map.entries()).map(([type, count]) => ({ type, count }));
+    }, [documents]);
+
+    const filtered = useMemo(() => {
+        return documents.filter((d) => {
+            const matchesStatus = filter === 'all' || d.status === filter;
+            const matchesType = !typeFilter || d.type === typeFilter;
+            const q = query.trim().toLowerCase();
+            const matchesQuery =
+                q === '' ||
+                d.name.toLowerCase().includes(q) ||
+                d.type.toLowerCase().includes(q);
+            return matchesStatus && matchesType && matchesQuery;
+        });
+    }, [documents, filter, typeFilter, query]);
 
     const counts = {
         all:      documents.length,
@@ -106,72 +125,48 @@ export default function AdminDocumentsIndex({ auth, documents = [] }) {
         return { background: '#fef3c7', color: '#92400e' };
     };
 
-    const NavAvatar = ({ size = 32, fontSize = 12 }) => (
-        <Avatar src={photoUrl} initials={initials} bg="#ff0000" color="white" size={size} fontSize={fontSize} />
-    );
-
-    const navLinks = [
-        { label: 'Dashboard',     route: 'admin.dashboard' },
-        { label: 'Volunteers',    route: 'admin.volunteers' },
-        { label: 'Schedule',      route: 'admin.schedule' },
-        { label: 'Attendance',    route: 'admin.attendance.index' },
-        { label: 'Activities',    route: 'admin.activities.index' },
-        { label: '201 Files',     route: 'admin.documents.index', active: true },
-        { label: 'Communication', route: 'admin.communication' },
-    ];
-
     return (
         <>
             <Head title="201 Files" />
-            <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
 
             <style>{`
-                * { box-sizing: border-box; margin: 0; padding: 0; }
-                :root { --red: #ff0000; --red-dark: #9B0B22; --ink: #1A1A1A; --muted: #6B6B6B; --border: #EDEDED; --surface: #F7F7F5; --white: #FFFFFF; }
-                body { font-family: 'Montserrat', sans-serif; font-size: 13px; background: var(--surface); }
-                .wrap { display: flex; min-height: 100vh; }
-                .sidebar { width: 220px; background: #ff0000; display: flex; flex-direction: column; position: fixed; top: 0; left: 0; height: 100vh; z-index: 100; transition: transform 0.2s; }
-                .sidebar.closed { transform: translateX(-220px); }
-                .main { margin-left: 220px; flex: 1; display: flex; flex-direction: column; min-height: 100vh; transition: margin-left 0.2s; }
-                .main.full { margin-left: 0; }
-                .sb-brand { padding: 18px 20px 14px; border-bottom: 1px solid rgba(255,255,255,0.15); }
-                .sb-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
-                .sb-cross { width: 32px; height: 32px; background: rgba(0,0,0,0.2); border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #fff; font-family: 'Montserrat', sans-serif; font-size: 20px; font-weight: 700; flex-shrink: 0; }
-                .sb-name { font-family: 'Montserrat', sans-serif; color: #fff; font-size: 13px; font-weight: 600; letter-spacing: .5px; line-height: 1.3; }
-                .sb-name span { display: block; color: rgba(255,255,255,0.7); font-size: 11px; font-weight: 400; letter-spacing: 1px; text-transform: uppercase; }
-                .sb-user { padding: 14px 20px; border-bottom: 1px solid rgba(255,255,255,0.15); display: flex; align-items: center; gap: 10px; text-decoration: none; }
-                .sb-uname { color: #fff; font-size: 12px; font-weight: 500; line-height: 1.3; }
-                .sb-uname span { display: block; color: rgba(255,255,255,0.7); font-size: 11px; }
-                .sb-nav { padding: 10px 0; flex: 1; overflow-y: auto; }
-                .nav-label { font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: rgba(255,255,255,0.6); padding: 10px 20px 4px; font-weight: 600; }
-                .nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 20px; color: rgba(255,255,255,0.85); font-size: 13px; font-weight: 500; cursor: pointer; transition: all .15s; border-left: 2px solid transparent; text-decoration: none; }
-                .nav-item:hover { background: rgba(0,0,0,0.12); color: #fff; }
-                .nav-item.active { background: rgba(255,255,255,0.2); border-left-color: #fff; color: #fff; }
-                .nav-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
-                .sb-footer { padding: 14px 20px; border-top: 1px solid rgba(255,255,255,0.15); }
-                .logout-btn { display: flex; align-items: center; gap: 8px; color: rgba(255,255,255,0.8); font-size: 12px; cursor: pointer; background: none; border: none; width: 100%; font-family: 'Montserrat', sans-serif; }
-                .logout-btn:hover { color: #fff; }
-                .topbar { background: var(--white); border-bottom: 1px solid var(--border); padding: 0 28px; height: 56px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 50; }
-                .menu-btn { background: none; border: none; cursor: pointer; color: var(--ink); display: flex; align-items: center; padding: 4px; }
-                .page-title { font-family: 'Montserrat', sans-serif; font-size: 20px; font-weight: 700; color: var(--ink); letter-spacing: .3px; text-transform: uppercase; }
-                .content { flex: 1; padding: 28px; }
-                .filters { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
-                .filter-btn { padding: 7px 16px; border-radius: 20px; font-size: 12px; font-weight: 600; cursor: pointer; border: 1.5px solid var(--border); background: var(--white); color: var(--muted); transition: all .15s; }
-                .filter-btn.active { background: var(--red); color: #fff; border-color: var(--red); }
-                .filter-btn:hover:not(.active) { border-color: #ccc; color: var(--ink); }
-                .table-card { background: var(--white); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
-                .table-head { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr 120px; gap: 12px; padding: 12px 20px; background: var(--surface); border-bottom: 1px solid var(--border); font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; }
-                .table-row { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr 120px; gap: 12px; padding: 13px 20px; border-bottom: 1px solid var(--border); align-items: center; cursor: pointer; transition: background .12s; }
+                .doc-wrap { font-size: 13px; }
+
+                .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
+                .search-box { position: relative; width: 100%; max-width: 320px; }
+                .search-box input { width: 100%; padding: 10px 14px 10px 36px; border-radius: 10px; border: 1px solid #EDEDED; background: #F7F7F5; font-size: 13px; color: #1A1A1A; outline: none; transition: box-shadow .15s, border-color .15s; }
+                .search-box input:focus { border-color: #ff0000; box-shadow: 0 0 0 3px rgba(255,0,0,0.08); }
+                .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #9CA3AF; pointer-events: none; }
+
+                .filters { display: flex; gap: 8px; flex-wrap: wrap; }
+                .filter-btn { padding: 7px 16px; border-radius: 20px; font-size: 12px; font-weight: 600; cursor: pointer; border: 1.5px solid #EDEDED; background: #FFFFFF; color: #6B6B6B; transition: all .15s; white-space: nowrap; }
+                .filter-btn.active { background: #ff0000; color: #fff; border-color: #ff0000; }
+                .filter-btn:hover:not(.active) { border-color: #ccc; color: #1A1A1A; }
+
+                .section-label { font-size: 13px; font-weight: 700; color: #1A1A1A; margin-bottom: 12px; }
+
+                .folders-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 14px; margin-bottom: 28px; }
+                .folder-card { background: #FFFFFF; border: 1px solid #EDEDED; border-radius: 12px; padding: 16px; text-align: left; cursor: pointer; transition: box-shadow .15s, border-color .15s; }
+                .folder-card:hover { box-shadow: 0 2px 10px rgba(0,0,0,0.06); }
+                .folder-card.active { border-color: #ff0000; box-shadow: 0 0 0 3px rgba(255,0,0,0.08); }
+                .folder-title { font-size: 13px; font-weight: 700; color: #1A1A1A; margin-bottom: 4px; }
+                .folder-count { font-size: 11.5px; color: #9CA3AF; }
+
+                .files-head-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+                .sort-label { font-size: 11.5px; color: #9CA3AF; font-weight: 600; }
+
+                .table-card { background: #FFFFFF; border: 1px solid #EDEDED; border-radius: 12px; overflow: hidden; }
+                .table-head { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr 120px; gap: 12px; padding: 12px 20px; background: #F7F7F5; border-bottom: 1px solid #EDEDED; font-size: 11px; font-weight: 600; color: #6B6B6B; text-transform: uppercase; letter-spacing: .5px; }
+                .table-row { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr 120px; gap: 12px; padding: 13px 20px; border-bottom: 1px solid #EDEDED; align-items: center; cursor: pointer; transition: background .12s; }
                 .table-row:last-child { border-bottom: none; }
                 .table-row:hover { background: #fafafa; }
-                .vol-av { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; flex-shrink: 0; }
                 .badge { font-size: 11px; padding: 3px 10px; border-radius: 20px; font-weight: 500; display: inline-block; }
                 .action-btns { display: flex; gap: 6px; }
                 .btn-approve { background: #dcfce7; color: #166534; border: none; padding: 5px 10px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer; transition: opacity .15s; }
                 .btn-approve:hover { opacity: .8; }
                 .btn-reject { background: #fee2e2; color: #991b1b; border: none; padding: 5px 10px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer; transition: opacity .15s; }
                 .btn-reject:hover { opacity: .8; }
-                .empty { text-align: center; padding: 48px; color: var(--muted); font-size: 13px; }
+                .empty { text-align: center; padding: 48px; color: #6B6B6B; font-size: 13px; }
                 .doc-type { font-size: 13px; color: #ff0000; font-weight: 600; text-transform: uppercase; }
                 .file-chip { display: inline-flex; align-items: center; gap: 5px; }
                 .file-chip-label { font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 4px; }
@@ -194,7 +189,7 @@ export default function AdminDocumentsIndex({ auth, documents = [] }) {
                                     fontSize={13}
                                 />
                                 <div>
-                                    <div style={{ fontFamily: 'Montserrat', fontSize: 16, fontWeight: 700, textTransform: 'uppercase' }}>{previewDoc.name}</div>
+                                    <div style={{ fontSize: 16, fontWeight: 700, textTransform: 'uppercase' }}>{previewDoc.name}</div>
                                     <div className="doc-type">{previewDoc.type}</div>
                                 </div>
                             </div>
@@ -224,7 +219,7 @@ export default function AdminDocumentsIndex({ auth, documents = [] }) {
                                     <div style={{ fontSize: 11, fontWeight: 600, color: '#888', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 4 }}>Document</div>
                                     <div className="doc-type">{previewDoc.type}</div>
                                 </div>
-                                {/* ✅ NEW: File type + size in modal */}
+                                {/* File type + size in modal */}
                                 <div>
                                     <div style={{ fontSize: 11, fontWeight: 600, color: '#888', textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 4 }}>File</div>
                                     <div className="file-chip">
@@ -246,7 +241,7 @@ export default function AdminDocumentsIndex({ auth, documents = [] }) {
                                 </div>
                             </div>
 
-                            {/* ✅ Right panel — preview using mime_type */}
+                            {/* Right panel — preview using mime_type */}
                             <div style={{ background: '#f5f5f5', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 380, overflow: 'hidden' }}>
                                 {previewDoc.file_url ? (
                                     isImageDoc(previewDoc)
@@ -292,114 +287,121 @@ export default function AdminDocumentsIndex({ auth, documents = [] }) {
                 </div>
             )}
 
-            <div className="wrap">
-                {/* SIDEBAR */}
-                <aside className={`sidebar ${sidebarOpen ? '' : 'closed'}`}>
-                    
-                    <Link href={route('admin.profile')} className="sb-user">
-                        <NavAvatar size={34} fontSize={12} />
-                        <div className="sb-uname">
-                            {admin?.name ?? 'Admin'}
-                            <span>Administrator</span>
-                        </div>
-                    </Link>
-                    <nav className="sb-nav">
-                        <div className="nav-label">Main</div>
-                        {navLinks.slice(0, 4).map(({ label, route: r, active }) => (
-                            <Link key={label} href={route(r)} className={`nav-item ${active ? 'active' : ''}`}>
-                                <div className="nav-dot" />{label}
-                            </Link>
-                        ))}
-                        <div className="nav-label">Manage</div>
-                        {navLinks.slice(4).map(({ label, route: r, active }) => (
-                            <Link key={label} href={route(r)} className={`nav-item ${active ? 'active' : ''}`}>
-                                <div className="nav-dot" />{label}
-                            </Link>
-                        ))}
-                    </nav>
-                    <div className="sb-footer">
-                        <button className="logout-btn" onClick={() => router.post(route('logout'))}>
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-                            Log out
-                        </button>
+            <div className="doc-wrap">
+                {/* Search + status filters — walang "Upload" button dito dahil hindi
+                    nag-uupload ang admin, nagre-review lang siya ng ipinasang files. */}
+                <div className="toolbar">
+                    <div className="search-box">
+                        <span className="search-icon">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <circle cx="11" cy="11" r="8" />
+                                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                            </svg>
+                        </span>
+                        <input
+                            value={query}
+                            onChange={(e) => setQuery(e.target.value)}
+                            placeholder="Search your documents"
+                        />
                     </div>
-                </aside>
 
-                {/* MAIN */}
-                <main className={`main ${sidebarOpen ? '' : 'full'}`}>
-                    <div className="topbar">
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                            <button className="menu-btn" onClick={() => setSidebarOpen(o => !o)}>
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+                    <div className="filters">
+                        {['all', 'pending', 'approved', 'rejected'].map(f => (
+                            <button key={f} className={`filter-btn ${filter === f ? 'active' : ''}`} onClick={() => setFilter(f)}>
+                                {f.charAt(0).toUpperCase() + f.slice(1)} ({counts[f]})
                             </button>
-                            <div>
-                                <div className="page-title">201 Files</div>
-                            </div>
-                        </div>
-                        <NavAvatar size={32} fontSize={12} />
+                        ))}
                     </div>
+                </div>
 
-                    <div className="content">
-                        <div className="filters">
-                            {['all', 'pending', 'approved', 'rejected'].map(f => (
-                                <button key={f} className={`filter-btn ${filter === f ? 'active' : ''}`} onClick={() => setFilter(f)}>
-                                    {f.charAt(0).toUpperCase() + f.slice(1)} {filter === f && `(${counts[f]})`}
+                {/* Folders — auto-derived from the document types on file */}
+                {folders.length > 0 && (
+                    <>
+                        <div className="section-label">Folders</div>
+                        <div className="folders-grid">
+                            {folders.map((folder) => (
+                                <button
+                                    key={folder.type}
+                                    className={`folder-card ${typeFilter === folder.type ? 'active' : ''}`}
+                                    onClick={() => setTypeFilter(typeFilter === folder.type ? null : folder.type)}
+                                >
+                                    <div className="folder-title">{folder.type}</div>
+                                    <div className="folder-count">{folder.count} file{folder.count === 1 ? '' : 's'}</div>
                                 </button>
                             ))}
                         </div>
+                    </>
+                )}
 
-                        <div className="table-card">
-                            <div className="table-head">
-                                <span>Volunteer</span>
-                                <span>Document Type</span>
-                                <span>File</span>
-                                <span>Uploaded</span>
-                                <span>Status</span>
-                                <span>Actions</span>
-                            </div>
-                            {filtered.length === 0 ? (
-                                <div className="empty">Walang dokumento.</div>
-                            ) : filtered.map((doc, i) => {
-                                const [bg, color] = avatarColors[doc.color_id ?? i % 5];
-                                const fileInfo = getFileTypeInfo(doc);
-                                const sizeLabel = formatFileSize(doc.file_size);
-                                return (
-                                    <div key={doc.id} className="table-row" onClick={() => setPreviewDoc(doc)}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                            <Avatar src={doc.photo} initials={doc.initials} bg={bg} color={color} size={32} fontSize={11} />
-                                            <div>
-                                                <div style={{ fontWeight: 500, fontSize: 13 }}>{doc.name}</div>
-                                                <div style={{ fontSize: 11, color: '#6B6B6B' }}>Muntinlupa City Branch</div>
-                                            </div>
-                                        </div>
-                                        <div className="doc-type">{doc.type}</div>
-                                        {/* ✅ NEW: File type + size, quick recognition before opening */}
-                                        <div className="file-chip">
-                                            <span className="file-chip-label" style={{ background: `${fileInfo.color}15`, color: fileInfo.color }}>
-                                                {fileInfo.label}
-                                            </span>
-                                            {sizeLabel && <span style={{ fontSize: 11, color: '#9CA3AF' }}>{sizeLabel}</span>}
-                                        </div>
-                                        <div style={{ fontSize: 12, color: '#6B6B6B' }}>{doc.uploaded_at}</div>
-                                        <span className="badge" style={statusStyle(doc.status)}>{doc.status}</span>
-                                        <div className="action-btns" onClick={e => e.stopPropagation()}>
-                                            {doc.status === 'pending' && (
-                                                <>
-                                                    <button className="btn-approve" onClick={() => handleApprove(doc.id)}>Approve</button>
-                                                    <button className="btn-reject"  onClick={() => handleReject(doc.id)}>Reject</button>
-                                                </>
-                                            )}
-                                            {doc.status !== 'pending' && (
-                                                <span style={{ fontSize: 11, color: '#aaa' }}>—</span>
-                                            )}
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
+                <div className="files-head-row">
+                    <div className="section-label" style={{ marginBottom: 0 }}>Files</div>
+                    {typeFilter && (
+                        <button
+                            onClick={() => setTypeFilter(null)}
+                            style={{ background: 'none', border: 'none', color: '#ff0000', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
+                        >
+                            Clear folder filter ✕
+                        </button>
+                    )}
+                </div>
+
+                <div className="table-card">
+                    <div className="table-head">
+                        <span>Volunteer</span>
+                        <span>Document Type</span>
+                        <span>File</span>
+                        <span>Uploaded</span>
+                        <span>Status</span>
+                        <span>Actions</span>
                     </div>
-                </main>
+                    {filtered.length === 0 ? (
+                        <div className="empty">Walang dokumento.</div>
+                    ) : filtered.map((doc, i) => {
+                        const [bg, color] = avatarColors[doc.color_id ?? i % 5];
+                        const fileInfo = getFileTypeInfo(doc);
+                        const sizeLabel = formatFileSize(doc.file_size);
+                        return (
+                            <div key={doc.id} className="table-row" onClick={() => setPreviewDoc(doc)}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                    <Avatar src={doc.photo} initials={doc.initials} bg={bg} color={color} size={32} fontSize={11} />
+                                    <div>
+                                        <div style={{ fontWeight: 500, fontSize: 13 }}>{doc.name}</div>
+                                        <div style={{ fontSize: 11, color: '#6B6B6B' }}>Muntinlupa City Branch</div>
+                                    </div>
+                                </div>
+                                <div className="doc-type">{doc.type}</div>
+                                {/* File type + size, quick recognition before opening */}
+                                <div className="file-chip">
+                                    <span className="file-chip-label" style={{ background: `${fileInfo.color}15`, color: fileInfo.color }}>
+                                        {fileInfo.label}
+                                    </span>
+                                    {sizeLabel && <span style={{ fontSize: 11, color: '#9CA3AF' }}>{sizeLabel}</span>}
+                                </div>
+                                <div style={{ fontSize: 12, color: '#6B6B6B' }}>{doc.uploaded_at}</div>
+                                <span className="badge" style={statusStyle(doc.status)}>{doc.status}</span>
+                                <div className="action-btns" onClick={e => e.stopPropagation()}>
+                                    {doc.status === 'pending' && (
+                                        <>
+                                            <button className="btn-approve" onClick={() => handleApprove(doc.id)}>Approve</button>
+                                            <button className="btn-reject"  onClick={() => handleReject(doc.id)}>Reject</button>
+                                        </>
+                                    )}
+                                    {doc.status !== 'pending' && (
+                                        <span style={{ fontSize: 11, color: '#aaa' }}>—</span>
+                                    )}
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
             </div>
         </>
     );
 }
+
+// ✅ Persistent layout — parehong AdminLayout ng ibang admin pages,
+// kaya lalabas na rin ang notification bell dito, at hindi na mag-re-render
+// ang sidebar sa navigation.
+AdminDocumentsIndex.layout = (page) => <AdminLayout title="201 Files">{page}</AdminLayout>;
+
+export default AdminDocumentsIndex;

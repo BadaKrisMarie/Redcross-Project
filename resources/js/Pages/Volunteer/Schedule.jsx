@@ -6,212 +6,168 @@ import VolunteerLayout from '@/Layouts/VolunteerLayout'; // ⚠️ ayusin ang pa
  * ✅ Hindi na dito ginagawa ang sidebar/topbar — galing na sa VolunteerLayout.
  * Kaya persistent na siya at hindi na "magbabago" tuwing lilipat ka ng page.
  */
-function VolunteerSchedule({ activities }) {
-    const acts = activities || [];
+export default function VolunteerSchedule({ activities = [] }) {
+    const [currentDate, setCurrentDate] = useState(new Date());
+    const [selectedDay, setSelectedDay] = useState(null);
 
-    const today = new Date();
-    const [currentMonth, setCurrentMonth] = useState(today.getMonth());
-    const [currentYear, setCurrentYear] = useState(today.getFullYear());
-    const [selectedActivity, setSelectedActivity] = useState(null);
-    const [popupPos, setPopupPos] = useState({ top: 0, left: 0 });
+    const year  = currentDate.getFullYear();
+    const month = currentDate.getMonth();
 
     const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-    const dayNames = ['SUNDAY','MONDAY','TUESDAY','WEDNESDAY','THURSDAY','FRIDAY','SATURDAY'];
+    const dayNames   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 
-    const prevMonth = () => {
-        if (currentMonth === 0) { setCurrentMonth(11); setCurrentYear(y => y - 1); }
-        else setCurrentMonth(m => m - 1);
+    const firstDay  = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+    const prevMonth = () => setCurrentDate(new Date(year, month - 1, 1));
+    const nextMonth = () => setCurrentDate(new Date(year, month + 1, 1));
+
+   // ✅ Itago na sa calendar ang mga activity na lumipas na ang petsa —
+    // "tapos na" = nakalipas na ang date kumpara sa ngayon.
+    const todayStr = (() => {
+        const t = new Date();
+        return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`;
+    })();
+    const visibleActivities = activities.filter(a => a.date && a.date.slice(0, 10) >= todayStr);
+
+    const getActivitiesForDay = (day) => {
+        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        return visibleActivities.filter(a => a.date && a.date.startsWith(dateStr));
     };
-    const nextMonth = () => {
-        if (currentMonth === 11) { setCurrentMonth(0); setCurrentYear(y => y + 1); }
-        else setCurrentMonth(m => m + 1);
+
+    const statusColor = (status) => {
+        if (status === 'upcoming')  return { bg: '#dbeafe', color: '#1e40af' };
+        if (status === 'ongoing')   return { bg: '#dcfce7', color: '#166534' };
+        if (status === 'completed') return { bg: '#f3f4f6', color: '#374151' };
+        if (status === 'cancelled') return { bg: '#fee2e2', color: '#991b1b' };
+        return { bg: '#22C55E', color: '#fff' };
     };
 
-    const firstDay = new Date(currentYear, currentMonth, 1).getDay();
-    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
-    const calendarCells = [];
-    for (let i = 0; i < firstDay; i++) calendarCells.push(null);
-    for (let d = 1; d <= daysInMonth; d++) calendarCells.push(d);
-    while (calendarCells.length % 7 !== 0) calendarCells.push(null);
+    const today = new Date();
+    const isToday = (day) =>
+        day === today.getDate() && month === today.getMonth() && year === today.getFullYear();
 
-    const actsByDate = {};
-    acts.forEach(act => {
-        const key = act.date?.substring(0, 10);
-        if (!actsByDate[key]) actsByDate[key] = [];
-        actsByDate[key].push(act);
-    });
+    const selectedActivities = selectedDay ? getActivitiesForDay(selectedDay) : [];
 
-    const chipColors = ['#22C55E'];
-    const getColor = (id) => chipColors[id % chipColors.length];
-
-    const handleChipClick = (e, act) => {
-        e.stopPropagation();
-        const rect = e.target.getBoundingClientRect();
-        let left = rect.right + 10;
-        let top = rect.top - 10;
-        if (left + 280 > window.innerWidth) left = rect.left - 290;
-        if (top + 380 > window.innerHeight) top = window.innerHeight - 390;
-        if (top < 60) top = 60;
-        setPopupPos({ top, left });
-        setSelectedActivity(act);
-    };
+    const cells = [];
+    for (let i = 0; i < firstDay; i++) cells.push(null);
+    for (let d = 1; d <= daysInMonth; d++) cells.push(d);
 
     return (
         <>
             <Head title="Schedule" />
-            <link href="https://fonts.googleapis.com/css2?family=monserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+            <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
 
-            <div onClick={() => setSelectedActivity(null)}>
-                {/* Calendar */}
-                <div style={{ background: 'white', borderRadius: '10px', border: '1px solid #E5E7EB', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+            <style>{`
+                .vsched-content { display: grid; grid-template-columns: 1fr 300px; gap: 20px; align-items: start; }
+                .vcal-card { background: #FFFFFF; border: 1px solid #EDEDED; border-radius: 12px; overflow: hidden; }
+                .vcal-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid #EDEDED; }
+                .vcal-month { font-family: 'Barlow Condensed', sans-serif; font-size: 18px; font-weight: 700; color: #1A1A1A; }
+                .vcal-nav { background: none; border: 1px solid #EDEDED; border-radius: 6px; width: 30px; height: 30px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #1A1A1A; font-size: 14px; transition: background 0.15s; }
+                .vcal-nav:hover { background: #F7F7F5; }
+                .vday-names { display: grid; grid-template-columns: repeat(7, 1fr); background: #F7F7F5; border-bottom: 1px solid #EDEDED; }
+                .vday-name { text-align: center; padding: 8px 4px; font-size: 11px; font-weight: 600; color: #6B6B6B; text-transform: uppercase; letter-spacing: .5px; }
+                .vcal-grid { display: grid; grid-template-columns: repeat(7, 1fr); }
+                .vcal-cell { min-height: 80px; border-right: 1px solid #EDEDED; border-bottom: 1px solid #EDEDED; padding: 6px; cursor: pointer; transition: background 0.12s; position: relative; }
+                .vcal-cell:nth-child(7n) { border-right: none; }
+                .vcal-cell:hover { background: #fafafa; }
+                .vcal-cell.selected { background: #fff5f5; }
+                .vcal-cell.empty { background: #F7F7F5; cursor: default; }
+                .vday-num { font-size: 12px; font-weight: 600; color: #1A1A1A; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; border-radius: 50%; margin-bottom: 4px; }
+                .vday-num.today { background: #ff0000; color: #fff; }
+                .vevent-pill { font-size: 10px; padding: 2px 6px; border-radius: 4px; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 500; }
+                .vmore-tag { font-size: 10px; color: #6B6B6B; padding: 1px 4px; }
+                .vdetail-card { background: #FFFFFF; border: 1px solid #EDEDED; border-radius: 12px; padding: 20px; }
+                .vdetail-title { font-family: 'Barlow Condensed', sans-serif; font-size: 16px; font-weight: 700; color: #1A1A1A; text-transform: uppercase; margin-bottom: 14px; }
+                .vactivity-item { padding: 12px; border: 1px solid #EDEDED; border-radius: 8px; margin-bottom: 10px; }
+                .vactivity-item:last-child { margin-bottom: 0; }
+                .vactivity-name { font-weight: 600; font-size: 13px; color: #1A1A1A; margin-bottom: 4px; }
+                .vactivity-meta { font-size: 11px; color: #6B6B6B; display: flex; flex-direction: column; gap: 2px; }
+                .vstatus-badge { display: inline-block; font-size: 10px; padding: 2px 8px; border-radius: 10px; font-weight: 600; margin-top: 6px; }
+                .vno-events { text-align: center; padding: 32px 0; color: #6B6B6B; font-size: 13px; }
+                .vassigned-box { border: 1px solid #E5E7EB; border-radius: 8px; padding: 8px 10px; margin-top: 8px; font-size: 11px; color: #374151; }
+                .vassigned-label { font-weight: 600; color: #ff0000; margin-right: 4px; }
+                @media (max-width: 900px) { .vsched-content { grid-template-columns: 1fr; } }
+            `}</style>
 
-                    <div style={{ padding: '12px 20px', display: 'flex', alignItems: 'center', gap: '12px', borderBottom: '1px solid #F3F4F6', flexShrink: 0 }}>
-                        <button onClick={(e) => { e.stopPropagation(); prevMonth(); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6B7280', fontSize: '18px', padding: '2px 6px', borderRadius: '4px', lineHeight: 1 }}>‹</button>
-                        <div style={{ fontSize: '16px', fontWeight: '700', color: '#111' }}>
-                            {monthNames[currentMonth]} {currentYear}
-                        </div>
-                        <button onClick={(e) => { e.stopPropagation(); nextMonth(); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#6B7280', fontSize: '18px', padding: '2px 6px', borderRadius: '4px', lineHeight: 1 }}>›</button>
+            <div className="vsched-content">
+                {/* CALENDAR */}
+                <div className="vcal-card">
+                    <div className="vcal-header">
+                        <button className="vcal-nav" onClick={prevMonth}>‹</button>
+                        <div className="vcal-month">{monthNames[month]} {year}</div>
+                        <button className="vcal-nav" onClick={nextMonth}>›</button>
                     </div>
-
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', borderBottom: '1px solid #F3F4F6', flexShrink: 0 }}>
-                        {dayNames.map(d => (
-                            <div key={d} style={{ padding: '7px 10px', fontSize: '10px', fontWeight: '600', color: '#9CA3AF', textAlign: 'center', letterSpacing: '0.5px' }}>{d}</div>
-                        ))}
+                    <div className="vday-names">
+                        {dayNames.map(d => <div key={d} className="vday-name">{d}</div>)}
                     </div>
-
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', flex: 1 }}>
-                        {calendarCells.map((day, idx) => {
-                            const dateKey = day
-                                ? `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
-                                : null;
-                            const dayActs = dateKey ? (actsByDate[dateKey] || []) : [];
-                            const isToday = day && today.getDate() === day && today.getMonth() === currentMonth && today.getFullYear() === currentYear;
-
+                    <div className="vcal-grid">
+                        {cells.map((day, i) => {
+                            if (!day) return <div key={`empty-${i}`} className="vcal-cell empty" />;
+                            const dayActivities = getActivitiesForDay(day);
+                            const isSelected = selectedDay === day;
                             return (
-                                <div key={idx} style={{
-                                    minHeight: '68px',
-                                    padding: '6px 8px',
-                                    borderRight: (idx + 1) % 7 !== 0 ? '1px solid #F3F4F6' : 'none',
-                                    borderBottom: idx < calendarCells.length - 7 ? '1px solid #F3F4F6' : 'none',
-                                    background: day ? 'white' : '#FAFAFA',
-                                    overflow: 'hidden',
-                                }}>
-                                    {day && (
-                                        <>
-                                            <div style={{
-                                                fontSize: '12px', fontWeight: isToday ? '700' : '400',
-                                                color: isToday ? 'white' : '#374151',
-                                                width: '22px', height: '22px', borderRadius: '50%',
-                                                background: isToday ? '#ff0000' : 'transparent',
-                                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                marginBottom: '3px'
-                                            }}>{day}</div>
-                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                                                {dayActs.slice(0, 2).map(act => (
-                                                    <div
-                                                        key={act.id}
-                                                        onClick={(e) => handleChipClick(e, act)}
-                                                        style={{
-                                                            background: getColor(act.id), color: 'white',
-                                                            borderRadius: '3px', padding: '2px 6px',
-                                                            fontSize: '10px', fontWeight: '600', cursor: 'pointer',
-                                                            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-                                                        }}
-                                                        title={act.name}
-                                                    >
-                                                        {act.name}
-                                                    </div>
-                                                ))}
-                                                {dayActs.length > 2 && (
-                                                    <div style={{ fontSize: '9px', color: '#9CA3AF' }}>+{dayActs.length - 2} more</div>
-                                                )}
+                                <div
+                                    key={day}
+                                    className={`vcal-cell ${isSelected ? 'selected' : ''}`}
+                                    onClick={() => setSelectedDay(day === selectedDay ? null : day)}
+                                >
+                                    <div className={`vday-num ${isToday(day) ? 'today' : ''}`}>{day}</div>
+                                    {dayActivities.slice(0, 2).map((a, idx) => {
+                                        const { bg, color } = statusColor(a.status);
+                                        return (
+                                            <div key={idx} className="vevent-pill" style={{ background: bg, color }}>
+                                                {a.name}
                                             </div>
-                                        </>
+                                        );
+                                    })}
+                                    {dayActivities.length > 2 && (
+                                        <div className="vmore-tag">+{dayActivities.length - 2} more</div>
                                     )}
                                 </div>
                             );
                         })}
                     </div>
                 </div>
-            </div>
 
-            {selectedActivity && (
-                <div
-                    onClick={e => e.stopPropagation()}
-                    style={{
-                        position: 'fixed',
-                        top: popupPos.top,
-                        left: popupPos.left,
-                        width: '272px',
-                        background: 'white',
-                        borderRadius: '12px',
-                        boxShadow: '0 8px 40px rgba(0,0,0,0.18)',
-                        zIndex: 300,
-                        overflow: 'hidden',
-                    }}
-                >
-                    <div style={{
-                        background: getColor(selectedActivity.id),
-                        padding: '12px 14px',
-                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                    }}>
-                        <div style={{ fontSize: '13px', fontWeight: '700', color: 'white' }}>
-                            {new Date(selectedActivity.date).toLocaleDateString('en-PH', {
-                                month: 'long', day: 'numeric', year: 'numeric'
-                            })}
-                        </div>
-                        <button
-                            onClick={() => setSelectedActivity(null)}
-                            style={{
-                                background: 'rgba(255,255,255,0.3)', border: 'none', borderRadius: '50%',
-                                color: 'white', fontSize: '12px', cursor: 'pointer',
-                                width: '20px', height: '20px', display: 'flex',
-                                alignItems: 'center', justifyContent: 'center', lineHeight: 1,
-                                fontWeight: '700'
-                            }}
-                        >✕</button>
+                {/* DETAIL PANEL */}
+                <div className="vdetail-card">
+                    <div className="vdetail-title">
+                        {selectedDay
+                            ? `${monthNames[month]} ${selectedDay}, ${year}`
+                            : 'Select a day'}
                     </div>
-                    <div style={{ padding: '16px 16px 14px' }}>
-                        <div style={{ fontSize: '15px', fontWeight: '700', color: '#111', marginBottom: '10px' }}>
-                            {selectedActivity.name}
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginBottom: '6px' }}>
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#6B7280" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                            <span style={{ fontSize: '12px', color: '#374151' }}>
-                                Time: {selectedActivity.start_time?.substring(0,5)} - {selectedActivity.end_time?.substring(0,5)}
-                            </span>
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '7px', marginBottom: '12px' }}>
-                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#6B7280" strokeWidth="2" style={{ flexShrink: 0, marginTop: '1px' }}><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-                            <span style={{ fontSize: '12px', color: '#374151', lineHeight: '1.4' }}>
-                                Location: {selectedActivity.location_name || '—'}
-                            </span>
-                        </div>
-                        <div style={{ borderTop: '1px solid #F3F4F6', marginBottom: '12px' }} />
-                        <div style={{ marginBottom: '14px' }}>
-                            <div style={{ fontSize: '12px', fontWeight: '600', color: '#374151', marginBottom: '5px' }}>Description:</div>
-                            <div style={{ fontSize: '12px', color: '#6B7280', lineHeight: '1.6' }}>
-                                {selectedActivity.description || 'No description provided.'}
+                    {!selectedDay && (
+                        <div className="vno-events">Click a date to see your activities</div>
+                    )}
+                    {selectedDay && selectedActivities.length === 0 && (
+                        <div className="vno-events">No activities on this day</div>
+                    )}
+                    {selectedActivities.map((a, i) => {
+                        const { bg, color } = statusColor(a.status);
+                        return (
+                            <div key={i} className="vactivity-item">
+                                <div className="vactivity-name">{a.name}</div>
+                                <div className="vactivity-meta">
+                                    <span>{a.start_time?.substring(0,5)} – {a.end_time?.substring(0,5)}</span>
+                                    <span>{a.location_name || '—'}</span>
+                                    {a.description && <span style={{ marginTop: 4 }}>{a.description}</span>}
+                                </div>
+                                {a.status && (
+                                    <span className="vstatus-badge" style={{ background: bg, color }}>{a.status}</span>
+                                )}
+                                <div className="vassigned-box">
+                                    <span className="vassigned-label">Assigned by:</span>
+                                    {a.assigned_by || 'Philippine Red Cross Admin'}
+                                </div>
                             </div>
-                        </div>
-                        <div style={{
-                            border: '1px solid #E5E7EB', borderRadius: '8px',
-                            padding: '9px 12px',
-                            display: 'flex', alignItems: 'flex-start', gap: '8px',
-                        }}>
-                            <span style={{ fontSize: '11px', fontWeight: '600', color: '#ff0000', flexShrink: 0 }}>Assigned by:</span>
-                            <span style={{ fontSize: '11px', color: '#374151', lineHeight: '1.5' }}>
-                                {selectedActivity.assigned_by || 'Philippine Red Cross Admin'}
-                            </span>
-                        </div>
-                    </div>
+                        );
+                    })}
                 </div>
-            )}
+            </div>
         </>
     );
 }
 
 // ✅ Ito ang susi — gagamitin na ang persistent VolunteerLayout, hindi na gagawa ng sarili niyang sidebar
 VolunteerSchedule.layout = (page) => <VolunteerLayout title="Schedule">{page}</VolunteerLayout>;
-
-export default VolunteerSchedule;

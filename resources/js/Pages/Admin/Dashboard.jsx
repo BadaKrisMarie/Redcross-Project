@@ -18,11 +18,11 @@ function AdminDashboard({
     flaggedThisWeek = 0,
     topVolunteers = [],
     todaysActivities = [],
-    branchBreakdown = [],
     recentActivityLog = [],
 }) {
     const [previewDoc, setPreviewDoc] = useState(null);
-    const [expandedActivityId, setExpandedActivityId] = useState(null);
+    const [isPreviewMaximized, setIsPreviewMaximized] = useState(false);
+    const [selectedActivity, setSelectedActivity] = useState(null);
     const thisYear = new Date().getFullYear();
     const availableYears = Object.keys(activityStatsByYear).map(Number).sort((a, b) => b - a);
     const yearOptions = availableYears.includes(thisYear) ? availableYears : [thisYear, ...availableYears];
@@ -50,12 +50,22 @@ function AdminDashboard({
 
     const availabilityBadgeStyle = { background: '#dbeafe', color: '#1e40af' };
 
-    const isImage = (url) => url && /\.(jpg|jpeg|png|gif|webp)$/i.test(url);
-    const isPdf   = (url) => url && /\.pdf$/i.test(url);
+    const isImage = (doc) => {
+        if (!doc?.file_url) return false;
+        if (doc.mime_type) return doc.mime_type.startsWith('image/');
+        if (doc.file_type) return /jpg|jpeg|png|gif|webp/i.test(doc.file_type);
+        return /\.(jpg|jpeg|png|gif|webp)(\?.*)?$/i.test(doc.file_url);
+    };
+    const isPdf = (doc) => {
+        if (!doc?.file_url) return false;
+        if (doc.mime_type) return doc.mime_type === 'application/pdf';
+        if (doc.file_type) return /pdf/i.test(doc.file_type);
+        return /\.pdf(\?.*)?$/i.test(doc.file_url);
+    };
 
     const handleDownload = async (doc) => {
         if (!doc.file_url) return;
-        const fileName = `${doc.name}_${doc.type}`.replace(/\s+/g, '_') + (isPdf(doc.file_url) ? '.pdf' : '');
+        const fileName = `${doc.name}_${doc.type}`.replace(/\s+/g, '_') + (isPdf(doc) ? '.pdf' : '');
         try {
             const response = await fetch(doc.file_url);
             const blob = await response.blob();
@@ -132,7 +142,7 @@ function AdminDashboard({
                 .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 16px; }
                 .full-card { margin-bottom: 16px; }
                 .card { background: var(--white); border: 1px solid var(--border); border-radius: 10px; padding: 20px; }
-                .card-title { font-family: 'Montserrat', sans-serif; font-size: 15px; font-weight: 700; color: var(--ink); text-transform: uppercase; letter-spacing: .3px; margin-bottom: 14px; }
+                .card-title { font-family: 'Montserrat', sans-serif; font-size: 15px; font-weight: 700; color: var(--ink); text-transform: uppercase; letter-spacing: .3px; margin-bottom: 14px; display: flex; align-items: center; }
                 .vol-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid #f0f0f0; text-decoration: none; }
                 .vol-row:last-child { border-bottom: none; }
                 .vol-name { font-size: 13px; color: var(--ink); font-weight: 500; }
@@ -167,40 +177,45 @@ function AdminDashboard({
                 .lb-rank { font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 14px; color: #999; width: 18px; }
                 .lb-hours { font-size: 12px; font-weight: 700; color: var(--red); margin-left: auto; }
 
-                /* NEW: today's activities horizontal strip */
+                /* Today's activities horizontal strip — click opens a modal instead of expanding inline */
                 .today-strip { display: flex; gap: 12px; overflow-x: auto; align-items: flex-start; padding-bottom: 4px; }
-                .today-pill { flex: 0 0 auto; width: 220px; border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; cursor: pointer; transition: box-shadow 0.15s, border-color 0.15s, width 0.2s ease; }
+                .today-pill { flex: 0 0 auto; width: 220px; border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; cursor: pointer; transition: box-shadow 0.15s, border-color 0.15s; }
                 .today-pill:hover { border-color: #ccc; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
-                .today-pill.expanded { width: 320px; box-shadow: 0 4px 14px rgba(0,0,0,0.08); border-color: #ddd; }
-                .today-pill .name { font-size: 13px; font-weight: 600; color: var(--ink); display: flex; justify-content: space-between; align-items: center; gap: 8px; }
-                .today-pill .name .chevron { font-size: 10px; color: #999; transition: transform 0.15s; flex-shrink: 0; }
-                .today-pill .name .chevron.rotated { transform: rotate(180deg); }
+                .today-pill .name { font-size: 13px; font-weight: 600; color: var(--ink); }
                 .today-pill .meta { font-size: 11px; color: var(--muted); margin-top: 4px; }
                 .today-pill .count { font-size: 11px; color: #0000ff; margin-top: 6px; font-weight: 600; }
-                .today-pill .detail { margin-top: 10px; padding-top: 10px; border-top: 1px solid #f0f0f0; }
-                .today-pill .detail .desc { font-size: 12px; color: #444; line-height: 1.5; margin-bottom: 8px; }
-                .today-pill .detail .status-tag { display: inline-block; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 10px; background: #f0f0f0; color: #666; text-transform: capitalize; margin-bottom: 8px; }
-                .today-pill .detail .names { font-size: 11px; color: #666; line-height: 1.6; }
-                .today-pill .detail .names strong { color: #333; }
-                .today-pill .detail .edit-link { display: inline-block; margin-top: 8px; font-size: 11px; font-weight: 600; color: #0000ff; text-decoration: none; }
 
-                /* NEW: branch breakdown bars */
-                .branch-row { margin-bottom: 10px; }
-                .branch-row .top { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px; }
-                .branch-bar-track { height: 6px; background: #f0f0f0; border-radius: 4px; overflow: hidden; }
-                .branch-bar-fill { height: 100%; background: var(--red); border-radius: 4px; }
+                /* Activity detail modal status tag (reused in modal + card) */
+                .status-tag { display: inline-block; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 10px; background: #f0f0f0; color: #666; text-transform: capitalize; }
 
                 /* NEW: recent activity log */
                 .log-row { display: flex; gap: 10px; padding: 8px 0; border-bottom: 1px solid #f0f0f0; font-size: 12px; }
                 .log-row:last-child { border-bottom: none; }
                 .log-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--red); margin-top: 5px; flex-shrink: 0; }
                 .log-time { color: #999; font-size: 11px; white-space: nowrap; margin-left: auto; }
+
+                /* NEW: pending document count badge sa card title */
+                .count-badge { margin-left: 8px; background: #fee2e2; color: #ff0000; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 10px; }
             `}</style>
 
-            {/* MODAL */}
+            {/* MODAL: Document Preview */}
             {previewDoc && (
-                <div onClick={() => setPreviewDoc(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
-                    <div onClick={e => e.stopPropagation()} style={{ background: 'white', borderRadius: '8px', width: '100%', maxWidth: '860px', maxHeight: '90vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                <div onClick={() => { setPreviewDoc(null); setIsPreviewMaximized(false); }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
+                    <div
+                        onClick={e => e.stopPropagation()}
+                        style={{
+                            background: 'white',
+                            borderRadius: '8px',
+                            width: '100%',
+                            maxWidth: isPreviewMaximized ? '95vw' : '860px',
+                            maxHeight: isPreviewMaximized ? '95vh' : '90vh',
+                            height: isPreviewMaximized ? '95vh' : 'auto',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            overflow: 'hidden',
+                            transition: 'max-width 0.2s ease, max-height 0.2s ease',
+                        }}
+                    >
                         <div style={{ padding: '16px 20px', borderBottom: '1px solid #f0f0f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                                 <ProfileAvatar doc={previewDoc} size={36} />
@@ -209,26 +224,54 @@ function AdminDashboard({
                                     <div style={{ fontSize: '12px', color: '#0000ff', fontWeight: '600', marginTop: '2px' }}>{previewDoc.type}</div>
                                 </div>
                             </div>
-                            <button onClick={() => setPreviewDoc(null)} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#888' }}>✕</button>
-                        </div>
-                        <div style={{ flex: 1, overflow: 'auto', display: 'grid', gridTemplateColumns: '240px 1fr' }}>
-                            <div style={{ borderRight: '1px solid #f0f0f0', padding: '24px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
-                                <ProfileAvatar doc={previewDoc} size={80} />
-                                <div style={{ textAlign: 'center' }}>
-                                    <div style={{ fontWeight: '600', fontSize: '15px' }}>{previewDoc.name}</div>
-                                    <div style={{ fontSize: '12px', color: '#888', marginTop: '2px' }}>Muntinlupa City Branch</div>
-                                </div>
-                                <div style={{ width: '100%', marginTop: '8px' }}>
-                                    <div style={{ fontSize: '11px', fontWeight: '600', color: '#888', textTransform: 'uppercase', marginBottom: '4px' }}>Document</div>
-                                    <div style={{ fontSize: '13px', color: '#ff0000', fontWeight: '600' }}>{previewDoc.type}</div>
-                                </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                {(isImage(previewDoc) || isPdf(previewDoc)) && (
+                                    <button
+                                        onClick={() => setIsPreviewMaximized(m => !m)}
+                                        title={isPreviewMaximized ? 'Shrink' : 'Palakihin ang preview'}
+                                        style={{ background: '#f5f5f5', border: '1px solid #e8e8e8', borderRadius: '6px', padding: '5px 10px', fontSize: '12px', fontWeight: '600', cursor: 'pointer', color: '#444' }}
+                                    >
+                                        {isPreviewMaximized ? '⤡ Shrink' : '⤢ Palakihin'}
+                                    </button>
+                                )}
+                                <button onClick={() => { setPreviewDoc(null); setIsPreviewMaximized(false); }} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#888' }}>✕</button>
                             </div>
-                            <div style={{ background: '#f5f5f5', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '400px', overflow: 'hidden' }}>
+                        </div>
+                        <div style={{ flex: 1, overflow: 'auto', display: 'grid', gridTemplateColumns: isPreviewMaximized ? '0px 1fr' : '240px 1fr' }}>
+                            {!isPreviewMaximized && (
+                                <div style={{ borderRight: '1px solid #f0f0f0', padding: '24px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
+                                    <ProfileAvatar doc={previewDoc} size={80} />
+                                    <div style={{ textAlign: 'center' }}>
+                                        <div style={{ fontWeight: '600', fontSize: '15px' }}>{previewDoc.name}</div>
+                                        <div style={{ fontSize: '12px', color: '#888', marginTop: '2px' }}>Muntinlupa City Branch</div>
+                                    </div>
+                                    <div style={{ width: '100%', marginTop: '8px' }}>
+                                        <div style={{ fontSize: '11px', fontWeight: '600', color: '#888', textTransform: 'uppercase', marginBottom: '4px' }}>Document</div>
+                                        <div style={{ fontSize: '13px', color: '#ff0000', fontWeight: '600' }}>{previewDoc.type}</div>
+                                    </div>
+                                </div>
+                            )}
+                            <div style={{ background: '#f5f5f5', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: isPreviewMaximized ? '100%' : '400px', overflow: 'hidden' }}>
                                 {previewDoc.file_url ? (
-                                    isImage(previewDoc.file_url) ? (
-                                        <img src={previewDoc.file_url} alt={previewDoc.type} style={{ maxWidth: '100%', maxHeight: '55vh', objectFit: 'contain', margin: '20px' }} />
-                                    ) : isPdf(previewDoc.file_url) ? (
-                                        <iframe src={`${previewDoc.file_url}#toolbar=1`} style={{ width: '100%', height: '55vh', border: 'none' }} title={previewDoc.type} />
+                                    isImage(previewDoc) ? (
+                                        <img
+                                            src={previewDoc.file_url}
+                                            alt={previewDoc.type}
+                                            onClick={() => setIsPreviewMaximized(m => !m)}
+                                            style={{
+                                                maxWidth: '100%',
+                                                maxHeight: isPreviewMaximized ? '90vh' : '55vh',
+                                                objectFit: 'contain',
+                                                margin: isPreviewMaximized ? 0 : '20px',
+                                                cursor: 'zoom-in',
+                                            }}
+                                        />
+                                    ) : isPdf(previewDoc) ? (
+                                        <iframe
+                                            src={`${previewDoc.file_url}#toolbar=1`}
+                                            style={{ width: '100%', height: isPreviewMaximized ? '100%' : '55vh', border: 'none' }}
+                                            title={previewDoc.type}
+                                        />
                                     ) : (
                                         <div style={{ textAlign: 'center', color: '#888' }}>
                                             <div style={{ fontSize: '48px', marginBottom: '12px' }}>📄</div>
@@ -242,7 +285,57 @@ function AdminDashboard({
                         </div>
                         <div style={{ padding: '12px 20px', borderTop: '1px solid #f0f0f0', display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
                             {previewDoc.file_url && <button onClick={() => handleDownload(previewDoc)} style={{ background: '#f5f5f5', border: '1px solid #e8e8e8', padding: '7px 14px', borderRadius: '4px', fontSize: '12px', fontWeight: '600', cursor: 'pointer' }}>Download</button>}
-                            <button onClick={() => setPreviewDoc(null)} style={{ background: '#f5f5f5', border: '1px solid #e8e8e8', padding: '7px 14px', borderRadius: '4px', fontSize: '12px', fontWeight: '600', cursor: 'pointer' }}>Close</button>
+                            <button onClick={() => { setPreviewDoc(null); setIsPreviewMaximized(false); }} style={{ background: '#f5f5f5', border: '1px solid #e8e8e8', padding: '7px 14px', borderRadius: '4px', fontSize: '12px', fontWeight: '600', cursor: 'pointer' }}>Close</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* MODAL: Today's Activity detail (replaces old inline accordion expand) */}
+            {selectedActivity && (
+                <div
+                    onClick={() => setSelectedActivity(null)}
+                    style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}
+                >
+                    <div
+                        onClick={e => e.stopPropagation()}
+                        style={{ background: 'white', borderRadius: '10px', width: '100%', maxWidth: '480px', overflow: 'hidden' }}
+                    >
+                        <div style={{ padding: '18px 22px', borderBottom: '1px solid #f0f0f0', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                            <div>
+                                <div style={{ fontFamily: "'Montserrat', sans-serif", fontSize: '17px', fontWeight: '700', color: '#111' }}>{selectedActivity.name}</div>
+                                {selectedActivity.status && (
+                                    <span className="status-tag" style={{ marginTop: '6px', display: 'inline-block' }}>{selectedActivity.status}</span>
+                                )}
+                            </div>
+                            <button onClick={() => setSelectedActivity(null)} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#888' }}>✕</button>
+                        </div>
+                        <div style={{ padding: '20px 22px' }}>
+                            <div style={{ fontSize: '13px', color: '#374151', marginBottom: '10px' }}>
+                                <strong style={{ color: '#111' }}>Time:</strong> {selectedActivity.time}
+                            </div>
+                            {selectedActivity.location && (
+                                <div style={{ fontSize: '13px', color: '#374151', marginBottom: '10px' }}>
+                                    <strong style={{ color: '#111' }}>Location:</strong> {selectedActivity.location}
+                                </div>
+                            )}
+                            <div style={{ fontSize: '13px', color: '#0000ff', fontWeight: '600', marginBottom: '14px' }}>
+                                {selectedActivity.assignedCount} assigned
+                            </div>
+                            {selectedActivity.description && (
+                                <div style={{ fontSize: '13px', color: '#444', lineHeight: '1.6', marginBottom: '14px' }}>
+                                    {selectedActivity.description}
+                                </div>
+                            )}
+                            <div style={{ fontSize: '12px', color: '#666', lineHeight: '1.6', marginBottom: '18px' }}>
+                                <strong style={{ color: '#333' }}>Assigned:</strong>{' '}
+                                {selectedActivity.assignedNames && selectedActivity.assignedNames.length > 0
+                                    ? selectedActivity.assignedNames.join(', ')
+                                    : 'Wala pang naka-assign'}
+                            </div>
+                            <Link href={route('admin.activities.edit', selectedActivity.id)} style={{ fontSize: '13px', fontWeight: '600', color: '#0000ff', textDecoration: 'none' }}>
+                                View full activity →
+                            </Link>
                         </div>
                     </div>
                 </div>
@@ -258,8 +351,8 @@ function AdminDashboard({
                 </div>
             )}
 
-            {/* NEW: FLAGGED THIS WEEK / TOP VOLUNTEERS / BRANCH BREAKDOWN */}
-            <div className="grid3">
+            {/* FLAGGED THIS WEEK / TOP VOLUNTEERS */}
+            <div className="grid2">
                 <Link href={route('admin.reports.index', { status: 'flagged' })} className="card mini-stat-card" style={{ textDecoration: 'none' }}>
                     <div className="card-title" style={{ marginBottom: 0 }}>Flagged This Week</div>
                     <div>
@@ -287,68 +380,26 @@ function AdminDashboard({
                         );
                     })}
                 </div>
-
-                <div className="card">
-                    <div className="card-title">Volunteers by Branch</div>
-                    {branchBreakdown.length === 0 ? (
-                        <div style={{ textAlign: 'center', color: '#aaa', fontSize: '13px', padding: '10px 0' }}>No data yet</div>
-                    ) : (() => {
-                        const max = Math.max(...branchBreakdown.map(b => b.total), 1);
-                        return branchBreakdown.map((b, i) => (
-                            <div key={i} className="branch-row">
-                                <div className="top">
-                                    <span>{b.branch}</span>
-                                    <span style={{ fontWeight: 600 }}>{b.total}</span>
-                                </div>
-                                <div className="branch-bar-track">
-                                    <div className="branch-bar-fill" style={{ width: `${(b.total / max) * 100}%` }} />
-                                </div>
-                            </div>
-                        ));
-                    })()}
-                </div>
             </div>
 
-            {/* NEW: TODAY'S ACTIVITIES */}
+            {/* TODAY'S ACTIVITIES — click a pill to open the detail modal */}
             <div className="card full-card">
                 <div className="card-title">Today's Activities</div>
                 {todaysActivities.length === 0 ? (
                     <div style={{ textAlign: 'center', color: '#aaa', fontSize: '13px', padding: '10px 0' }}>Walang naka-schedule ngayong araw</div>
                 ) : (
                     <div className="today-strip">
-                        {todaysActivities.map((a) => {
-                            const isOpen = expandedActivityId === a.id;
-                            return (
-                                <div
-                                    key={a.id}
-                                    className={`today-pill ${isOpen ? 'expanded' : ''}`}
-                                    onClick={() => setExpandedActivityId(isOpen ? null : a.id)}
-                                >
-                                    <div className="name">
-                                        <span>{a.name}</span>
-                                        <span className={`chevron ${isOpen ? 'rotated' : ''}`}>▼</span>
-                                    </div>
-                                    <div className="meta">{a.time}{a.location ? ` · ${a.location}` : ''}</div>
-                                    <div className="count">{a.assignedCount} assigned</div>
-
-                                    {isOpen && (
-                                        <div className="detail" onClick={e => e.stopPropagation()}>
-                                            {a.status && <span className="status-tag">{a.status}</span>}
-                                            {a.description && <div className="desc">{a.description}</div>}
-                                            <div className="names">
-                                                <strong>Assigned:</strong>{' '}
-                                                {a.assignedNames && a.assignedNames.length > 0
-                                                    ? a.assignedNames.join(', ')
-                                                    : 'Wala pang naka-assign'}
-                                            </div>
-                                            <Link href={route('admin.activities.edit', a.id)} className="edit-link">
-                                                View full activity →
-                                            </Link>
-                                        </div>
-                                    )}
-                                </div>
-                            );
-                        })}
+                        {todaysActivities.map((a) => (
+                            <div
+                                key={a.id}
+                                className="today-pill"
+                                onClick={() => setSelectedActivity(a)}
+                            >
+                                <div className="name">{a.name}</div>
+                                <div className="meta">{a.time}{a.location ? ` · ${a.location}` : ''}</div>
+                                <div className="count">{a.assignedCount} assigned</div>
+                            </div>
+                        ))}
                     </div>
                 )}
             </div>
@@ -376,8 +427,8 @@ function AdminDashboard({
                                         <div className="vol-sub">{vol.branch}</div>
                                     </div>
                                     <div style={{ display: 'flex', gap: 4, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-                                        {vol.is_available ? (
-                                            <span className="badge" style={availabilityBadgeStyle}>● Available</span>
+                                        {vol.is_online ? (
+                                            <span className="badge" style={{ background: '#dcfce7', color: '#166534' }}>● Online</span>
                                         ) : (
                                             <span className="badge" style={{ background: '#f5f5f5', color: '#999' }}>○ Offline</span>
                                         )}
@@ -424,15 +475,20 @@ function AdminDashboard({
             {/* PENDING DOCUMENTS */}
             <div className="card full-card">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-                    <div className="card-title" style={{ marginBottom: 0 }}>Pending Documents</div>
-                    <Link href={route('admin.volunteers')} className="view-all">View all →</Link>
+                    <div className="card-title" style={{ marginBottom: 0 }}>
+                        Pending Documents
+                        {pendingDocuments.length > 0 && (
+                            <span className="count-badge">{pendingDocuments.length}</span>
+                        )}
+                    </div>
+                    <Link href={route('admin.documents.index')} className="view-all">View all →</Link>
                 </div>
                 {pendingDocuments.length === 0 ? (
                     <div style={{ textAlign: 'center', color: '#aaa', fontSize: '13px', padding: '20px 0' }}>No pending documents</div>
                 ) : pendingDocuments.map((doc, i) => {
                     const [bg, color] = avatarColors[doc.color_id ?? i % avatarColors.length];
                     return (
-                        <div key={i} onClick={() => setPreviewDoc(doc)} className="vol-row" style={{ cursor: 'pointer' }}
+                        <div key={i} onClick={() => { setPreviewDoc(doc); setIsPreviewMaximized(false); }} className="vol-row" style={{ cursor: 'pointer' }}
                             onMouseEnter={e => e.currentTarget.style.background = '#fafafa'}
                             onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                         >

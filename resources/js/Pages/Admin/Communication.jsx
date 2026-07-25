@@ -1,20 +1,29 @@
 import React from 'react';
-import { Head, Link, router, useForm } from '@inertiajs/react';
+import { Head, useForm, router } from '@inertiajs/react';
 import { useState } from 'react';
+import AdminLayout from '../../Layouts/AdminLayout';
 
-export default function AdminCommunication({ auth, messages, announcements }) {
+/* ── Design tokens: plain, professional ── */
+const ink    = '#1f2328';
+const sub    = '#5c6470';
+const line   = '#e3e5e8';
+const panel  = '#fafafa';
+const status = '#4a5568';
+
+const mutedRed       = '#8a3b3b';
+const mutedRedLine   = '#e0c4c4';
+const mutedGreen     = '#2f5d43';
+const mutedGreenLine = '#c9dcd0';
+
+const serif = "'Georgia', 'Times New Roman', serif";
+const sans  = "Arial, Helvetica, sans-serif";
+
+function AdminCommunication({ messages, announcements }) {
     const [activeTab, setActiveTab] = useState('messages');
     const [selectedMessage, setSelectedMessage] = useState(null);
-    const [sidebarOpen, setSidebarOpen] = useState(true);
 
     const replyForm = useForm({ reply: '' });
     const announceForm = useForm({ title: '', body: '' });
-
-    const admin = auth?.user;
-    const photoUrl = admin?.photo ? `/storage/${admin.photo}` : null;
-    const initials = admin?.name
-        ? admin.name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
-        : 'AD';
 
     const handleReply = (e) => {
         e.preventDefault();
@@ -39,32 +48,18 @@ export default function AdminCommunication({ auth, messages, announcements }) {
         }
     };
 
-    const navLinks = [
-        { label: 'Dashboard',     route: 'admin.dashboard' },
-        { label: 'Volunteers',    route: 'admin.volunteers' },
-        { label: 'Schedule',      route: 'admin.schedule' },
-        { label: 'Attendance',    route: 'admin.attendance.index' },
-        { label: 'Activities',    route: 'admin.activities.index' },
-        { label: '201 Files',     route: 'admin.documents.index' },
-        { label: 'Communication', route: 'admin.communication' },
-       
-    ];
-
-    const NavAvatar = ({ size = 32, fontSize = 12 }) => (
-        <div style={{ width: size, height: size, borderRadius: '50%', background: '#ff0000', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize, fontWeight: '700', overflow: 'hidden', flexShrink: 0 }}>
-            {photoUrl ? <img src={photoUrl} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : initials}
-        </div>
-    );
-
+    /* Plain tab style: quiet border underline instead of colored text/underline */
     const tabStyle = (key) => ({
-        padding: '8px 18px', fontSize: '13px',
-        fontWeight: activeTab === key ? '600' : '400',
-        color: activeTab === key ? '#ff0000' : '#6B7280',
-        borderBottom: activeTab === key ? '2px solid #ff0000' : '2px solid transparent',
-        background: 'none', border: 'none', cursor: 'pointer',
+        padding: '10px 18px', fontSize: '13px',
+        fontWeight: '600',
+        color: activeTab === key ? ink : sub,
+        borderBottom: activeTab === key ? `2px solid ${ink}` : '2px solid transparent',
+        background: 'none', border: 'none', borderBottomWidth: '2px', borderBottomStyle: 'solid',
+        borderBottomColor: activeTab === key ? ink : 'transparent',
+        cursor: 'pointer', fontFamily: sans,
     });
 
-    // ✅ NEW: simple line-icon components (no emojis) for a cleaner, professional look
+    // ✅ simple line-icon components (no emojis) for a cleaner, professional look
     const IconInbox = ({ size = 16 }) => (
         <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>
     );
@@ -78,257 +73,174 @@ export default function AdminCommunication({ auth, messages, announcements }) {
         <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
     );
 
+    /* Uniform outline button */
+    const btnBase = {
+        border: `1px solid ${line}`, background: 'white', color: ink,
+        padding: '9px 20px', fontSize: '13px', fontWeight: '600',
+        cursor: 'pointer', fontFamily: sans, letterSpacing: '0.01em',
+    };
+    const inputStyle = {
+        width: '100%', padding: '10px 14px', border: `1px solid ${line}`,
+        fontSize: '13px', outline: 'none', boxSizing: 'border-box',
+        fontFamily: sans, color: ink,
+    };
+
     return (
         <>
             <Head title="Communication" />
-            <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
 
             <style>{`
-                * { box-sizing: border-box; margin: 0; padding: 0; }
-                :root { --red: #ff0000; --red-dark: #9B0B22; --ink: #1A1A1A; --muted: #6B6B6B; --border: #EDEDED; --surface: #F7F7F5; --white: #FFFFFF; }
-                .wrap { display: flex; min-height: 100vh; background: var(--surface); font-family: 'DM Sans', sans-serif; font-size: 13px; }
-                .sidebar { width: 220px; background: #ff0000; display: flex; flex-direction: column; position: fixed; top: 0; left: 0; height: 100vh; z-index: 100; transition: transform 0.2s; flex-shrink: 0; }
-                .sidebar.closed { transform: translateX(-220px); }
-                .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 99; }
-                .main { margin-left: 220px; flex: 1; display: flex; flex-direction: column; min-height: 100vh; transition: margin-left 0.2s; }
-                .main.full { margin-left: 0; }
-                .sb-brand { padding: 18px 20px 14px; border-bottom: 1px solid rgba(255,255,255,0.15); }
-                .sb-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
-                .sb-cross { width: 32px; height: 32px; background: rgba(0,0,0,0.2); border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #fff; font-family: 'Barlow Condensed', sans-serif; font-size: 20px; font-weight: 700; flex-shrink: 0; }
-                .sb-name { font-family: 'Barlow Condensed', sans-serif; color: #fff; font-size: 13px; font-weight: 600; letter-spacing: .5px; line-height: 1.3; }
-                .sb-name span { display: block; color: rgba(255,255,255,0.7); font-size: 11px; font-weight: 400; letter-spacing: 1px; text-transform: uppercase; }
-                .sb-user { padding: 14px 20px; border-bottom: 1px solid rgba(255,255,255,0.15); display: flex; align-items: center; gap: 10px; text-decoration: none; transition: background 0.15s; }
-                .sb-user:hover { background: rgba(0,0,0,0.1); }
-                .sb-uname { color: #fff; font-size: 12px; font-weight: 500; line-height: 1.3; }
-                .sb-uname span { display: block; color: rgba(255,255,255,0.7); font-size: 11px; font-weight: 400; }
-                .sb-nav { padding: 10px 0; flex: 1; overflow-y: auto; }
-                .nav-section-label { font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: rgba(255,255,255,0.6); padding: 10px 20px 4px; font-weight: 600; }
-                .nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 20px; color: rgba(255,255,255,0.85); font-size: 13px; font-weight: 500; cursor: pointer; transition: all .15s; border-left: 2px solid transparent; text-decoration: none; }
-                .nav-item:hover { background: rgba(0,0,0,0.12); color: #fff; }
-                .nav-item.active { background: rgba(255,255,255,0.2); border-left-color: #fff; color: #fff; }
-                .nav-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
-                .sb-footer { padding: 14px 20px; border-top: 1px solid rgba(255,255,255,0.15); }
-                .logout-btn { display: flex; align-items: center; gap: 8px; color: rgba(255,255,255,0.7); font-size: 12px; cursor: pointer; background: none; border: none; width: 100%; font-family: 'DM Sans', sans-serif; }
-                .logout-btn:hover { color: #fff; }
-                .topbar { background: var(--white); border-bottom: 1px solid var(--border); padding: 0 28px; height: 56px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; position: sticky; top: 0; z-index: 50; }
-                .menu-btn { background: none; border: none; cursor: pointer; color: var(--ink); display: flex; align-items: center; padding: 4px; }
-                .page-title { font-family: 'Barlow Condensed', sans-serif; font-size: 20px; font-weight: 700; color: var(--ink); letter-spacing: .3px; text-transform: uppercase; }
-                @media (max-width: 768px) {
-                    .sidebar-overlay { display: block; }
-                    .main { margin-left: 0 !important; }
-                    .topbar { padding: 0 16px; }
-                }
+                .comm-wrap { font-size: 13px; font-family: ${sans}; color: ${ink}; }
+                textarea:focus, input:focus { border-color: ${status} !important; }
             `}</style>
 
-            <div className="wrap">
-
-                {/* Mobile overlay */}
-                {sidebarOpen && (
-                    <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)} />
-                )}
-
-                {/* SIDEBAR */}
-                <aside className={`sidebar ${sidebarOpen ? '' : 'closed'}`}>
-                    
-                    <Link href={route('admin.profile')} className="sb-user">
-                        <NavAvatar size={34} fontSize={12} />
-                        <div className="sb-uname">
-                            {admin?.name ?? 'Admin'}
-                            <span>Administrator</span>
-                        </div>
-                    </Link>
-                    <nav className="sb-nav">
-                        <div className="nav-section-label">Main</div>
-                        {navLinks.slice(0, 4).map(({ label, route: r, isPdf }) =>
-                            isPdf ? (
-                                <a key={label} href={route(r)} className="nav-item">
-                                    <div className="nav-dot" />{label}
-                                </a>
-                            ) : (
-                                <Link key={label} href={route(r)} className={`nav-item ${r === 'admin.communication' ? 'active' : ''}`}>
-                                    <div className="nav-dot" />{label}
-                                </Link>
-                            )
+            <div className="comm-wrap">
+                {/* Tabs */}
+                <div style={{ background: 'white', border: `1px solid ${line}`, padding: '0 20px', display: 'flex', gap: '4px', marginBottom: '24px' }}>
+                    <button style={{ ...tabStyle('messages'), display: 'flex', alignItems: 'center', gap: '8px' }} onClick={() => setActiveTab('messages')}>
+                        <IconInbox />
+                        Volunteer Messages
+                        {messages.length > 0 && (
+                            <span style={{ border: `1px solid ${line}`, color: sub, padding: '1px 7px', fontSize: '10px', marginLeft: '2px', fontFamily: sans, fontWeight: '700' }}>
+                                {messages.length}
+                            </span>
                         )}
-                        <div className="nav-section-label">Manage</div>
-                        {navLinks.slice(4).map(({ label, route: r, isPdf }) =>
-                            isPdf ? (
-                                // ✅ Regular <a> tag — hindi ini-intercept ng Inertia, mag-do-download ng PDF
-                                <a key={label} href={route(r)} className="nav-item">
-                                    <div className="nav-dot" />{label}
-                                </a>
-                            ) : (
-                                <Link key={label} href={route(r)} className={`nav-item ${r === 'admin.communication' ? 'active' : ''}`}>
-                                    <div className="nav-dot" />{label}
-                                </Link>
-                            )
-                        )}
-                    </nav>
-                    <div className="sb-footer">
-                        <button className="logout-btn" onClick={() => router.post(route('logout'))}>
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-                            Log out
-                        </button>
-                    </div>
-                </aside>
+                    </button>
+                    <button style={{ ...tabStyle('announce'), display: 'flex', alignItems: 'center', gap: '8px' }} onClick={() => setActiveTab('announce')}>
+                        <IconMegaphone />
+                        Announcements
+                    </button>
+                </div>
 
-                {/* MAIN */}
-                <div className={`main ${sidebarOpen ? '' : 'full'}`}>
-                    <div className="topbar">
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                            <button className="menu-btn" onClick={() => setSidebarOpen(o => !o)}>
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-                            </button>
-                            <div>
-                                <div className="page-title">Communication</div>
+                {/* MESSAGES TAB */}
+                {activeTab === 'messages' && (
+                    <div style={{ display: 'flex', gap: '16px' }}>
+                        <div style={{ width: '340px', flexShrink: 0, overflowY: 'auto' }}>
+                            <div style={{ background: 'white', border: `1px solid ${line}`, overflow: 'hidden' }}>
+                                <div style={{ padding: '14px 18px', borderBottom: `1px solid ${line}`, background: panel }}>
+                                    <div style={{ fontSize: '11px', fontWeight: '700', color: sub, textTransform: 'uppercase', letterSpacing: '0.06em', fontFamily: sans }}>All Messages</div>
+                                </div>
+                                {messages.length === 0 ? (
+                                    <div style={{ padding: '48px', textAlign: 'center', color: '#a1a8b0', fontSize: '13px', fontFamily: sans }}>
+                                        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '10px', color: '#c4c9ce' }}><IconInbox size={30} /></div>
+                                        No messages yet
+                                    </div>
+                                ) : (
+                                    messages.map((msg, i) => (
+                                        <div key={i} onClick={() => setSelectedMessage(msg)} style={{ padding: '14px 18px', cursor: 'pointer', borderBottom: i < messages.length - 1 ? `1px solid ${line}` : 'none', background: selectedMessage?.id === msg.id ? panel : 'white', borderLeft: selectedMessage?.id === msg.id ? `3px solid ${ink}` : '3px solid transparent' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
+                                                <div style={{ fontSize: '14px', fontWeight: '700', color: ink, fontFamily: serif }}>{msg.user?.name || 'Volunteer'}</div>
+                                                {msg.reply && <span style={{ border: `1px solid ${mutedGreenLine}`, color: mutedGreen, fontSize: '10px', fontWeight: '700', padding: '1px 7px', fontFamily: sans, textTransform: 'uppercase', letterSpacing: '0.03em' }}>Replied</span>}
+                                            </div>
+                                            <div style={{ fontSize: '12.5px', fontWeight: '600', color: ink, marginBottom: '2px', fontFamily: sans }}>{msg.subject}</div>
+                                            <div style={{ fontSize: '11.5px', color: sub, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: sans }}>{msg.message}</div>
+                                            <div style={{ fontSize: '10.5px', color: '#a1a8b0', marginTop: '4px', fontFamily: sans }}>{new Date(msg.created_at).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}</div>
+                                        </div>
+                                    ))
+                                )}
                             </div>
                         </div>
-                        <NavAvatar size={32} fontSize={12} />
-                    </div>
 
-                    {/* Tabs */}
-                    <div style={{ background: 'white', borderBottom: '1px solid #E5E7EB', padding: '0 28px', display: 'flex', gap: '4px' }}>
-                        <button style={{ ...tabStyle('messages'), display: 'flex', alignItems: 'center', gap: '6px' }} onClick={() => setActiveTab('messages')}>
-                            <IconInbox />
-                            Volunteer Messages
-                            {messages.length > 0 && (
-                                <span style={{ background: '#ff0000', color: 'white', borderRadius: '10px', padding: '1px 6px', fontSize: '10px', marginLeft: '2px' }}>
-                                    {messages.length}
-                                </span>
-                            )}
-                        </button>
-                        <button style={{ ...tabStyle('announce'), display: 'flex', alignItems: 'center', gap: '6px' }} onClick={() => setActiveTab('announce')}>
-                            <IconMegaphone />
-                            Announcements
-                        </button>
-                    </div>
-
-                    <main style={{ flex: 1, padding: '28px', display: 'flex', gap: '24px', overflow: 'hidden' }}>
-
-                        {/* MESSAGES TAB */}
-                        {activeTab === 'messages' && (
-                            <>
-                                <div style={{ width: '340px', flexShrink: 0, overflowY: 'auto' }}>
-                                    <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #E5E7EB', overflow: 'hidden' }}>
-                                        <div style={{ padding: '14px 18px', borderBottom: '1px solid #F3F4F6' }}>
-                                            <div style={{ fontSize: '13px', fontWeight: '600', color: '#111' }}>All Messages</div>
-                                        </div>
-                                        {messages.length === 0 ? (
-                                            <div style={{ padding: '48px', textAlign: 'center', color: '#9CA3AF', fontSize: '13px' }}>
-                                                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '10px', color: '#D1D5DB' }}><IconInbox size={30} /></div>
-                                                No messages yet
-                                            </div>
-                                        ) : (
-                                            messages.map((msg, i) => (
-                                                <div key={i} onClick={() => setSelectedMessage(msg)} style={{ padding: '14px 18px', cursor: 'pointer', borderBottom: i < messages.length - 1 ? '1px solid #F3F4F6' : 'none', background: selectedMessage?.id === msg.id ? '#FEF2F2' : 'white', borderLeft: selectedMessage?.id === msg.id ? '3px solid #ff0000' : '3px solid transparent' }}>
-                                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '3px' }}>
-                                                        <div style={{ fontSize: '13px', fontWeight: '600', color: '#111' }}>{msg.user?.name || 'Volunteer'}</div>
-                                                        {msg.reply && <span style={{ background: '#DCFCE7', color: '#166534', fontSize: '10px', fontWeight: '600', padding: '1px 6px', borderRadius: '8px' }}>Replied</span>}
-                                                    </div>
-                                                    <div style={{ fontSize: '12px', fontWeight: '500', color: '#374151', marginBottom: '2px' }}>{msg.subject}</div>
-                                                    <div style={{ fontSize: '11px', color: '#9CA3AF', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{msg.message}</div>
-                                                    <div style={{ fontSize: '10px', color: '#D1D5DB', marginTop: '4px' }}>{new Date(msg.created_at).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}</div>
-                                                </div>
-                                            ))
-                                        )}
-                                    </div>
+                        <div style={{ flex: 1, overflowY: 'auto' }}>
+                            {!selectedMessage ? (
+                                <div style={{ background: 'white', border: `1px solid ${line}`, padding: '64px', textAlign: 'center', color: '#a1a8b0' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '14px', color: '#c4c9ce' }}><IconMessage size={34} /></div>
+                                    <div style={{ fontSize: '14px', fontFamily: sans }}>Select a message to read and reply</div>
                                 </div>
-
-                                <div style={{ flex: 1, overflowY: 'auto' }}>
-                                    {!selectedMessage ? (
-                                        <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #E5E7EB', padding: '64px', textAlign: 'center', color: '#9CA3AF' }}>
-                                            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '14px', color: '#D1D5DB' }}><IconMessage size={34} /></div>
-                                            <div style={{ fontSize: '14px' }}>Select a message to read and reply</div>
-                                        </div>
-                                    ) : (
-                                        <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #E5E7EB', overflow: 'hidden' }}>
-                                            <div style={{ padding: '20px 24px', borderBottom: '1px solid #F3F4F6' }}>
-                                                <div style={{ fontSize: '16px', fontWeight: '700', color: '#111', marginBottom: '6px' }}>{selectedMessage.subject}</div>
-                                                <div style={{ fontSize: '12px', color: '#6B7280' }}>From: <strong>{selectedMessage.user?.name}</strong> · {new Date(selectedMessage.created_at).toLocaleDateString('en-PH', { month: 'long', day: 'numeric', year: 'numeric' })}</div>
-                                            </div>
-                                            <div style={{ padding: '20px 24px', borderBottom: '1px solid #F3F4F6' }}>
-                                                <div style={{ fontSize: '14px', color: '#374151', lineHeight: '1.7' }}>{selectedMessage.message}</div>
-                                            </div>
-                                            {selectedMessage.reply && (
-                                                <div style={{ padding: '16px 24px', background: '#F0FDF4', borderBottom: '1px solid #F3F4F6' }}>
-                                                    <div style={{ fontSize: '12px', fontWeight: '600', color: '#166534', marginBottom: '6px' }}>Your reply:</div>
-                                                    <div style={{ fontSize: '13px', color: '#374151' }}>{selectedMessage.reply}</div>
-                                                </div>
-                                            )}
-                                            <div style={{ padding: '20px 24px' }}>
-                                                <div style={{ fontSize: '13px', fontWeight: '600', color: '#374151', marginBottom: '10px' }}>{selectedMessage.reply ? 'Update Reply' : 'Reply'}</div>
-                                                <form onSubmit={handleReply}>
-                                                    <textarea value={replyForm.data.reply} onChange={e => replyForm.setData('reply', e.target.value)} placeholder="Type your reply..." rows={4} style={{ width: '100%', padding: '10px 14px', border: '1px solid #E5E7EB', borderRadius: '8px', fontSize: '13px', outline: 'none', resize: 'vertical', boxSizing: 'border-box', fontFamily: 'inherit', marginBottom: '12px' }} />
-                                                    {replyForm.errors.reply && <div style={{ fontSize: '11px', color: '#ff0000', marginBottom: '8px' }}>{replyForm.errors.reply}</div>}
-                                                    <div style={{ display: 'flex', gap: '10px' }}>
-                                                        <button type="submit" disabled={replyForm.processing} style={{ background: '#ff0000', color: 'white', border: 'none', borderRadius: '8px', padding: '9px 20px', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}>{replyForm.processing ? 'Sending...' : 'Send Reply'}</button>
-                                                        <button type="button" onClick={() => setSelectedMessage(null)} style={{ background: '#F3F4F6', color: '#374151', border: 'none', borderRadius: '8px', padding: '9px 20px', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}>Cancel</button>
-                                                    </div>
-                                                </form>
-                                            </div>
+                            ) : (
+                                <div style={{ background: 'white', border: `1px solid ${line}`, overflow: 'hidden' }}>
+                                    <div style={{ padding: '20px 24px', borderBottom: `1px solid ${line}` }}>
+                                        <div style={{ fontSize: '17px', fontWeight: '700', color: ink, marginBottom: '6px', fontFamily: serif }}>{selectedMessage.subject}</div>
+                                        <div style={{ fontSize: '12.5px', color: sub, fontFamily: sans }}>From: <strong style={{ color: ink }}>{selectedMessage.user?.name}</strong> · {new Date(selectedMessage.created_at).toLocaleDateString('en-PH', { month: 'long', day: 'numeric', year: 'numeric' })}</div>
+                                    </div>
+                                    <div style={{ padding: '20px 24px', borderBottom: `1px solid ${line}` }}>
+                                        <div style={{ fontSize: '14px', color: ink, lineHeight: '1.7', fontFamily: sans }}>{selectedMessage.message}</div>
+                                    </div>
+                                    {selectedMessage.reply && (
+                                        <div style={{ padding: '16px 24px', background: panel, borderBottom: `1px solid ${line}` }}>
+                                            <div style={{ fontSize: '11px', fontWeight: '700', color: sub, marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em', fontFamily: sans }}>Your reply</div>
+                                            <div style={{ fontSize: '13px', color: ink, fontFamily: sans }}>{selectedMessage.reply}</div>
                                         </div>
                                     )}
-                                </div>
-                            </>
-                        )}
-
-                        {/* ANNOUNCEMENTS TAB */}
-                        {activeTab === 'announce' && (
-                            <div style={{ display: 'flex', gap: '24px', flex: 1, overflow: 'hidden' }}>
-                                <div style={{ width: '380px', flexShrink: 0 }}>
-                                    <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #E5E7EB', padding: '24px' }}>
-                                        <div style={{ fontSize: '14px', fontWeight: '600', color: '#111', marginBottom: '18px' }}>Post Announcement</div>
-                                        <form onSubmit={handleAnnounce}>
-                                            <div style={{ marginBottom: '14px' }}>
-                                                <label style={{ fontSize: '13px', fontWeight: '500', color: '#374151', display: 'block', marginBottom: '6px' }}>Title</label>
-                                                <input type="text" value={announceForm.data.title} onChange={e => announceForm.setData('title', e.target.value)} placeholder="e.g. Schedule Change Notice" style={{ width: '100%', padding: '10px 14px', border: '1px solid #E5E7EB', borderRadius: '8px', fontSize: '13px', outline: 'none', boxSizing: 'border-box' }} />
-                                                {announceForm.errors.title && <div style={{ fontSize: '11px', color: '#ff0000', marginTop: '4px' }}>{announceForm.errors.title}</div>}
+                                    <div style={{ padding: '20px 24px' }}>
+                                        <div style={{ fontSize: '11px', fontWeight: '700', color: sub, marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '0.05em', fontFamily: sans }}>{selectedMessage.reply ? 'Update Reply' : 'Reply'}</div>
+                                        <form onSubmit={handleReply}>
+                                            <textarea value={replyForm.data.reply} onChange={e => replyForm.setData('reply', e.target.value)} placeholder="Type your reply..." rows={4} style={{ ...inputStyle, resize: 'vertical', marginBottom: '12px' }} />
+                                            {replyForm.errors.reply && <div style={{ fontSize: '11px', color: mutedRed, marginBottom: '8px', fontFamily: sans }}>{replyForm.errors.reply}</div>}
+                                            <div style={{ display: 'flex', gap: '10px' }}>
+                                                <button type="submit" disabled={replyForm.processing} style={btnBase}>{replyForm.processing ? 'Sending...' : 'Send Reply'}</button>
+                                                <button type="button" onClick={() => setSelectedMessage(null)} style={btnBase}>Cancel</button>
                                             </div>
-                                            <div style={{ marginBottom: '18px' }}>
-                                                <label style={{ fontSize: '13px', fontWeight: '500', color: '#374151', display: 'block', marginBottom: '6px' }}>Message</label>
-                                                <textarea value={announceForm.data.body} onChange={e => announceForm.setData('body', e.target.value)} placeholder="Type your announcement here..." rows={5} style={{ width: '100%', padding: '10px 14px', border: '1px solid #E5E7EB', borderRadius: '8px', fontSize: '13px', outline: 'none', resize: 'vertical', boxSizing: 'border-box', fontFamily: 'inherit' }} />
-                                                {announceForm.errors.body && <div style={{ fontSize: '11px', color: '#ff0000', marginTop: '4px' }}>{announceForm.errors.body}</div>}
-                                            </div>
-                                            <button type="submit" disabled={announceForm.processing} style={{ background: '#ff0000', color: 'white', border: 'none', borderRadius: '8px', padding: '10px 24px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-                                                <IconMegaphone size={15} />
-                                                {announceForm.processing ? 'Posting...' : 'Post to All Volunteers'}
-                                            </button>
                                         </form>
                                     </div>
                                 </div>
-                                <div style={{ flex: 1, overflowY: 'auto' }}>
-                                    <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #E5E7EB', overflow: 'hidden' }}>
-                                        <div style={{ padding: '14px 20px', borderBottom: '1px solid #F3F4F6' }}>
-                                            <div style={{ fontSize: '13px', fontWeight: '600', color: '#111' }}>Posted Announcements</div>
-                                        </div>
-                                        {announcements.length === 0 ? (
-                                            <div style={{ padding: '48px', textAlign: 'center', color: '#9CA3AF', fontSize: '13px' }}>
-                                                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '10px', color: '#D1D5DB' }}><IconMegaphone size={30} /></div>
-                                                No announcements posted yet
-                                            </div>
-                                        ) : (
-                                            announcements.map((a, i) => (
-                                                <div key={i} style={{ padding: '16px 20px', borderBottom: i < announcements.length - 1 ? '1px solid #F3F4F6' : 'none' }}>
-                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                                                        <div style={{ flex: 1 }}>
-                                                            <div style={{ fontSize: '13px', fontWeight: '600', color: '#111', marginBottom: '4px' }}>{a.title}</div>
-                                                            <div style={{ fontSize: '12px', color: '#6B7280', lineHeight: '1.6', marginBottom: '6px' }}>{a.body}</div>
-                                                            <div style={{ fontSize: '10px', color: '#9CA3AF' }}>{new Date(a.created_at).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}</div>
-                                                        </div>
-                                                        <button onClick={() => handleDeleteAnnouncement(a.id)} style={{ background: 'none', border: 'none', color: '#EF4444', cursor: 'pointer', padding: '0 0 0 12px', flexShrink: 0, display: 'flex', alignItems: 'center' }} title="Delete">
-                                                            <IconTrash size={15} />
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            ))
-                                        )}
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                {/* ANNOUNCEMENTS TAB */}
+                {activeTab === 'announce' && (
+                    <div style={{ display: 'flex', gap: '16px' }}>
+                        <div style={{ width: '380px', flexShrink: 0 }}>
+                            <div style={{ background: 'white', border: `1px solid ${line}`, padding: '24px' }}>
+                                <div style={{ fontSize: '15px', fontWeight: '700', color: ink, marginBottom: '18px', fontFamily: serif }}>Post Announcement</div>
+                                <form onSubmit={handleAnnounce}>
+                                    <div style={{ marginBottom: '14px' }}>
+                                        <label style={{ fontSize: '11px', fontWeight: '700', color: sub, display: 'block', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em', fontFamily: sans }}>Title</label>
+                                        <input type="text" value={announceForm.data.title} onChange={e => announceForm.setData('title', e.target.value)} placeholder="e.g. Schedule Change Notice" style={inputStyle} />
+                                        {announceForm.errors.title && <div style={{ fontSize: '11px', color: mutedRed, marginTop: '4px', fontFamily: sans }}>{announceForm.errors.title}</div>}
                                     </div>
-                                </div>
+                                    <div style={{ marginBottom: '18px' }}>
+                                        <label style={{ fontSize: '11px', fontWeight: '700', color: sub, display: 'block', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.05em', fontFamily: sans }}>Message</label>
+                                        <textarea value={announceForm.data.body} onChange={e => announceForm.setData('body', e.target.value)} placeholder="Type your announcement here..." rows={5} style={{ ...inputStyle, resize: 'vertical' }} />
+                                        {announceForm.errors.body && <div style={{ fontSize: '11px', color: mutedRed, marginTop: '4px', fontFamily: sans }}>{announceForm.errors.body}</div>}
+                                    </div>
+                                    <button type="submit" disabled={announceForm.processing} style={{ ...btnBase, width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                                        <IconMegaphone size={15} />
+                                        {announceForm.processing ? 'Posting...' : 'Post to All Volunteers'}
+                                    </button>
+                                </form>
                             </div>
-                        )}
-                    </main>
-                </div>
+                        </div>
+                        <div style={{ flex: 1, overflowY: 'auto' }}>
+                            <div style={{ background: 'white', border: `1px solid ${line}`, overflow: 'hidden' }}>
+                                <div style={{ padding: '14px 20px', borderBottom: `1px solid ${line}`, background: panel }}>
+                                    <div style={{ fontSize: '11px', fontWeight: '700', color: sub, textTransform: 'uppercase', letterSpacing: '0.06em', fontFamily: sans }}>Posted Announcements</div>
+                                </div>
+                                {announcements.length === 0 ? (
+                                    <div style={{ padding: '48px', textAlign: 'center', color: '#a1a8b0', fontSize: '13px', fontFamily: sans }}>
+                                        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '10px', color: '#c4c9ce' }}><IconMegaphone size={30} /></div>
+                                        No announcements posted yet
+                                    </div>
+                                ) : (
+                                    announcements.map((a, i) => (
+                                        <div key={i} style={{ padding: '16px 20px', borderBottom: i < announcements.length - 1 ? `1px solid ${line}` : 'none' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                                <div style={{ flex: 1 }}>
+                                                    <div style={{ fontSize: '14px', fontWeight: '700', color: ink, marginBottom: '4px', fontFamily: serif }}>{a.title}</div>
+                                                    <div style={{ fontSize: '12.5px', color: sub, lineHeight: '1.6', marginBottom: '6px', fontFamily: sans }}>{a.body}</div>
+                                                    <div style={{ fontSize: '10.5px', color: '#a1a8b0', fontFamily: sans }}>{new Date(a.created_at).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}</div>
+                                                </div>
+                                                <button onClick={() => handleDeleteAnnouncement(a.id)} style={{ background: 'none', border: 'none', color: mutedRed, cursor: 'pointer', padding: '0 0 0 12px', flexShrink: 0, display: 'flex', alignItems: 'center' }} title="Delete">
+                                                    <IconTrash size={15} />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </>
     );
 }
+
+// ✅ Persistent layout — parehong AdminLayout ng ibang admin pages,
+// kaya lalabas na rin ang notification bell dito, at hindi na mag-re-render
+// ang sidebar sa navigation.
+AdminCommunication.layout = (page) => <AdminLayout title="Communication">{page}</AdminLayout>;
+
+export default AdminCommunication;

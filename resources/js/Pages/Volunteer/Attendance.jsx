@@ -79,6 +79,29 @@ const FILTER_ACTIVE = {
     Absent:     { background: '#374151', color: '#fff', border: '1px solid #374151' },
 };
 
+// ✅ NEW: badge styles for attendance method (office biometric vs field face recognition)
+const METHOD_STYLES = {
+    fingerprint: { background: '#eef2ff', color: '#4338ca', label: 'Biometric (Office)' },
+    face:        { background: '#faf5ff', color: '#7e22ce', label: 'Face Recognition (Field)' },
+};
+
+function MethodBadge({ method }) {
+    const style = METHOD_STYLES[method] || { background: '#f3f4f6', color: '#9ca3af', label: '—' };
+    return (
+        <span style={{
+            background: style.background,
+            color: style.color,
+            padding: '2px 10px',
+            borderRadius: '999px',
+            fontSize: '11px',
+            fontWeight: '600',
+            letterSpacing: '0.3px',
+            display: 'inline-block',
+            whiteSpace: 'nowrap',
+        }}>{style.label}</span>
+    );
+}
+
 function StatusBadge({ status }) {
     return (
         <span style={{
@@ -219,7 +242,7 @@ function VolunteerAttendance({ attendances, todayRecords, totalHours, activities
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                     <thead>
                         <tr style={{ background: '#f9fafb' }}>
-                            {['Date', 'Activity', 'Time In', 'Time Out', 'Hours', 'Status'].map(h => (
+                            {['Date', 'Activity', 'Time In', 'Time Out', 'Hours', 'Method', 'Status'].map(h => (
                                 <th key={h} style={{
                                     padding: '12px 20px', textAlign: 'left',
                                     fontSize: '11px', fontWeight: '600',
@@ -231,7 +254,7 @@ function VolunteerAttendance({ attendances, todayRecords, totalHours, activities
                     <tbody>
                         {filtered.length === 0 ? (
                             <tr>
-                                <td colSpan="6" style={{
+                                <td colSpan="7" style={{
                                     padding: '32px', textAlign: 'center',
                                     color: '#aaa', fontSize: '14px'
                                 }}>No records found.</td>
@@ -243,6 +266,9 @@ function VolunteerAttendance({ attendances, todayRecords, totalHours, activities
                                 <td style={{ padding: '14px 20px', fontSize: '14px', color: '#16a34a' }}>{formatTime(record.time_in)}</td>
                                 <td style={{ padding: '14px 20px', fontSize: '14px', color: '#ff0000' }}>{formatTime(record.time_out)}</td>
                                 <td style={{ padding: '14px 20px', fontSize: '14px', color: '#111' }}>{record.hours_rendered ?? '—'}</td>
+                                <td style={{ padding: '14px 20px' }}>
+                                    <MethodBadge method={record.method} />
+                                </td>
                                 <td style={{ padding: '14px 20px' }}>
                                     {record.statuses.map(s => <StatusBadge key={s} status={s} />)}
                                 </td>
