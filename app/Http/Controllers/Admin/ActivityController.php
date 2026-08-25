@@ -59,6 +59,7 @@ class ActivityController extends Controller
         $validated = $request->validate([
             'name'            => 'required|string|max:255',
             'description'     => 'nullable|string',
+            'assigned_by'     => 'nullable|string|max:255',
             'date'            => 'required|date',
             'start_time'      => 'required',
             'end_time'        => 'required',
@@ -70,8 +71,6 @@ class ActivityController extends Controller
             'volunteer_ids'   => 'array',
             'volunteer_ids.*' => 'exists:users,id',
         ]);
-
-        $validated['assigned_by'] = auth()->id();
 
         $activity = Activity::create($validated);
 
@@ -100,6 +99,7 @@ class ActivityController extends Controller
         $validated = $request->validate([
             'name'            => 'required|string|max:255',
             'description'     => 'nullable|string',
+            'assigned_by'     => 'nullable|string|max:255',
             'date'            => 'required|date',
             'start_time'      => 'required',
             'end_time'        => 'required',
@@ -111,8 +111,6 @@ class ActivityController extends Controller
             'volunteer_ids'   => 'array',
             'volunteer_ids.*' => 'exists:users,id',
         ]);
-
-        $validated['assigned_by'] = auth()->id();
 
         $activity->update($validated);
         $activity->volunteers()->sync($validated['volunteer_ids'] ?? []);

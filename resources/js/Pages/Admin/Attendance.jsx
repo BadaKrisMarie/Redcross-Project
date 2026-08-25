@@ -7,6 +7,51 @@ import AdminLayout from '../../Layouts/AdminLayout';
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50];
 
+/* ── Coordinated avatar palette ──────────────────────────────────
+   Same hashing approach used on the Volunteers page, so a person's
+   avatar color is consistent everywhere they show up in the admin
+   panel instead of being picked at random. */
+const AVATAR_PALETTE = [
+    ['#FDECEE', '#A00D25'], ['#EAF0FE', '#1D4ED8'], ['#E9F7EF', '#1A8245'],
+    ['#FDF3E0', '#B4700A'], ['#F1EEFB', '#5B3FBF'], ['#E6F6F6', '#0E7C86'],
+    ['#FBEAF3', '#B02E7A'],
+];
+const hashString = (str) => {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+        hash = (hash * 31 + str.charCodeAt(i)) >>> 0;
+    }
+    return hash;
+};
+const getAvatarColor = (name) => AVATAR_PALETTE[hashString(name || '') % AVATAR_PALETTE.length];
+
+// ✅ NEW: normalize inconsistent name casing coming from the DB
+// ("kris marie", "KRIS BADA") to a single consistent display format.
+const toTitleCase = (name) =>
+    (name || '')
+        .toLowerCase()
+        .split(' ')
+        .filter(Boolean)
+        .map(w => w[0].toUpperCase() + w.slice(1))
+        .join(' ');
+
+const getInitials = (name) =>
+    (name || '').split(' ').filter(Boolean).map(w => w[0]).join('').slice(0, 2).toUpperCase();
+
+const VolunteerAvatar = ({ name, size = 30 }) => {
+    const [bg, fg] = getAvatarColor(name);
+    return (
+        <div style={{
+            width: size, height: size, borderRadius: '50%', flexShrink: 0,
+            background: bg, color: fg,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: size * 0.36, fontWeight: 700,
+        }}>
+            {getInitials(name) || '-'}
+        </div>
+    );
+};
+
 export default function AdminAttendance({ attendances, volunteers, activities, filters }) {
     const [volunteerFilter, setVolunteerFilter] = useState(filters?.volunteer_id || '');
     const [activityFilter, setActivityFilter] = useState(filters?.activity_id || '');
@@ -190,6 +235,20 @@ const [sortDirection, setSortDirection] = useState('desc');
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [attendances, statusFilter]);
 
+    // ✅ NEW: tally how many records carry each status label, computed off the
+    // full (unfiltered) record set so the counts on the legend pills stay
+    // stable no matter which pill is currently active.
+    const statusCounts = useMemo(() => {
+        const counts = { 'Early In': 0, 'On Time': 0, 'Late': 0, 'Early Out': 0, 'Absent': 0 };
+        attendances.forEach(r => {
+            getAttendanceStatuses(r).forEach(status => {
+                if (status in counts) counts[status] += 1;
+            });
+        });
+        return counts;
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [attendances]);
+
     const totalHours = filteredAttendances.reduce((sum, a) => sum + parseFloat(a.hours_rendered || 0), 0);
 
     // ✅ NEW: datatable column definitions — accessor pulls a comparable value out of each record
@@ -250,6 +309,46 @@ const [sortDirection, setSortDirection] = useState('desc');
         setCurrentPage(1);
     };
 
+    // ✅ NEW: pagination + page size footer, extracted so it can sit below the
+    // table instead of being duplicated above and below it.
+    const TableFooter = () => (
+        sortedAttendances.length > 0 && (
+            <div className="at-table-footer">
+                <div className="at-page-size">
+                    <span>Rows per page:</span>
+                    <select
+                        value={pageSize}
+                        onChange={(e) => { setPageSize(Number(e.target.value)); setCurrentPage(1); }}
+                    >
+                        {PAGE_SIZE_OPTIONS.map((n) => (
+                            <option key={n} value={n}>{n}</option>
+                        ))}
+                    </select>
+                    <span className="at-page-info">
+                        {(safePage - 1) * pageSize + 1}–{Math.min(safePage * pageSize, sortedAttendances.length)} of {sortedAttendances.length}
+                    </span>
+                </div>
+                <div className="at-pagination">
+                    <button
+                        className="at-page-btn"
+                        onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                        disabled={safePage === 1}
+                    >
+                        ‹ Prev
+                    </button>
+                    <span className="at-page-info">Page {safePage} of {totalPages}</span>
+                    <button
+                        className="at-page-btn"
+                        onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                        disabled={safePage === totalPages}
+                    >
+                        Next ›
+                    </button>
+                </div>
+            </div>
+        )
+    );
+
     return (
         <div>
             <Head title="Attendance Records" />
@@ -280,7 +379,13 @@ const [sortDirection, setSortDirection] = useState('desc');
                 .at-legend-pill { border: none; cursor: pointer; transition: transform .1s ease, box-shadow .15s ease; }
                 .at-legend-pill:hover { transform: translateY(-1px); }
                 .at-legend-pill.active { box-shadow: 0 0 0 2px currentColor inset; }
+                .at-legend-count { opacity: .75; font-weight: 700; margin-left: 3px; }
                 .at-clear-status { background: transparent; border: none; color: #9ca3af; font-size: 12px; font-weight: 600; cursor: pointer; padding: 5px 10px; text-decoration: underline; }
+
+                /* ✅ NEW: Export PDF is now a quiet outline button — red is reserved
+                   for the primary "Filter" action so the two don't compete. */
+                .at-export-btn { background: #fff; color: #374151; border: 1px solid #e5e7eb; padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: background .12s, border-color .12s; }
+                .at-export-btn:hover { background: #f9fafb; border-color: #d1d5db; }
             `}</style>
 
             <div className="at-montserrat" style={{ minHeight: '100vh', background: '#f5f5f5' }}>
@@ -292,7 +397,9 @@ const [sortDirection, setSortDirection] = useState('desc');
                         <h1 style={{ fontSize: '32px', color: '#111', fontWeight: '600', textTransform: 'uppercase', margin: 0 }}>Attendance Records</h1>
                     </div>
 
-                    <LiveLocationMap />
+                    <div style={{ marginBottom: '24px' }}>
+                        <LiveLocationMap />
+                    </div>
 
                     <div style={{ background: 'white', borderRadius: '8px', border: '1px solid #e8e8e8', padding: '20px 24px', marginBottom: '24px' }}>
                         <div style={{ fontSize: '14px', fontWeight: '600', textTransform: 'uppercase', marginBottom: '16px', color: '#111' }}>Filter Records</div>
@@ -302,7 +409,7 @@ const [sortDirection, setSortDirection] = useState('desc');
                                 <select value={volunteerFilter} onChange={e => setVolunteerFilter(e.target.value)} style={{ width: '100%', padding: '9px 12px', border: '1px solid #e5e7eb', borderRadius: '6px', fontSize: '14px' }}>
                                     <option value="">All Volunteers</option>
                                     {volunteers.map(v => (
-                                        <option key={v.id} value={v.id}>{v.name}</option>
+                                        <option key={v.id} value={v.id}>{toTitleCase(v.name)}</option>
                                     ))}
                                 </select>
                             </div>
@@ -330,24 +437,16 @@ const [sortDirection, setSortDirection] = useState('desc');
                                 <div style={{ fontSize: '16px', color: '#111', fontWeight: '600', textTransform: 'uppercase' }}>
                                     All Attendance Records
                                 </div>
-                                <button
-                                    onClick={exportPdf}
-                                    style={{
-                                        background: '#ff0000',
-                                        color: 'white',
-                                        padding: '8px 18px',
-                                        borderRadius: '6px',
-                                        fontSize: '13px',
-                                        fontWeight: '600',
-                                        border: 'none',
-                                        cursor: 'pointer',
-                                    }}
-                                >
+                                <button onClick={exportPdf} className="at-export-btn">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M12 3v12m0 0-4-4m4 4 4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" />
+                                    </svg>
                                     Export PDF
                                 </button>
                             </div>
 
-                            {/* ✅ UPDATED: legend pills are now clickable filters */}
+                            {/* ✅ UPDATED: legend pills are now clickable filters, with a live
+                                count of matching records so admins know volume before clicking. */}
                             <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
                                 {['Early In', 'On Time', 'Late', 'Early Out', 'Absent'].map(label => {
                                     const style = statusStyles[label];
@@ -367,7 +466,7 @@ const [sortDirection, setSortDirection] = useState('desc');
                                                 opacity: statusFilter && !isActive ? 0.55 : 1,
                                             }}
                                         >
-                                            {label}
+                                            {label}<span className="at-legend-count">· {statusCounts[label]}</span>
                                         </button>
                                     );
                                 })}
@@ -379,42 +478,8 @@ const [sortDirection, setSortDirection] = useState('desc');
                             </div>
                         </div>
 
-                        {/* ✅ NEW: pagination + page size controls (moved above table) */}
-                        {sortedAttendances.length > 0 && (
-                            <div className="at-table-footer">
-                                <div className="at-page-size">
-                                    <span>Rows per page:</span>
-                                    <select
-                                        value={pageSize}
-                                        onChange={(e) => { setPageSize(Number(e.target.value)); setCurrentPage(1); }}
-                                    >
-                                        {PAGE_SIZE_OPTIONS.map((n) => (
-                                            <option key={n} value={n}>{n}</option>
-                                        ))}
-                                    </select>
-                                    <span className="at-page-info">
-                                        {(safePage - 1) * pageSize + 1}–{Math.min(safePage * pageSize, sortedAttendances.length)} of {sortedAttendances.length}
-                                    </span>
-                                </div>
-                                <div className="at-pagination">
-                                    <button
-                                        className="at-page-btn"
-                                        onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                                        disabled={safePage === 1}
-                                    >
-                                        ‹ Prev
-                                    </button>
-                                    <span className="at-page-info">Page {safePage} of {totalPages}</span>
-                                    <button
-                                        className="at-page-btn"
-                                        onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                                        disabled={safePage === totalPages}
-                                    >
-                                        Next ›
-                                    </button>
-                                </div>
-                            </div>
-                        )}
+                        {/* ✅ MOVED: pagination + page size controls back above the table */}
+                        <TableFooter />
 
                         {/* ✅ NEW: sortable datatable */}
                         <div className="at-table-scroll">
@@ -443,18 +508,25 @@ const [sortDirection, setSortDirection] = useState('desc');
                                         <tr>
                                             <td colSpan="8" style={{ padding: '40px', textAlign: 'center', color: '#aaa', fontSize: '14px' }}>No attendance records found.</td>
                                         </tr>
-                                    ) : pagedAttendances.map((record) => (
+                                    ) : pagedAttendances.map((record) => {
+                                        const displayName = toTitleCase(record.user?.name);
+                                        return (
                                         <tr key={record.id} style={{ borderTop: '1px solid #f0f0f0' }}>
                                             <td style={{ padding: '14px 24px' }}>
-                                                <div
-                                                    onClick={() => setSelectedRecord(record)}
-                                                    style={{ fontSize: '14px', fontWeight: '600', color: '#111', cursor: 'pointer', textDecoration: 'underline', textDecorationColor: 'transparent' }}
-                                                    onMouseEnter={(e) => e.currentTarget.style.textDecorationColor = '#ff0000'}
-                                                    onMouseLeave={(e) => e.currentTarget.style.textDecorationColor = 'transparent'}
-                                                >
-                                                    {record.user?.name ?? '-'}
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                    <VolunteerAvatar name={record.user?.name} />
+                                                    <div>
+                                                        <div
+                                                            onClick={() => setSelectedRecord(record)}
+                                                            style={{ fontSize: '14px', fontWeight: '600', color: '#111', cursor: 'pointer', textDecoration: 'underline', textDecorationColor: 'transparent' }}
+                                                            onMouseEnter={(e) => e.currentTarget.style.textDecorationColor = '#ff0000'}
+                                                            onMouseLeave={(e) => e.currentTarget.style.textDecorationColor = 'transparent'}
+                                                        >
+                                                            {displayName || '-'}
+                                                        </div>
+                                                        <div style={{ fontSize: '12px', color: '#9ca3af' }}>{record.user?.email ?? ''}</div>
+                                                    </div>
                                                 </div>
-                                                <div style={{ fontSize: '12px', color: '#9ca3af' }}>{record.user?.email ?? ''}</div>
                                             </td>
                                             <td style={{ padding: '14px 24px', fontSize: '14px', color: '#374151' }}>{record.activity?.name ?? '-'}</td>
                                             <td style={{ padding: '14px 24px', fontSize: '14px', color: '#374151' }}>{formatDate(record.date)}</td>
@@ -470,7 +542,8 @@ const [sortDirection, setSortDirection] = useState('desc');
                                                 <StatusBadges statuses={getAttendanceStatuses(record)} />
                                             </td>
                                         </tr>
-                                    ))}
+                                        );
+                                    })}
                                 </tbody>
                             </table>
                         </div>

@@ -3,6 +3,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Mail\VolunteerRegistered;
 use App\Models\User;
+use App\Models\Notification;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -82,10 +83,21 @@ class RegisteredUserController extends Controller
 
         // Automatically assign volunteer role
         $user->assignRole('volunteer');
+
+        // Notify admins of the new volunteer registration
+        Notification::create([
+            'type'    => 'volunteer_registration',
+            'message' => "New volunteer registered: {$user->name}",
+            'link'    => route('admin.volunteers.show', $user->id),
+        ]);
+
         event(new Registered($user));
+
         // Send registration confirmation email
         Mail::to($user->email)->send(new VolunteerRegistered($user));
+
         // Do NOT log them in — send to pending page
         return redirect()->route('login')->with('status', 'Your account has been submitted for approval. Please wait for the admin to approve your account before logging in.');
     }
+
 }

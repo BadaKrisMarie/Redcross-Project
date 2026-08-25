@@ -16,15 +16,27 @@ use App\Http\Controllers\Admin\AttendanceController as AdminAttendanceController
 use App\Http\Controllers\Admin\AttendanceLogController;
 use App\Http\Controllers\Admin\CommunicationController as AdminCommunicationController;
 use App\Http\Controllers\Admin\DocumentController as AdminDocumentController;
-use App\Http\Controllers\DisasterAlertController;
+use App\Http\Controllers\Admin\DocumentCategoryController;
 use Illuminate\Foundation\Application;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\NotificationController;
 use App\Http\Controllers\Volunteer\AvailabilityController;
+// ✅ Live Chat controllers
+use App\Http\Controllers\Admin\ChatController as AdminChatController;
+use App\Http\Controllers\Volunteer\ChatController as VolunteerChatController;
+use App\Http\Controllers\Admin\FingerprintEnrollmentController;
+
+// --- Broadcasting auth route (Laravel 11 no longer auto-registers this) -------
+// Fixes: POST /broadcasting/auth 404 (Not Found) — required for Echo/Reverb
+// private & presence channels (live chat, live location, notifications).
+Broadcast::routes(['middleware' => ['web', 'auth']]);
+require __DIR__.'/channels.php';
+// ----------------------------------------------------------------------------
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [
@@ -46,10 +58,7 @@ Route::get('/contact', function () {
 Route::get('/donate', function () {
     return Inertia::render('Donate');
 })->name('donate');
-// --- Disaster Alerts API (used by DisasterAlertsBanner.jsx) --------------------
-Route::get('/api/disaster-alerts', [DisasterAlertController::class, 'recent']);
-// ----------------------------------------------------------------------------
-// ----------------------------------------------------------------------------
+
 
 // --- Give Blood & Training main pages (linked from SiteNavbar dropdowns) ------
 Route::get('/give-blood', function () {
@@ -68,10 +77,6 @@ Route::get('/training/employees', function () {
 // Each service now has its own dedicated page instead of the old
 // combined "Our Services" listing page.
 
-// Disaster Management Service main page
-Route::get('/disaster-management', function () {
-    return Inertia::render('DisasterManagement');
-})->name('disaster-management');
 
 // National Blood Service main page
 Route::get('/national-blood-service', function () {
@@ -235,7 +240,7 @@ Route::prefix('contact')->name('contact.')->group(function () {
 Route::post('/check-email', [RegisteredUserController::class, 'checkEmail'])
     ->name('check.email');
 
-// --- Notification Routes -------------------------------------------------------
+// --- Notification Routes (Volunteer-side, legacy user_notifications table) -----
 Route::middleware('auth')->group(function () {
 
     Route::get('/volunteer/notifications', function (Request $request) {
@@ -290,6 +295,11 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
 
     Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard');
 
+    // 🆕 Global topbar search (beside the notification bell in AdminLayout.jsx)
+    // Ginagamit ito ng debounced fetch sa AdminLayout.jsx: route('admin.search')?q=...
+    // Nagbabalik ng JSON: { results: [{ id, type, label, subtitle, url }, ...] }
+    Route::get('/search', [AdminController::class, 'search'])->name('search');
+
     // Schedule
     Route::get('/schedule', [ActivityController::class, 'schedule'])->name('schedule');
 
@@ -311,10 +321,10 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     // Attendance
     Route::get('/attendance', [AdminAttendanceController::class, 'index'])->name('attendance.index');
     Route::get('/attendance/export-pdf', [AdminAttendanceController::class, 'exportPdf'])->name('attendance.export.pdf');
-    // ? Added � polled by LiveLocationMap.jsx to render current volunteer positions
+    // ? Added   polled by LiveLocationMap.jsx to render current volunteer positions
     Route::get('/attendance/live-locations', [AdminAttendanceController::class, 'liveLocations'])->name('attendance.live-locations');
 
-    // ✅ NEW: Attendance Logs (separate detailed log view from the main Attendance summary page)
+    // ? NEW: Attendance Logs (separate detailed log view from the main Attendance summary page)
     Route::get('/attendance-logs', [AttendanceLogController::class, 'index'])
         ->name('attendance-logs.index');
 
@@ -329,16 +339,35 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::post('/communication/announce', [AdminCommunicationController::class, 'announce'])->name('communication.announce');
     Route::delete('/communication/announcement/{announcement}', [AdminCommunicationController::class, 'deleteAnnouncement'])->name('communication.announcement.delete');
 
+    // ✅ Live Chat
+    Route::get('/chat/volunteers', [AdminChatController::class, 'volunteers'])->name('chat.volunteers');
+    Route::get('/chat/{volunteerId}/messages', [AdminChatController::class, 'messages'])->name('chat.messages');
+    Route::post('/chat/{volunteerId}/messages', [AdminChatController::class, 'send'])->name('chat.send');
+
     // 201 Files (Documents)
     Route::get('/documents', [AdminDocumentController::class, 'index'])->name('documents.index');
     Route::get('/documents/{id}/file', [AdminDocumentController::class, 'serveFile'])->name('documents.file');
+    // ✅ guarded download route: 403 sa controller kung hindi pa 'approved' ang document.
+    // Hiwalay ito sa 'documents.file' (preview) route, na dapat manatiling open kahit pending
+    // para makita pa rin ni admin ang laman ng file bago mag-approve/reject.
+    Route::get('/documents/{id}/download', [AdminDocumentController::class, 'download'])->name('documents.download');
     Route::patch('/documents/{id}/approve', [AdminDocumentController::class, 'approve'])->name('documents.approve');
     Route::patch('/documents/{id}/reject', [AdminDocumentController::class, 'reject'])->name('documents.reject');
+    Route::delete('/documents/{id}', [AdminDocumentController::class, 'destroy'])->name('documents.destroy');
+
+    // ✅ BAGONG LINYA — "Create New Folder" sa 201 Files. Nagdadagdag ng bagong
+    // row sa document_categories, na awtomatikong lalabas bilang folder sa
+    // AdminDocumentsIndex.jsx AT bilang option sa volunteer upload form.
+    Route::post('/documents/categories', [DocumentCategoryController::class, 'store'])->name('documents.categories.store');
+    Route::delete('/documents/categories/{id}', [DocumentCategoryController::class, 'destroy'])->name('documents.categories.destroy');
 
     // Profile & Password
     Route::get('/profile',           [AdminProfileController::class, 'edit'])->name('profile');
     Route::patch('/profile',         [AdminProfileController::class, 'update'])->name('profile.update');
     Route::post('/profile/password', [AdminProfileController::class, 'changePassword'])->name('profile.password');
+
+    // Notifications (galing sa pending documents + volunteers, computed sa HandleInertiaRequests)
+    Route::post('/notifications/mark-read', [NotificationController::class, 'markRead'])->name('notifications.markRead');
 });
 
 // --- Volunteer Routes ---------------------------------------------------------
@@ -394,8 +423,15 @@ Route::middleware(['auth', 'role:volunteer'])->prefix('volunteer')->name('volunt
     Route::get('/communication', [CommunicationController::class, 'index'])->name('communication');
     Route::post('/communication/send', [CommunicationController::class, 'send'])->name('communication.send');
 
+    // ✅ Live Chat
+    Route::get('/chat/messages', [VolunteerChatController::class, 'index'])->name('chat.messages');
+    Route::post('/chat/messages', [VolunteerChatController::class, 'send'])->name('chat.send');
+
     Route::get('/documents', [DocumentController::class, 'index'])->name('documents');
     Route::post('/documents', [DocumentController::class, 'store'])->name('documents.store');
+    // ✅ NEW — Gmail-style bulk delete. Must be registered BEFORE the
+    // '/documents/{id}' route below so 'bulk' is never swallowed as an {id}.
+    Route::delete('/documents/bulk', [DocumentController::class, 'bulkDestroy'])->name('documents.bulkDestroy');
     Route::delete('/documents/{id}', [DocumentController::class, 'destroy'])->name('documents.destroy');
 
     Route::get('/profile', [VolunteerProfileController::class, 'edit'])->name('profile');
@@ -430,17 +466,13 @@ Route::middleware(['auth', 'role:volunteer'])->prefix('volunteer')->name('volunt
     Route::post('/face/timein', [FaceAttendanceController::class, 'timeIn'])->name('face.timein');
     Route::post('/face/timeout', [FaceAttendanceController::class, 'timeOut'])->name('face.timeout');
 
-    // ? Added � periodic location pings sent by FaceAttendance.jsx while checked in,
+    // ? Added   periodic location pings sent by FaceAttendance.jsx while checked in,
     // and a clear call right after a successful time-out. Powers the admin live map.
     Route::post('/location/ping', [LocationPingController::class, 'store'])->name('location.ping');
     Route::post('/location/clear', [LocationPingController::class, 'clear'])->name('location.clear');
 
-    Route::post('/webauthn/register/options', [WebAuthnRegisterController::class, 'options'])->name('webauthn.register.options');
-    Route::post('/webauthn/register', [WebAuthnRegisterController::class, 'register'])->name('webauthn.register');
-    Route::post('/webauthn/timein/options', [WebAuthnAttendanceController::class, 'options'])->name('webauthn.timein.options');
-    Route::post('/webauthn/timein', [WebAuthnAttendanceController::class, 'timeIn'])->name('webauthn.timein');
-    Route::post('/webauthn/timeout/options', [WebAuthnAttendanceController::class, 'options'])->name('webauthn.timeout.options');
-    Route::post('/webauthn/timeout', [WebAuthnAttendanceController::class, 'timeOut'])->name('webauthn.timeout');
+
+    Route::patch('/availability', [AvailabilityController::class, 'update'])->name('availability.update');
 });
 
 Route::middleware('auth')->group(function () {
@@ -449,9 +481,9 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-Route::post('admin/notifications/mark-read', [NotificationController::class, 'markRead'])
-    ->name('admin.notifications.markRead');
-
-    Route::patch('/availability', [AvailabilityController::class, 'update'])->name('availability.update');
+Route::prefix('admin')->middleware(['auth', 'role:admin'])->group(function () {
+    Route::get('fingerprint-enrollment', [FingerprintEnrollmentController::class, 'index'])->name('admin.fingerprint.index');
+    Route::patch('fingerprint-enrollment/{user}/toggle', [FingerprintEnrollmentController::class, 'toggle'])->name('admin.fingerprint.toggle');
+});
 
 require __DIR__.'/auth.php';

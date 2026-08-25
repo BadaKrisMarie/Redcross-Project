@@ -226,10 +226,35 @@ class ReportController extends Controller
             'timeIn' => $row->time_in ? Carbon::parse($row->time_in)->format('h:i A') : '—',
             'timeOut' => $row->time_out ? Carbon::parse($row->time_out)->format('h:i A') : '—',
             'geofence' => $geofence,
-            'scan' => $row->method === 'face' ? 'verified' : ($hasAttendance ? 'manual' : 'failed'),
+            // ✅ FIXED: dating exact match lang sa 'face' ($row->method === 'face'), kaya
+            // kung ang naka-save sa DB ay ibang variant (e.g. 'face_recognition',
+            // 'face_field', 'facial'), palagi itong bumabagsak sa 'manual' fallback.
+            // Ngayon, case-insensitive substring check na — kahit anong variant ng
+            // "face" ang laman ng method column, "verified" pa rin ang lalabas.
+            'scan' => $this->resolveScanMethod($row->method, $hasAttendance),
             'status' => $status,
             'rawDate' => $row->activity_date,
         ];
+    }
+
+    /**
+     * Maps the raw `attendances.method` DB value to the display-friendly
+     * "scan" value used by the frontend (verified / manual / failed).
+     */
+    private function resolveScanMethod(?string $method, bool $hasAttendance): string
+    {
+        if (! $hasAttendance) {
+            return 'failed';
+        }
+
+        $normalized = strtolower(trim($method ?? ''));
+
+        // Covers 'face', 'face_recognition', 'face_field', 'facial', etc.
+        if (str_contains($normalized, 'face')) {
+            return 'verified';
+        }
+
+        return 'manual';
     }
 
     /**

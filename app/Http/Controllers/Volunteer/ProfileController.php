@@ -13,8 +13,16 @@ class ProfileController extends Controller
     public function edit()
     {
         $user = Auth::user();
+
         return Inertia::render('Volunteer/Profile', [
-            'user' => $user,
+            // ✅ FIX: i-format ang birthdate bilang "YYYY-MM-DD" para tugma
+            // sa <input type="date">. Dati, ibinabalik ito bilang full
+            // ISO datetime string (dahil sa 'date' cast sa User model),
+            // kaya hindi na-display ng browser yung value kahit naka-save
+            // na sa database — mukhang "nawawala" pero hindi naman totoo.
+            'user' => array_merge($user->toArray(), [
+                'birthdate' => $user->birthdate ? $user->birthdate->format('Y-m-d') : null,
+            ]),
         ]);
     }
 

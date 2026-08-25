@@ -27,7 +27,7 @@ class PhivolcsAlertScraper
 
         $inserted = 0;
         try {
-            $response = Http::withoutVerifying()->timeout(15)
+            $response = Http::withoutVerifying()->timeout(45)
                 ->withHeaders(['User-Agent' => 'Mozilla/5.0 (compatible; RedCrossAlertBot/1.0)'])
                 ->get($this->sourceUrl);
 
@@ -78,7 +78,12 @@ class PhivolcsAlertScraper
                     continue;
                 }
 
-                $mapUrl = "https://staticmap.openstreetmap.de/staticmap.php?center={$latitude},{$longitude}&zoom=7&size=320x240&maptype=mapnik&markers={$latitude},{$longitude},red-pushpin";
+                $bboxDelta = 0.6;
+$minLon = $longitude - $bboxDelta;
+$maxLon = $longitude + $bboxDelta;
+$minLat = $latitude - $bboxDelta;
+$maxLat = $latitude + $bboxDelta;
+$mapUrl = "https://www.openstreetmap.org/export/embed.html?bbox={$minLon},{$minLat},{$maxLon},{$maxLat}&marker={$latitude},{$longitude}&layer=mapnik";
                 $issuedAt = $this->parseDateTime($dateTimeText);
                 $externalId = 'phivolcs-' . md5($dateTimeText . $latitude . $longitude . $magnitude);
 

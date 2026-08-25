@@ -8,27 +8,15 @@ use Illuminate\Console\Command;
 
 class FetchDisasterAlerts extends Command
 {
-    /**
-     * php artisan alerts:fetch
-     */
-    protected $signature = 'alerts:fetch';
+    protected $signature = 'disaster-alerts:fetch';
 
-    protected $description = 'Fetch latest PHIVOLCS earthquake and PAGASA weather alerts';
+    protected $description = 'Fetch latest disaster alerts from PAGASA and PHIVOLCS';
 
-    public function handle(PhivolcsAlertScraper $phivolcs, PagasaAlertScraper $pagasa): int
+    public function handle(PagasaAlertScraper $pagasa, PhivolcsAlertScraper $phivolcs)
     {
-        ini_set('memory_limit', '512M');
+        $pagasaCount = $pagasa->fetch();
+        $phivolcsCount = $phivolcs->run();
 
-        $this->info('Fetching PHIVOLCS earthquake alerts...');
-        $eqCount = $phivolcs->run();
-        $this->info("  -> {$eqCount} new earthquake alert(s) saved.");
-
-        $this->info('Fetching PAGASA weather alerts...');
-        $wxCount = $pagasa->fetch();
-        $this->info("  -> {$wxCount} new weather alert(s) saved.");
-
-        $this->info('Done.');
-
-        return self::SUCCESS;
+        $this->info("PAGASA: {$pagasaCount} new alert(s). PHIVOLCS: {$phivolcsCount} new earthquake(s).");
     }
 }

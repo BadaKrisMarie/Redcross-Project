@@ -7,7 +7,6 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
-use App\Models\FingerprintTemplate; // ← ADDED
 
 class User extends Authenticatable
 {
@@ -28,11 +27,11 @@ class User extends Authenticatable
         'emergency_contact_phone',
         'status',
         'face_descriptor',
-        'skills',        // ✅ NEW — array of trainings e.g. First Aid, CPR
-        'skills_notes',  // ✅ NEW — free-text notes about skills/trainings
+        'skills',
+        'skills_notes',
         'is_available',
         'last_active_at',
-        'is_online',     // ✅ NEW — true habang naka-login, false pag naka-logout
+        'is_online',
     ];
 
     protected $hidden = [
@@ -44,11 +43,11 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
         'password'          => 'hashed',
         'face_descriptor'   => 'array',
-        'skills'            => 'array', // ✅ NEW — auto encode/decode as JSON array
-        'birthdate'         => 'date',  // ✅ NEW — lets us format/compute age cleanly
+        'skills'            => 'array',
+        'birthdate'         => 'date',
         'is_available'      => 'boolean',
         'last_active_at'    => 'datetime',
-        'is_online'         => 'boolean', // ✅ NEW
+        'is_online'         => 'boolean',
     ];
 
     protected $appends = ['avatar_url'];
@@ -77,5 +76,11 @@ class User extends Authenticatable
     public function activities()
     {
         return $this->belongsToMany(Activity::class, 'activity_volunteer');
+    }
+
+    // ✅ NEW — Fingerprint enrollment status
+    public function fingerprintEnrollment()
+    {
+        return $this->hasOne(FingerprintEnrollment::class, 'user_id');
     }
 }

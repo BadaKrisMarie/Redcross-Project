@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Head, Link } from '@inertiajs/react';
 import SiteNavbar from './SiteNavbar';
-import DisasterAlertsBanner from './DisasterAlertsBanner';
 
 const RED = "#ff0000";
 const NAVY = "#1A1464";
@@ -224,22 +223,9 @@ function EmergencyAppeal() {
   ];
 
   return (
-    <div style={{ fontFamily: "'Montserrat', sans-serif" }}>
-      <DisasterAlertsBanner />
-      <div style={{ display: 'grid', gridTemplateColumns: `repeat(${photos.length}, 1fr)`, gap: 0, background: 'transparent' }}>
-        {photos.map(({ src, alt }, i) => (
-            <Reveal key={i} delay={0.15 + i * 0.2} startVisible={true}>
-              <div style={{ aspectRatio: '3/4', overflow: 'hidden', background: '#f3f4f6' }}>
-                <img
-                  src={src}
-                  alt={alt}
-                  style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-                  onError={e => { e.currentTarget.style.display = 'none'; }}
-                />
-              </div>
-            </Reveal>
-          ))}
-      </div>
+   
+
+    
       <Reveal delay={0.3}>
         <div style={{
           background: 'white', padding: '20px 36px',
@@ -261,7 +247,7 @@ function EmergencyAppeal() {
           </Link>
         </div>
       </Reveal>
-    </div>
+
   );
 }
 

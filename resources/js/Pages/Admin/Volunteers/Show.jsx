@@ -5,7 +5,6 @@ import AdminLayout from '@/Layouts/AdminLayout';
 function VolunteerShow({ volunteer }) {
     const s = {
         content: { maxWidth: '900px' },
-        eyebrow: { fontSize: '11px', fontWeight: '600', letterSpacing: '2px', textTransform: 'uppercase', color: '#ff0000', marginBottom: '8px' },
         h1: { fontFamily: 'Oswald, sans-serif', fontSize: '32px', color: '#111', fontWeight: '600', letterSpacing: '0.5px', textTransform: 'uppercase', margin: '0 0 32px' },
         card: { background: 'white', borderRadius: '8px', border: '1px solid #e8e8e8', padding: '28px', marginBottom: '20px' },
         cardTitle: { fontFamily: 'Oswald, sans-serif', fontSize: '14px', color: '#888', fontWeight: '600', letterSpacing: '1px', textTransform: 'uppercase', marginBottom: '20px', paddingBottom: '12px', borderBottom: '1px solid #f0f0f0' },
@@ -63,7 +62,7 @@ function VolunteerShow({ volunteer }) {
     };
     const age = getAge(volunteer.birthdate);
 
-    // ✅ NEW: skills can arrive as an array (JSON column) — guard against string/null
+    // Skills can arrive as an array (JSON column) — guard against string/null
     const skillsList = Array.isArray(volunteer.skills) ? volunteer.skills : [];
 
     const handleApprove = () => router.patch(route('admin.volunteers.approve', volunteer.id), {}, { preserveScroll: true });
@@ -75,7 +74,6 @@ function VolunteerShow({ volunteer }) {
             <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Source+Sans+3:wght@300;400;600&display=swap" rel="stylesheet" />
 
             <div style={s.content}>
-                <div style={s.eyebrow}>Volunteer Profile</div>
                 <h1 style={s.h1}>Profile Details</h1>
 
                 {/* PROFILE HEADER */}
@@ -124,11 +122,11 @@ function VolunteerShow({ volunteer }) {
                     </div>
                 </div>
 
-                {/* ✅ NEW: SKILLS & TRAININGS */}
+                {/* SKILLS & TRAININGS */}
                 <div style={s.card}>
                     <div style={s.cardTitle}>Skills & Trainings</div>
                     {skillsList.length === 0 ? (
-                        <div style={s.noSkills}>Wala pang na-report na skills o trainings ang volunteer na ito.</div>
+                        <div style={s.noSkills}>This volunteer hasn't reported any skills or trainings yet.</div>
                     ) : (
                         <div>
                             {skillsList.map((skill, i) => (
@@ -164,7 +162,7 @@ function VolunteerShow({ volunteer }) {
     );
 }
 
-// ✅ Persistent layout — sidebar hindi na mawawala
+// ✅ Persistent layout — sidebar stays mounted across navigation
 VolunteerShow.layout = (page) => <AdminLayout title="Volunteer Profile">{page}</AdminLayout>;
 
 export default VolunteerShow;

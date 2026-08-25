@@ -1,6 +1,5 @@
 import React from 'react';
 import InputError from '@/Components/InputError';
-import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 import GuestLayout from '@/Layouts/GuestLayout';
 import { Head, useForm } from '@inertiajs/react';
@@ -19,7 +18,6 @@ export default function ForgotPassword({ status }) {
         <GuestLayout>
             <Head title="Forgot Password" />
 
-            {/* Page wrapper */}
             <div style={{
                 minHeight: '100vh',
                 display: 'flex',
@@ -34,50 +32,29 @@ export default function ForgotPassword({ status }) {
                     border: '1px solid #e5e7eb',
                     padding: '2.5rem',
                     width: '100%',
-                    maxWidth: '460px',
+                    maxWidth: '440px',
                     boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
                 }}>
 
-                    {/* Brand Header */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '2rem' }}>
-                        <img
-                            src="/images/redcross-logo.png"
-                            alt="Philippine Red Cross - Muntinlupa City Branch"
-                            style={{
-                                width: '38px',
-                                height: '38px',
-                                objectFit: 'cover',
-                                clipPath: 'circle(50%)',
-                                flexShrink: 0,
-                            }}
-                        />
-                        <div>
-                            <div style={{ fontSize: '14px', fontWeight: '600', color: '#111' }}>Rizal Chapter</div>
-                            <div style={{ fontSize: '12px', color: '#6b7280' }}>Muntinlupa City Branch</div>
-                        </div>
-                    </div>
-
-                    {/* Title */}
                     <h1 style={{
                         fontSize: '20px',
-                        fontWeight: '700',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.5px',
-                        color: '#111',
+                        fontWeight: '600',
+                        color: '#111827',
                         marginBottom: '6px',
+                        textAlign: 'center',
                     }}>
-                        Forgot Password
+                        Forgot password
                     </h1>
                     <p style={{
                         fontSize: '13px',
                         color: '#6b7280',
                         lineHeight: '1.6',
                         marginBottom: '1.75rem',
+                        textAlign: 'center',
                     }}>
-                        Enter your registered email address and we'll send you a password reset link.
+                        Enter your registered email and we'll send you a link to reset your password.
                     </p>
 
-                    {/* Success status */}
                     {status && (
                         <div style={{
                             backgroundColor: '#F0FDF4',
@@ -98,17 +75,16 @@ export default function ForgotPassword({ status }) {
                         </div>
                     )}
 
-                    {/* Form */}
                     <form onSubmit={submit}>
-                        <div style={{ marginBottom: '1rem' }}>
-                            <label style={{
+                        <div style={{ marginBottom: '1.25rem' }}>
+                            <label htmlFor="email" style={{
                                 display: 'block',
                                 fontSize: '13px',
                                 fontWeight: '500',
                                 color: '#374151',
                                 marginBottom: '6px',
                             }}>
-                                Email Address
+                                Email address
                             </label>
                             <TextInput
                                 id="email"
@@ -121,15 +97,19 @@ export default function ForgotPassword({ status }) {
                                     borderRadius: '8px',
                                     border: '1px solid #d1d5db',
                                     fontSize: '14px',
-                                    color: '#111',
-                                    backgroundColor: '#f9fafb',
+                                    color: '#111827',
+                                    backgroundColor: '#ffffff',
                                     outline: 'none',
+                                    transition: 'border-color 0.15s ease, box-shadow 0.15s ease',
                                 }}
                                 isFocused={true}
                                 onChange={(e) => setData('email', e.target.value)}
-                                placeholder="you@example.com"
+                                placeholder="name@example.com"
                             />
                             <InputError message={errors.email} className="mt-2" />
+                            <p style={{ fontSize: '12px', color: '#9ca3af', marginTop: '6px' }}>
+                                We'll only use this to verify your account and send the reset link.
+                            </p>
                         </div>
 
                         <button
@@ -138,24 +118,26 @@ export default function ForgotPassword({ status }) {
                             style={{
                                 width: '100%',
                                 padding: '11px',
-                                backgroundColor: processing ? '#e5a0a0' : '#ff0000',
+                                backgroundColor: processing ? '#e5a0a0' : '#CC2222',
                                 color: 'white',
                                 border: 'none',
                                 borderRadius: '8px',
                                 fontSize: '14px',
                                 fontWeight: '600',
                                 cursor: processing ? 'not-allowed' : 'pointer',
-                                marginTop: '0.25rem',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '8px',
                                 transition: 'background-color 0.2s',
                             }}
-                            onMouseEnter={e => { if (!processing) e.target.style.backgroundColor = '#ff0000'; }}
-                            onMouseLeave={e => { if (!processing) e.target.style.backgroundColor = '#ff0000'; }}
+                            onMouseEnter={e => { if (!processing) e.target.style.backgroundColor = '#aa1a1a'; }}
+                            onMouseLeave={e => { if (!processing) e.target.style.backgroundColor = '#CC2222'; }}
                         >
-                            {processing ? 'Sending...' : 'Send Password Reset Link'}
+                            {processing ? 'Sending...' : 'Send reset link'}
                         </button>
                     </form>
 
-                    {/* Back link */}
                     <div style={{ textAlign: 'center', marginTop: '1.5rem' }}>
                         <a
                             href="/login"
@@ -165,7 +147,7 @@ export default function ForgotPassword({ status }) {
                                 textDecoration: 'none',
                             }}
                         >
-                            ← Back to Sign In
+                            &larr; Back to sign in
                         </a>
                     </div>
 

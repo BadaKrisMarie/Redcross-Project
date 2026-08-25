@@ -6,7 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Models\Announcement;
 use App\Models\SentEmail;
 use App\Models\User;
+use App\Models\UserNotification;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 
 class CommunicationController extends Controller
@@ -21,9 +23,17 @@ class CommunicationController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
 
+        // ✅ list of volunteers used to power @mention autocomplete
+        // in the announcement composer. Adjust the where() below if your
+        // "volunteer" role is stored differently (e.g. user_type, is_volunteer).
+        $volunteers = User::where('role', 'volunteer')
+            ->orderBy('name')
+            ->get(['id', 'name']);
+
         return Inertia::render('Admin/Communication', [
             'messages'      => $messages,
             'announcements' => $announcements,
+            'volunteers'    => $volunteers,
         ]);
     }
 
@@ -44,8 +54,10 @@ class CommunicationController extends Controller
     public function announce(Request $request)
     {
         $request->validate([
-            'title' => 'required|string|max:255',
-            'body'  => 'required|string',
+            'title'           => 'required|string|max:255',
+            'body'            => 'required|string',
+            'mentioned_ids'   => 'array',
+            'mentioned_ids.*' => 'exists:users,id',
         ]);
 
         Announcement::create([
@@ -53,6 +65,18 @@ class CommunicationController extends Controller
             'title'    => $request->title,
             'body'     => $request->body,
         ]);
+
+        // ✅ notify each mentioned volunteer that they were tagged in this announcement
+        if (!empty($request->mentioned_ids)) {
+            foreach (array_unique($request->mentioned_ids) as $userId) {
+                UserNotification::create([
+                    'user_id' => $userId,
+                    'title'   => 'You were mentioned in an announcement',
+                    'message' => $request->title . ': ' . Str::limit($request->body, 100),
+                    'is_read' => false,
+                ]);
+            }
+        }
 
         return back()->with('success', 'Announcement posted!');
     }

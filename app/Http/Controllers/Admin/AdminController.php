@@ -7,6 +7,7 @@ use App\Models\Activity;
 use App\Models\Attendance;
 use App\Models\Document;
 use App\Models\User;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
@@ -23,6 +24,14 @@ class AdminController extends Controller
 
         $pendingCount = User::role('volunteer')
             ->where('status', 'pending')
+            ->count();
+
+        // ✅ BAGO — totoong "online ngayon" count, base sa is_online column
+        // (event-driven: nagiging true pag nag-login, false pag nag-logout).
+        // Ito yung dating hindi nakukuwenta at kaya laging 0/walang laman
+        // ang "Available Volunteers" card sa Dashboard.
+        $onlineNowCount = User::role('volunteer')
+            ->where('is_online', true)
             ->count();
 
         // ── Recent volunteers (latest 5) ──────────────────────────────
@@ -95,14 +104,20 @@ class AdminController extends Controller
                 // ✅ Detect mime_type from actual file on disk (kagaya ng sa DocumentController@index)
                 // Kailangan ito para malaman ng frontend kung image, PDF, o iba pang uri ng file
                 // ang dapat i-preview sa modal, dahil ang file_url galing sa route (walang extension).
-                $mimeType = null;
+               $mimeType = null;
                 if ($doc->file_path) {
-                    $path = storage_path('app/public/' . $doc->file_path);
-                    if (file_exists($path)) {
+                    $normalized = str_replace('\\', '/', $doc->file_path);
+                    $path = storage_path('app/public/' . $normalized);
+                    if (file_exists($path) && filesize($path) > 0) {
                         $mimeType = mime_content_type($path);
+                    } else {
+                        \Illuminate\Support\Facades\Log::warning('Dashboard pending doc: file missing/empty', [
+                            'doc_id' => $doc->id,
+                            'resolved_path' => $path,
+                            'exists' => file_exists($path),
+                        ]);
                     }
                 }
-
                 return [
                     'id'        => $doc->id,
                     'user_id'   => $doc->user_id,
@@ -234,6 +249,7 @@ class AdminController extends Controller
             'pendingCount'         => $pendingCount,
             'totalVolunteers'      => $totalVolunteers,
             'activeToday'          => $activeToday,
+            'onlineNowCount'       => $onlineNowCount, // ✅ BAGO — pinapasa na ngayon papunta sa "Available Volunteers" card
             'recentVolunteers'     => $recentVolunteers,
             'pendingDocuments'     => $pendingDocuments,
             'volunteerStats'       => $volunteerStats,
@@ -246,6 +262,84 @@ class AdminController extends Controller
             'branchBreakdown'      => $branchBreakdown,
             'recentActivityLog'    => $recentActivityLog,
         ]);
+    }
+
+    /**
+     * 🆕 Global topbar search (ginagamit ng debounced fetch sa
+     * AdminLayout.jsx: route('admin.search')?q=...).
+     *
+     * Naghahanap sa tatlong bagay: volunteers (users na role 'volunteer'),
+     * activities, at pending/approved documents — tapos pinagsasama ang
+     * lahat papunta sa isang flat na listahan na may pare-parehong hugis
+     * ({ id, type, label, subtitle, url }) para diretso na magamit ng
+     * dropdown sa frontend.
+     */
+    public function search(Request $request)
+    {
+        $q = trim((string) $request->query('q', ''));
+
+        if (strlen($q) < 2) {
+            return response()->json(['results' => []]);
+        }
+
+        // — Volunteers (pangalan o email) —
+        $volunteers = User::role('volunteer')
+            ->where(function ($query) use ($q) {
+                $query->where('name', 'like', "%{$q}%")
+                      ->orWhere('email', 'like', "%{$q}%");
+            })
+            ->limit(5)
+            ->get(['id', 'name', 'email'])
+            ->map(fn ($v) => [
+                'id'       => $v->id,
+                'type'     => 'volunteer',
+                'label'    => $v->name,
+                'subtitle' => $v->email,
+                'url'      => route('admin.volunteers.show', $v->id),
+            ]);
+
+        // — Activities (pangalan o lokasyon) —
+        $activities = Activity::where(function ($query) use ($q) {
+                $query->where('name', 'like', "%{$q}%")
+                      ->orWhere('location_name', 'like', "%{$q}%");
+            })
+            ->limit(5)
+            ->get(['id', 'name', 'location_name', 'date'])
+            ->map(fn ($a) => [
+                'id'       => $a->id,
+                'type'     => 'activity',
+                'label'    => $a->name,
+                'subtitle' => $a->location_name
+                    ? $a->location_name . ' · ' . \Carbon\Carbon::parse($a->date)->format('M d, Y')
+                    : \Carbon\Carbon::parse($a->date)->format('M d, Y'),
+                'url'      => route('admin.activities.edit', $a->id),
+            ]);
+
+        // — Documents (uri ng dokumento o pangalan ng volunteer na may-ari) —
+        $documents = Document::with('user')
+            ->where(function ($query) use ($q) {
+                $query->where('type', 'like', "%{$q}%")
+                      ->orWhereHas('user', function ($uq) use ($q) {
+                          $uq->where('name', 'like', "%{$q}%");
+                      });
+            })
+            ->limit(5)
+            ->get()
+            ->map(fn ($d) => [
+                'id'       => $d->id,
+                'type'     => 'document',
+                'label'    => strtoupper($d->type) . ' — ' . ($d->user->name ?? 'Unknown'),
+                'subtitle' => ucfirst($d->status),
+                'url'      => route('admin.documents.index'),
+            ]);
+
+        $results = $volunteers
+            ->concat($activities)
+            ->concat($documents)
+            ->values()
+            ->toArray();
+
+        return response()->json(['results' => $results]);
     }
 
     /**

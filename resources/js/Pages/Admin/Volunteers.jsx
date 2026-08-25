@@ -88,12 +88,36 @@ const T = {
     surfaceAlt: '#FAFBFC',
     success: '#1A8245',
     successSoft: '#E9F7EF',
+    successBorder: '#C4E9D3',
     warning: '#B4700A',
     warningSoft: '#FDF3E0',
+    warningBorder: '#F3DFB0',
     info: '#1D4ED8',
     infoSoft: '#EAF0FE',
     dangerSoft: '#FCEBEC',
+    dangerBorder: '#F6C6CB',
 };
+
+/* ── Coordinated avatar palette ──────────────────────────────────
+   Same set used across Dashboard and 201 Files so a volunteer's
+   avatar color stays consistent no matter where they show up in
+   the admin panel. Assignment is a deterministic hash of the full
+   name (not just the first letter) so colors spread out evenly
+   instead of clustering on common initials.
+   ──────────────────────────────────────────────────────────────── */
+const AVATAR_PALETTE = [
+    ['#FDECEE', '#A00D25'], ['#EAF0FE', '#1D4ED8'], ['#E9F7EF', '#1A8245'],
+    ['#FDF3E0', '#B4700A'], ['#F1EEFB', '#5B3FBF'], ['#E6F6F6', '#0E7C86'],
+    ['#FBEAF3', '#B02E7A'],
+];
+const hashString = (str) => {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+        hash = (hash * 31 + str.charCodeAt(i)) >>> 0;
+    }
+    return hash;
+};
+const getAvatarColor = (name) => AVATAR_PALETTE[hashString(name) % AVATAR_PALETTE.length];
 
 function Volunteers({ volunteers }) {
     const { flash } = usePage().props;
@@ -142,14 +166,6 @@ function Volunteers({ volunteers }) {
 
     const getInitials = (name) =>
         name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
-
-    const avatarColors = [
-        ['#FDECEE', '#A00D25'], ['#EAF0FE', '#1D4ED8'], ['#E9F7EF', '#1A8245'],
-        ['#FDF3E0', '#B4700A'], ['#F1EEFB', '#5B3FBF'], ['#E6F6F6', '#0E7C86'],
-        ['#FBEAF3', '#B02E7A'],
-    ];
-    const getAvatarColor = (name) =>
-        avatarColors[name.charCodeAt(0) % avatarColors.length];
 
     const fmtDate = (d, opts) =>
         new Date(d).toLocaleDateString('en-PH', opts || { year: 'numeric', month: 'short', day: 'numeric' });
@@ -233,9 +249,15 @@ function Volunteers({ volunteers }) {
         transition: 'background 0.12s',
     };
 
+    /* Row actions are hidden until the row is hovered — only the
+       chevron stays visible at rest, so the table doesn't read as
+       "loud" the moment the page opens. Clicking the row (or tapping
+       on touch devices) still opens the quick-view, where the same
+       actions — including delete — are reachable. */
     const VolunteerRow = ({ v, actions }) => (
         <tr
             key={v.id}
+            className="vol-row"
             style={clickableRow}
             onClick={() => setSelectedVolunteer(v)}
             onMouseEnter={e => e.currentTarget.style.background = T.surfaceAlt}
@@ -254,8 +276,11 @@ function Volunteers({ volunteers }) {
                 {fmtDate(v.created_at)}
             </td>
             <td style={{ padding: '13px 20px' }} onClick={e => e.stopPropagation()}>
-                <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
-                    {actions(v)}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', justifyContent: 'flex-end' }}>
+                    <div className="row-actions" style={{ display: 'flex', gap: '6px' }}>
+                        {actions(v)}
+                    </div>
+                    <Icon.chevron width={14} height={14} style={{ color: T.faint, flexShrink: 0 }} />
                 </div>
             </td>
         </tr>
@@ -264,7 +289,7 @@ function Volunteers({ volunteers }) {
     const SectionCard = ({ dotColor, title, count, headers, rows, emptyMsg, renderActions }) => (
         <div style={{
             background: T.surface, borderRadius: '10px', border: `1px solid ${T.border}`,
-            marginBottom: '20px', overflow: 'hidden',
+            marginBottom: '28px', overflow: 'hidden',
         }}>
             <div style={{
                 padding: '16px 20px', borderBottom: `1px solid ${T.borderSoft}`,
@@ -319,6 +344,15 @@ function Volunteers({ volunteers }) {
                 .vol-list-scroll::-webkit-scrollbar-thumb:hover { background-color: #9AA0AC; }
                 .vol-list-scroll { scrollbar-width: thin; scrollbar-color: #C7CBD3 transparent; }
 
+                /* Hover-reveal row actions — chevron stays put, the
+                   action buttons (including delete) fade in only when
+                   the row is actively hovered. */
+                .row-actions { opacity: 0; transform: translateX(4px); transition: opacity 0.12s ease, transform 0.12s ease; }
+                .vol-row:hover .row-actions,
+                .vol-row:focus-within .row-actions,
+                .recent-row:hover .row-actions,
+                .recent-row:focus-within .row-actions { opacity: 1; transform: translateX(0); }
+
                 .icon-btn {
                     position: relative;
                     width: 30px; height: 30px;
@@ -368,6 +402,7 @@ function Volunteers({ volunteers }) {
 
                 .search-input:focus { border-color: ${T.ink} !important; background: #fff !important; }
                 .primary-btn:hover { background: #262B36 !important; }
+                .ghost-danger-btn:hover { background: ${T.dangerSoft} !important; color: ${T.red} !important; }
             `}</style>
 
             {/* ── DELETE CONFIRMATION MODAL ── */}
@@ -412,7 +447,21 @@ function Volunteers({ volunteers }) {
             {selectedVolunteer && (
                 <div onClick={() => setSelectedVolunteer(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(15,17,23,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px' }}>
                     <div onClick={e => e.stopPropagation()} style={{ background: T.surface, borderRadius: '14px', width: '460px', maxWidth: '100%', boxShadow: '0 24px 64px rgba(15,17,23,0.28)', overflow: 'hidden' }}>
-                        <div style={{ padding: '22px 24px 0', display: 'flex', justifyContent: 'flex-end' }}>
+                        <div style={{ padding: '22px 24px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            {/* Delete lives here in the detail view instead of sitting loud on the row */}
+                            <button
+                                onClick={() => { setToDelete(selectedVolunteer); setSelectedVolunteer(null); }}
+                                className="ghost-danger-btn"
+                                style={{
+                                    background: 'transparent', border: 'none', color: T.faint,
+                                    fontSize: '12px', fontWeight: 600, cursor: 'pointer',
+                                    display: 'flex', alignItems: 'center', gap: '5px',
+                                    padding: '5px 8px', borderRadius: '6px', transition: 'background 0.12s, color 0.12s',
+                                }}
+                            >
+                                <Icon.trash width={13} height={13} />
+                                Delete
+                            </button>
                             <button onClick={() => setSelectedVolunteer(null)} style={{ background: T.surfaceAlt, border: `1px solid ${T.border}`, width: '28px', height: '28px', borderRadius: '7px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: T.muted }}>
                                 <Icon.close width={14} height={14} />
                             </button>
@@ -454,35 +503,57 @@ function Volunteers({ volunteers }) {
             <div style={{ fontFamily: "'Inter', sans-serif" }}>
 
                 {/* Page heading */}
-                <div style={{ marginBottom: '22px' }}>
+                <div style={{ marginBottom: '26px' }}>
                     <h1 style={{ fontFamily: "'Oswald', sans-serif", fontSize: '22px', fontWeight: 600, color: T.ink, textTransform: 'uppercase', letterSpacing: '0.4px', margin: 0 }}>Volunteers</h1>
                     <p style={{ fontSize: '13px', color: T.muted, marginTop: '4px' }}>Review applications, manage access, and keep the roster up to date.</p>
                 </div>
 
                 {/* Flash */}
                 {flash?.success && (
-                    <div style={{ marginBottom: '20px', padding: '12px 16px', background: T.successSoft, border: '1px solid #C4E9D3', borderRadius: '8px', fontSize: '13px', color: T.success, fontWeight: 500, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ marginBottom: '24px', padding: '12px 16px', background: T.successSoft, border: '1px solid #C4E9D3', borderRadius: '8px', fontSize: '13px', color: T.success, fontWeight: 500, display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <Icon.check width={15} height={15} />
                         {flash.success}
                     </div>
                 )}
 
-                {/* Stats */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '14px', marginBottom: '24px' }}>
+                {/* Stats — color-coded: pending stays neutral while empty,
+                    approved always reads green, rejected always reads red */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '14px', marginBottom: '32px' }}>
                     {[
-                        { label: 'Pending Approval', value: pending.length },
-                        { label: 'Approved',         value: approved.length },
-                        { label: 'Rejected',         value: rejected.length },
-                    ].map(({ label, value }) => (
-                        <div key={label} style={{ background: T.surface, padding: '20px', borderRadius: '10px', border: `1px solid ${T.border}` }}>
-                            <div style={{ fontFamily: "'Oswald', sans-serif", fontSize: '28px', color: T.ink, fontWeight: 600, lineHeight: 1 }}>{value}</div>
-                            <div style={{ fontSize: '12.5px', color: T.muted, marginTop: '6px', fontWeight: 500 }}>{label}</div>
+                        {
+                            label: 'Pending Approval',
+                            value: pending.length,
+                            bg: pending.length > 0 ? T.warningSoft : T.surface,
+                            border: pending.length > 0 ? T.warningBorder : T.border,
+                            fg: pending.length > 0 ? T.warning : T.ink,
+                            fgLabel: pending.length > 0 ? T.warning : T.muted,
+                        },
+                        {
+                            label: 'Approved',
+                            value: approved.length,
+                            bg: T.successSoft,
+                            border: T.successBorder,
+                            fg: T.success,
+                            fgLabel: T.success,
+                        },
+                        {
+                            label: 'Rejected',
+                            value: rejected.length,
+                            bg: T.dangerSoft,
+                            border: T.dangerBorder,
+                            fg: T.red,
+                            fgLabel: T.red,
+                        },
+                    ].map(({ label, value, bg, border, fg, fgLabel }) => (
+                        <div key={label} style={{ background: bg, padding: '20px', borderRadius: '10px', border: `1px solid ${border}` }}>
+                            <div style={{ fontFamily: "'Oswald', sans-serif", fontSize: '28px', color: fg, fontWeight: 600, lineHeight: 1 }}>{value}</div>
+                            <div style={{ fontSize: '12.5px', color: fgLabel, marginTop: '6px', fontWeight: 500 }}>{label}</div>
                         </div>
                     ))}
                 </div>
 
                 {/* ── RECENT VOLUNTEERS ── */}
-                <div style={{ background: T.surface, borderRadius: '10px', border: `1px solid ${T.border}`, marginBottom: '24px', overflow: 'hidden' }}>
+                <div style={{ background: T.surface, borderRadius: '10px', border: `1px solid ${T.border}`, marginBottom: '32px', overflow: 'hidden' }}>
                     <div style={{ padding: '16px 20px', borderBottom: `1px solid ${T.borderSoft}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: T.surfaceAlt, flexWrap: 'wrap', gap: '10px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '9px' }}>
                             <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: T.red }} />
@@ -513,6 +584,7 @@ function Volunteers({ volunteers }) {
                             recent.map((v, i) => (
                                 <div
                                     key={v.id}
+                                    className="recent-row"
                                     style={{
                                         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                                         padding: '13px 20px',
@@ -533,7 +605,8 @@ function Volunteers({ volunteers }) {
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexShrink: 0 }}>
                                         <span style={{ fontSize: '12px', color: T.faint }}>{fmtDate(v.created_at)}</span>
                                         <StatusBadge status={v.status} />
-                                        <div onClick={e => e.stopPropagation()}>
+                                        {/* Delete only appears on hover — chevron is always the visible affordance */}
+                                        <div className="row-actions" onClick={e => e.stopPropagation()}>
                                             <IconBtn icon={Icon.trash} label="Delete" tone="danger" onClick={() => setToDelete(v)} />
                                         </div>
                                         <Icon.chevron width={14} height={14} style={{ color: T.faint }} />

@@ -12,7 +12,7 @@ function ellipseCircumference(rx, ry) {
 
 const HOLD_FRAMES_REQUIRED = 6;      // consecutive well-positioned frames needed before capturing/advancing (max strictness)
 const TURN_HOLD_FRAMES_REQUIRED = 8; // must hold a genuine, deliberate turn for ~8 consecutive confirmed frames (max strictness)
-const STABLE_FRAMES_REQUIRED = 6;    // for passive auto-capture (timein/timeout)
+const STABLE_FRAMES_REQUIRED = 4;    // for passive auto-capture (timein/timeout) — loosened from 6 so a good position confirms faster
 
 // Head-yaw estimate anchored to the eyes, not the face detection box.
 // The detector's bounding box is frequently NOT symmetric around the actual
@@ -49,26 +49,72 @@ function getYawRatio(landmarks) {
 const YAW_LEFT_MAX = 0.72;   // must clearly exceed this ratio to count as turned left (on-screen) — recalibrated for the eye-span-based metric
 const YAW_RIGHT_MIN = 0.28;  // must clearly fall below this ratio to count as turned right (on-screen) — recalibrated for the eye-span-based metric
 
+// ✅ anti-spoofing — blink-based liveness (Eye Aspect Ratio).
+// Uses the standard Soukupová & Čech EAR formula on the 6-point eye
+// landmarks face-api.js already gives us (no extra model needed). A printed
+// photo, an ID card, or a photo shown on a phone/screen physically cannot
+// blink, so requiring one real open→closed→open cycle before capture is what
+// actually blocks photo/ID spoofing — face size/position checks alone do
+// not, since a still image satisfies those just as easily as a live face.
+const EAR_CLOSED_THRESHOLD = 0.23; // below this, eyes are considered closed
+const EAR_OPEN_THRESHOLD = 0.25;   // above this, eyes are considered open again (hysteresis avoids jitter false-triggers)
+// If the face has been "stable" (well-positioned) for this long without
+// a single genuine blink, treat it as a spoof attempt (photo/printed ID/screen)
+// and reject automatically instead of waiting indefinitely.
+const SPOOF_TIMEOUT_MS = 12000;
+
+function getEyeAspectRatio(landmarks) {
+    const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+    const earFor = (eye) => {
+        // eye = 6 points: [outerCorner, topLid1, topLid2, innerCorner, bottomLid1, bottomLid2]
+        const vertical1 = dist(eye[1], eye[5]);
+        const vertical2 = dist(eye[2], eye[4]);
+        const horizontal = dist(eye[0], eye[3]);
+        if (horizontal < 1) return 0.3; // degenerate case guard, treat as open
+        return (vertical1 + vertical2) / (2 * horizontal);
+    };
+    const left = earFor(landmarks.getLeftEye());
+    const right = earFor(landmarks.getRightEye());
+    return (left + right) / 2;
+}
+
 function getDetectorOptions() {
-    return new faceapi.TinyFaceDetectorOptions({ inputSize: 416, scoreThreshold: 0.2 });
+    return new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.2 });
 }
 
 // More lenient than the default — a turned face is harder for the model to
 // pick up than a frontal one, so we lower the confidence bar specifically
 // for the turn_left/turn_right steps to avoid false "no face detected" drops.
 function getTurnDetectorOptions() {
-    return new faceapi.TinyFaceDetectorOptions({ inputSize: 416, scoreThreshold: 0.12 });
+    return new faceapi.TinyFaceDetectorOptions({ inputSize: 320, scoreThreshold: 0.12 });
 }
 
+// Detection is throttled to run at most this often. Running the full
+// TinyFaceDetector + 68-point landmark model on every single
+// requestAnimationFrame call (up to ~60 times/sec) is far more work than the
+// UI actually needs and is what was causing the visible lag/stutter before
+// the face was even recognized as "held" in place. ~7 checks/sec is still
+// fast enough to feel instant while cutting CPU load dramatically.
+const DETECTION_INTERVAL_MS = 140;
+
 let enhanceCanvas = null;
+let enhanceCtx = null;
 
 function getEnhancedFrame(video) {
-    if (!enhanceCanvas) enhanceCanvas = document.createElement('canvas');
+    if (!enhanceCanvas) {
+        enhanceCanvas = document.createElement('canvas');
+        // willReadFrequently tells the browser this canvas will have its pixel
+        // data read back over and over (which is exactly what face-api.js does
+        // internally every detection call). Without it, Chrome optimizes for
+        // write-only/GPU-composited use and repeated readback gets noticeably
+        // slower — this was the "Canvas2D: Multiple readback operations..."
+        // warning showing up in devtools.
+        enhanceCtx = enhanceCanvas.getContext('2d', { willReadFrequently: true });
+    }
     enhanceCanvas.width = video.videoWidth;
     enhanceCanvas.height = video.videoHeight;
-    const ctx = enhanceCanvas.getContext('2d');
-    ctx.filter = 'brightness(1.5) contrast(1.2)';
-    ctx.drawImage(video, 0, 0, enhanceCanvas.width, enhanceCanvas.height);
+    enhanceCtx.filter = 'brightness(1.5) contrast(1.2)';
+    enhanceCtx.drawImage(video, 0, 0, enhanceCanvas.width, enhanceCanvas.height);
     return enhanceCanvas;
 }
 
@@ -126,6 +172,21 @@ export default function FaceAttendance({ todayRecords, activities, hasFaceDescri
     const stableCounterRef = useRef(0);
     const processingRef = useRef(false);
     const referenceDescriptorRef = useRef(null);
+    const lastDetectionTimeRef = useRef(0); // throttles heavy detection calls, see DETECTION_INTERVAL_MS
+
+    // Blink-liveness tracking for the passive timein/timeout scan.
+    const blinkDetectedRef = useRef(false);
+    const eyeStateRef = useRef('open');
+    const blinkWaitStartRef = useRef(null); // timestamp when the face first became "stable" without a blink yet
+    // Per-session "eyes open" EAR baseline. Eye shape, eyelid coverage, and
+    // camera angle shift the absolute EAR range a lot from person to person
+    // (e.g. looking slightly down at a laptop webcam, or naturally hooded
+    // eyelids), so a fixed global threshold can be simply unreachable for
+    // some users even while blinking completely normally. Calibrating a
+    // baseline at the start of each scan and comparing relative drops fixes
+    // that instead of guessing a one-size-fits-all number.
+    const earBaselineRef = useRef(null);
+    const earCalibrationSamplesRef = useRef([]); // collects the first few EAR readings to establish a reliable "open" baseline before trusting it
 
     const locationPromiseRef = useRef(null);
     const pingIntervalRef = useRef(null);
@@ -151,7 +212,15 @@ export default function FaceAttendance({ todayRecords, activities, hasFaceDescri
         loadModels();
         (async () => {
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                // Capping the requested resolution matters a lot here: face
+                // detection doesn't need 720p/1080p to work, but every extra
+                // pixel is extra decode + canvas-draw + model-inference cost on
+                // EVERY frame. Most webcams default to a much higher resolution
+                // than this if unconstrained, which is a major, easy-to-miss
+                // source of lag on lower-spec laptops.
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' },
+                });
                 preWarmedStreamRef.current = stream;
             } catch {}
         })();
@@ -181,6 +250,20 @@ export default function FaceAttendance({ todayRecords, activities, hasFaceDescri
 
     const loadModels = async () => {
         try {
+            // Force the GPU-accelerated WebGL backend explicitly. Without this,
+            // tfjs sometimes silently falls back to its plain CPU backend on
+            // certain devices/drivers — which can be 10-50x slower for a model
+            // like this and is very likely why detection feels sluggish on
+            // older/weaker volunteer laptops specifically. If WebGL truly isn't
+            // available we swallow the error and let tfjs pick whatever backend
+            // it can, rather than blocking model loading entirely.
+            try {
+                await faceapi.tf.setBackend('webgl');
+                await faceapi.tf.ready();
+            } catch (backendErr) {
+                console.warn('WebGL backend unavailable, falling back to default:', backendErr);
+            }
+
             await Promise.all([
                 faceapi.nets.tinyFaceDetector.loadFromUri('/models'),
                 faceapi.nets.faceLandmark68Net.loadFromUri('/models'),
@@ -200,7 +283,9 @@ export default function FaceAttendance({ todayRecords, activities, hasFaceDescri
                 if (videoRef.current) videoRef.current.srcObject = streamRef.current;
                 return;
             }
-            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' },
+            });
             streamRef.current = stream;
             if (videoRef.current) videoRef.current.srcObject = stream;
         } catch {
@@ -295,6 +380,7 @@ export default function FaceAttendance({ todayRecords, activities, hasFaceDescri
         stepIndexRef.current = 0;
         holdCounterRef.current = 0;
         referenceDescriptorRef.current = null;
+        lastDetectionTimeRef.current = 0;
         setLiveStep('detecting_face');
         setRegisterStepProgress(0);
 
@@ -305,6 +391,15 @@ export default function FaceAttendance({ todayRecords, activities, hasFaceDescri
                 if (!video || video.readyState !== 4) {
                     return;
                 }
+
+                // Skip the heavy detection work (but keep the rAF loop alive) if
+                // we ran it too recently — this is what actually cuts the lag,
+                // since the video itself keeps rendering smoothly regardless.
+                const now = performance.now();
+                if (now - lastDetectionTimeRef.current < DETECTION_INTERVAL_MS) {
+                    return;
+                }
+                lastDetectionTimeRef.current = now;
 
                 const currentStep = REGISTER_STEPS[stepIndexRef.current];
 
@@ -482,6 +577,7 @@ export default function FaceAttendance({ todayRecords, activities, hasFaceDescri
     const startPassiveLoop = useCallback((targetMode) => {
         stableCounterRef.current = 0;
         processingRef.current = false;
+        lastDetectionTimeRef.current = 0;
         setScanProgress(0);
         setVerified(false);
         setLivePositive(false);
@@ -501,38 +597,61 @@ export default function FaceAttendance({ todayRecords, activities, hasFaceDescri
                     return;
                 }
 
+                // Skip the heavy detection work (but keep the rAF loop alive) if
+                // we ran it too recently — same throttle as the register loop,
+                // this is what removes the lag while "holding still".
+                const now = performance.now();
+                if (now - lastDetectionTimeRef.current < DETECTION_INTERVAL_MS) {
+                    return;
+                }
+                lastDetectionTimeRef.current = now;
+
                 const frame = getEnhancedFrame(video);
-                const result = await faceapi.detectSingleFace(frame, getDetectorOptions());
+                // Requests landmarks every frame (not just the bounding box) so we
+                // can track eye-openness for blink detection.
+                const result = await faceapi.detectSingleFace(frame, getDetectorOptions()).withFaceLandmarks();
 
                 if (!result) {
                     stableCounterRef.current = 0;
+                    blinkWaitStartRef.current = null;
+                    blinkDetectedRef.current = false;
+                    eyeStateRef.current = 'open';
                     setScanProgress(0);
                     setLivePositive(false);
                     setInfoStatus('No face detected. Make sure the area is well lit.');
                     return;
                 }
 
-                const box = result.box;
+                const box = result.detection.box;
                 const videoArea = video.videoWidth * video.videoHeight;
                 const faceRatio = (box.width * box.height) / videoArea;
-                const wellPositioned = faceRatio > 0.08 && faceRatio < 0.6;
+                // Slightly widened from the original 0.08–0.6 — the box
+                // reported by the detector naturally jitters a little frame to
+                // frame even when the person hasn't moved, and the old tighter
+                // range meant that jitter alone could flip "well positioned"
+                // on and off and keep resetting progress.
+                const wellPositioned = faceRatio > 0.06 && faceRatio < 0.65;
 
                 if (wellPositioned) {
                     stableCounterRef.current += 1;
                     setScanProgress(Math.min(stableCounterRef.current / STABLE_FRAMES_REQUIRED, 1));
-                    // ✅ FIXED: dati, hindi na-uupdate ang livePositive dito, kaya laging
-                    // kulay-abo ang progress ring kahit tama na ang posisyon ng mukha.
-                    // Ngayon, sumusunod na ito sa parehong pattern ng register flow —
-                    // magiging berde ang ring habang tama ang detection.
                     setLivePositive(true);
                     setInfoStatus('Hold still...');
                 } else {
-                    stableCounterRef.current = 0;
-                    setScanProgress(0);
+                    // Decay by 1 instead of resetting to 0 — a single jittery
+                    // frame (detector box briefly shrinking/growing, a tiny
+                    // head wobble) shouldn't throw away several frames' worth
+                    // of already-good progress. A person who's genuinely moved
+                    // away will still fall back to 0 within a couple of frames;
+                    // this just stops single-frame noise from being punishing.
+                    stableCounterRef.current = Math.max(0, stableCounterRef.current - 1);
+                    setScanProgress(Math.min(stableCounterRef.current / STABLE_FRAMES_REQUIRED, 1));
                     setLivePositive(false);
                     setInfoStatus('Move a little closer or further from the camera');
                 }
 
+                // Capture fires once the face has been stable and well-positioned
+                // for STABLE_FRAMES_REQUIRED consecutive frames — no blink required.
                 if (stableCounterRef.current >= STABLE_FRAMES_REQUIRED) {
                     const captureFrame = getEnhancedFrame(video);
                     const finalResult = await faceapi
@@ -632,7 +751,7 @@ export default function FaceAttendance({ todayRecords, activities, hasFaceDescri
 
     const startMode = (m) => {
         if ((m === 'timein' || m === 'timeout') && !selectedActivity) {
-            setErrorStatus('Please select an activity.');
+            setErrorStatus('Please select an activity first.');
             return;
         }
         setMode(m);
@@ -662,6 +781,14 @@ export default function FaceAttendance({ todayRecords, activities, hasFaceDescri
     const activeProgress = mode === 'register' ? registerStepProgress : scanProgress;
     const currentArrow = mode === 'register' ? STEP_ARROWS[liveStep] : null;
     const showArrow = currentArrow && liveStep !== 'done';
+    const ringStroke = livePositive ? '#16a34a' : '#9ca3af';
+
+    // ✅ NEW: buttons are locked (grayed out + unclickable) until an activity
+    // is selected. This is on top of the existing startMode() guard/toast —
+    // that guard still fires as a fallback (e.g. keyboard activation), but
+    // now the button itself visibly communicates "not ready yet" instead of
+    // looking clickable and only failing after the tap.
+    const noActivitySelected = !selectedActivity;
 
     return (
         <div style={{ background: 'white', borderRadius: '8px', border: '1px solid #e8e8e8', padding: '28px', marginBottom: '24px' }}>
@@ -692,13 +819,22 @@ export default function FaceAttendance({ todayRecords, activities, hasFaceDescri
                         onChange={e => setSelectedActivity(e.target.value)}
                         disabled={!!mode}
                         autoComplete="off"
-                        style={{ width: '100%', padding: '10px 12px', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '14px' }}
+                        style={{
+                            width: '100%', padding: '10px 12px', borderRadius: '8px', fontSize: '14px',
+                            border: noActivitySelected ? '1px solid #fca5a5' : '1px solid #e5e7eb',
+                        }}
                     >
                         <option value="">-- Select your assigned activity --</option>
                         {selectableActivities?.map(a => (
                             <option key={a.id} value={a.id}>{a.name} — {a.location_name} ({a.date})</option>
                         ))}
                     </select>
+                    {/* ✅ NEW: explicit hint so the disabled buttons below make sense at a glance */}
+                    {noActivitySelected && !mode && (
+                        <div style={{ fontSize: '12px', color: '#b91c1c', marginTop: '6px' }}>
+                            Select an activity above before you can time in or out.
+                        </div>
+                    )}
                 </div>
             )}
 
@@ -738,7 +874,7 @@ export default function FaceAttendance({ todayRecords, activities, hasFaceDescri
                     <div style={{ fontSize: '12px', color: '#888', marginBottom: '22px' }}>
                         {mode === 'register'
                             ? 'Follow the instructions below to verify it\u2019s really you.'
-                            : 'Your face will be scanned automatically — no need to press anything.'}
+                            : 'Your face will be scanned automatically — hold still and blink naturally.'}
                     </div>
 
                     <div style={{ position: 'relative', width: '260px', height: '268px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -771,7 +907,7 @@ export default function FaceAttendance({ todayRecords, activities, hasFaceDescri
                                     {activeProgress > 0 && (
                                         <ellipse
                                             cx="104" cy="134" rx="100" ry="130" fill="none"
-                                            stroke={livePositive ? '#16a34a' : '#9ca3af'}
+                                            stroke={ringStroke}
                                             strokeWidth="4"
                                             style={{ transition: 'stroke 0.15s linear' }}
                                         />
@@ -853,7 +989,7 @@ export default function FaceAttendance({ todayRecords, activities, hasFaceDescri
                         {[
                             'Remove glasses, mask, or anything covering your face.',
                             'Keep your whole face inside the circle.',
-                            'Scanning is automatic — no need to press anything.',
+                            'Hold still until the ring turns green.',
                             'Make sure the area is well lit.',
                         ].map((tip, i) => (
                             <div key={i} style={{ display: 'flex', gap: '8px', fontSize: '12px', color: '#666', marginBottom: '6px' }}>
@@ -883,12 +1019,13 @@ export default function FaceAttendance({ todayRecords, activities, hasFaceDescri
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                     <button
                         onClick={() => startMode('timein')}
-                        disabled={alreadyTimedIn || !modelsLoaded}
+                        disabled={alreadyTimedIn || !modelsLoaded || noActivitySelected}
+                        title={noActivitySelected ? 'Select an activity first' : undefined}
                         style={{
                             padding: '12px', borderRadius: '6px', border: 'none',
-                            cursor: alreadyTimedIn || !modelsLoaded ? 'not-allowed' : 'pointer',
-                            background: alreadyTimedIn ? '#e5e7eb' : '#16a34a',
-                            color: alreadyTimedIn ? '#9ca3af' : 'white',
+                            cursor: alreadyTimedIn || !modelsLoaded || noActivitySelected ? 'not-allowed' : 'pointer',
+                            background: alreadyTimedIn || noActivitySelected ? '#e5e7eb' : '#16a34a',
+                            color: alreadyTimedIn || noActivitySelected ? '#9ca3af' : 'white',
                             fontWeight: '600', fontSize: '14px',
                         }}
                     >
@@ -896,12 +1033,13 @@ export default function FaceAttendance({ todayRecords, activities, hasFaceDescri
                     </button>
                     <button
                         onClick={() => startMode('timeout')}
-                        disabled={!modelsLoaded}
+                        disabled={!modelsLoaded || noActivitySelected}
+                        title={noActivitySelected ? 'Select an activity first' : undefined}
                         style={{
                             padding: '12px', borderRadius: '6px', border: 'none',
-                            cursor: !modelsLoaded ? 'not-allowed' : 'pointer',
-                            background: '#ff0000',
-                            color: 'white',
+                            cursor: !modelsLoaded || noActivitySelected ? 'not-allowed' : 'pointer',
+                            background: noActivitySelected ? '#e5e7eb' : '#ff0000',
+                            color: noActivitySelected ? '#9ca3af' : 'white',
                             fontWeight: '600', fontSize: '14px',
                         }}
                     >

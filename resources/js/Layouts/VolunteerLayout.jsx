@@ -1,6 +1,8 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState } from 'react';
 import { Link, router, usePage } from '@inertiajs/react';
-import axios from 'axios';
+import LiveChatPanel from '@/Components/LiveChatPanel';
+// ⚠️ Palitan ang import path sa itaas kung iba ang lokasyon ng LiveChatPanel.jsx mo
+// (hal. '@/Pages/Volunteer/Communication/LiveChatPanel' o kung saan mo talaga sinave).
 
 /**
  * ✅ PERSISTENT LAYOUT (Volunteer side)
@@ -13,37 +15,14 @@ import axios from 'axios';
  *
  * ⚠️ Palitan ang mga route names sa navLinks kung iba ang pangalan nila sa routes/web.php mo.
  *
- * 🔔 NOTIFICATION BELL — dito na siya nakatira ngayon (katabi ng profile sa topbar),
- * kaya persistent siya sa LAHAT ng volunteer pages, hindi lang sa Dashboard.
- * Kumukuha siya ng data mula sa /volunteer/notifications endpoint (general/announcement type).
- * Ang mga "upcoming activity" notifications (na galing sa assignedActivities prop) ay
- * dashboard-specific pa rin dahil page-specific ang prop na iyon.
+ * ❌ Notification bell removed — tinanggal na ang bell button, dropdown,
+ * detail modal, at lahat ng kaugnay na state/logic (fetch, mark-as-read, atbp).
+ *
+ * 🆕 FLOATING LIVE CHAT — dinagdag na floating chat bubble (parang Messenger/Intercom)
+ * dito sa layout mismo, kaya lumalabas siya sa LAHAT ng volunteer pages kasama ang
+ * Dashboard, hindi lang sa Communication page. Ginagamit nito yung LiveChatPanel.jsx
+ * mo (mode="volunteer") sa loob ng floating overlay window.
  */
-
-const RED = '#ff0000';
-
-axios.defaults.withCredentials = true;
-axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
-const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-if (csrfToken) axios.defaults.headers.common['X-CSRF-TOKEN'] = csrfToken;
-
-// -- localStorage helpers for persisting read notification IDs -------------
-// (parehong key gamit ng Dashboard's inline notification section, para magka-sync
-// ang "read" state kahit saan pa i-mark as read)
-const LS_KEY = 'volunteer_read_notif_ids';
-function getReadIds() {
-    try { return new Set(JSON.parse(localStorage.getItem(LS_KEY) || '[]')); }
-    catch { return new Set(); }
-}
-function saveReadIds(set) {
-    try { localStorage.setItem(LS_KEY, JSON.stringify([...set])); } catch {}
-}
-function markIdsRead(ids) {
-    const s = getReadIds();
-    ids.forEach(id => s.add(String(id)));
-    saveReadIds(s);
-}
-// ---------------------------------------------------------------------------
 
 const navLinks = [
     { label: 'Dashboard',      route: 'volunteer.dashboard',     icon: 'grid' },
@@ -65,8 +44,6 @@ const NavIcon = ({ name }) => {
     }
 };
 
-function BellIcon() { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6B7280" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>; }
-
 // ⚠️ Idinefine OUTSIDE ng parent component para hindi mag-reset ang state nito sa bawat re-render.
 const NavAvatar = ({ photoUrl, initials, size = 32, fontSize = 12 }) => (
     <div style={{ width: size, height: size, borderRadius: '50%', background: 'rgba(255,255,255,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize, fontWeight: '700', overflow: 'hidden', flexShrink: 0 }}>
@@ -74,65 +51,22 @@ const NavAvatar = ({ photoUrl, initials, size = 32, fontSize = 12 }) => (
     </div>
 );
 
+// 🆕 Floating chat bubble button — nasa ibaba-right, laging nakalutang sa lahat ng pages
+const ChatBubbleIcon = ({ size = 24 }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+    </svg>
+);
+const CloseIcon = ({ size = 20 }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+    </svg>
+);
+
 export default function VolunteerLayout({ children, title = 'Dashboard' }) {
     const { auth } = usePage().props;
     const [sidebarOpen, setSidebarOpen] = useState(true);
-
-    // -- Notification bell state (persistent, header-level) -----------------
-    const [notifications, setNotifications] = useState([]);
-    const [unreadCount, setUnreadCount] = useState(0);
-    const [showBellNotifs, setShowBellNotifs] = useState(false);
-    const [expandedId, setExpandedId] = useState(null);
-    const bellRef = useRef();
-
-    const fetchNotifications = useCallback(async () => {
-        const readIds = getReadIds();
-        try {
-            const res = await axios.get('/volunteer/notifications');
-            const apiNotifs = (res.data.notifications || []).map(n => ({
-                ...n,
-                is_read: n.is_read || readIds.has(String(n.id)),
-            }));
-            setNotifications(apiNotifs);
-            setUnreadCount(apiNotifs.filter(n => !n.is_read).length);
-        } catch {
-            setNotifications([]);
-            setUnreadCount(0);
-        }
-    }, []);
-
-    useEffect(() => { fetchNotifications(); }, [fetchNotifications]);
-
-    useEffect(() => {
-        const handler = (e) => {
-            if (bellRef.current && !bellRef.current.contains(e.target)) {
-                setShowBellNotifs(false);
-                setExpandedId(null);
-            }
-        };
-        document.addEventListener('mousedown', handler);
-        return () => document.removeEventListener('mousedown', handler);
-    }, []);
-
-    const handleBellToggle = () => {
-        const willOpen = !showBellNotifs;
-        setShowBellNotifs(willOpen);
-        setExpandedId(null);
-
-        if (willOpen && unreadCount > 0) {
-            setNotifications(prev => {
-                markIdsRead(prev.map(n => n.id));
-                return prev.map(n => ({ ...n, is_read: true }));
-            });
-            setUnreadCount(0);
-            axios.patch('/volunteer/notifications/read-all').catch(() => {});
-        }
-    };
-
-    const handleNotifClick = (id) => {
-        setExpandedId(prev => prev === id ? null : id);
-    };
-    // -------------------------------------------------------------------------
+    const [chatOpen, setChatOpen] = useState(false); // 🆕 floating chat window toggle
 
     const isActive = (routeName) => {
         try {
@@ -158,27 +92,39 @@ export default function VolunteerLayout({ children, title = 'Dashboard' }) {
 
             <style>{`
                 * { box-sizing: border-box; margin: 0; padding: 0; }
-                :root { --red: #ff0000; --ink: #1A1A1A; --muted: #6B6B6B; --border: #EDEDED; --surface: #F7F7F5; --white: #FFFFFF; }
+                :root { --red: #5765F2; --ink: #1A1A1A; --muted: #6B6B6B; --border: #EDEDED; --surface: #F4F5F7; --white: #FFFFFF; }
                 /* ✅ FIXED: fallback font + explicit regular weight, para hindi ma-default sa bold
                    ang buong app habang naglo-load pa ang Montserrat */
                 body { font-family: 'Montserrat', sans-serif; font-weight: 400; background: var(--surface); }
                 .vwrap { display: flex; min-height: 100vh; }
-                .vsidebar { width: 220px; background: #ff0000; display: flex; flex-direction: column; position: fixed; top: 0; left: 0; height: 100vh; z-index: 100; transition: transform 0.2s; }
+                .vsidebar { width: 220px; background: #e40000; display: flex; flex-direction: column; position: fixed; top: 0; left: 0; height: 100vh; z-index: 100; transition: transform 0.2s; }
                 .vsidebar.closed { transform: translateX(-220px); }
                 .vmain { margin-left: 220px; flex: 1; display: flex; flex-direction: column; min-height: 100vh; transition: margin-left 0.2s; }
                 .vmain.full { margin-left: 0; }
                 /* ✅ Static lang — hindi clickable, kagaya ng ginawa sa AdminLayout */
                 .vsb-user { padding: 20px; border-bottom: 1px solid rgba(255,255,255,0.15); display: flex; align-items: center; gap: 10px; cursor: default; }
                 .vsb-uname { color: #fff; font-size: 14px; font-weight: 700; line-height: 1.3; }
-                .vsb-uname span { display: block; color: rgba(255,255,255,0.75); font-size: 11px; font-weight: 400; }
+                .vsb-uname span { display: block; color: rgba(255,255,255,0.9); font-size: 11px; font-weight: 500; }
                 .vsb-nav { padding: 10px 0; flex: 1; overflow-y: auto; }
-                .vnav-section-label { font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: rgba(255,255,255,0.6); padding: 10px 20px 4px; font-weight: 600; }
-                .vnav-item { display: flex; align-items: center; gap: 10px; padding: 11px 20px; color: rgba(255,255,255,0.85); font-size: 13px; font-weight: 500; cursor: pointer; transition: all .15s; border-left: 2px solid transparent; text-decoration: none; }
-                .vnav-item:hover { background: rgba(0,0,0,0.12); color: #fff; }
-                .vnav-item.active { background: rgba(255,255,255,0.2); border-left-color: #fff; color: #fff; font-weight: 700; }
+                .vnav-section-label { font-size: 10.5px; letter-spacing: 1.5px; text-transform: uppercase; color: rgba(255,255,255,0.85); padding: 10px 20px 4px; font-weight: 700; text-shadow: 0 1px 2px rgba(0,0,0,0.15); }
+                .vnav-item { position: relative; display: flex; align-items: center; gap: 10px; padding: 11px 20px; color: #ffffff; font-size: 13.5px; font-weight: 600; cursor: pointer; transition: all .15s; border-left: 2px solid transparent; text-decoration: none; text-shadow: 0 1px 2px rgba(0,0,0,0.12); }
+                .vnav-item:hover { background: rgba(0,0,0,0.15); color: #fff; }
+                .vnav-item.active { background: #fff; border-left-color: transparent; color: #e40000; text-shadow: none; font-weight: 700; border-radius: 20px 0 0 20px; z-index: 1; }
+                .vnav-item.active::before,
+                .vnav-item.active::after {
+                    content: '';
+                    position: absolute;
+                    right: 0;
+                    width: 18px;
+                    height: 18px;
+                    border-radius: 50%;
+                    pointer-events: none;
+                }
+                .vnav-item.active::before { top: -18px; box-shadow: 9px 9px 0 0 #fff; }
+                .vnav-item.active::after { bottom: -18px; box-shadow: 9px -9px 0 0 #fff; }
                 .vsb-footer { padding: 14px 20px; border-top: 1px solid rgba(255,255,255,0.15); }
                 /* ✅ FIXED: dating 'DM Sans' (ibang font, hindi consistent) — Montserrat na rin */
-                .vlogout-btn { display: flex; align-items: center; gap: 8px; color: rgba(255,255,255,0.7); font-size: 12px; cursor: pointer; transition: color .15s; background: none; border: none; width: 100%; font-family: 'Montserrat', sans-serif; }
+                .vlogout-btn { display: flex; align-items: center; gap: 8px; color: rgba(255,255,255,0.85); font-size: 12px; font-weight: 600; cursor: pointer; transition: color .15s; background: none; border: none; width: 100%; font-family: 'Montserrat', sans-serif; }
                 .vlogout-btn:hover { color: #fff; }
                 .vtopbar { background: var(--white); border-bottom: 1px solid var(--border); padding: 0 28px; height: 56px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; position: sticky; top: 0; z-index: 50; }
                 .vmenu-btn { background: none; border: none; cursor: pointer; color: var(--ink); display: flex; align-items: center; padding: 4px; }
@@ -188,9 +134,42 @@ export default function VolunteerLayout({ children, title = 'Dashboard' }) {
                 .vtopbar-profile { display: flex; align-items: center; gap: 10px; text-decoration: none; padding: 4px 8px; border-radius: 8px; transition: background 0.15s; cursor: pointer; }
                 .vtopbar-profile:hover { background: #f5f5f5; }
                 .vtopbar-profile-name { font-size: 12px; font-weight: 500; color: var(--ink); }
-                /* 🔔 Bell button */
-                .vbell-btn { width: 36px; height: 36px; border-radius: 50%; background: #F3F4F6; border: 1px solid #E5E7EB; cursor: pointer; display: flex; align-items: center; justify-content: center; position: relative; transition: background 0.15s; flex-shrink: 0; }
-                .vbell-btn:hover { background: #EDEEF0; }
+
+                /* 🆕 FLOATING CHAT WIDGET */
+                .vchat-fab {
+                    position: fixed; bottom: 26px; right: 26px; width: 58px; height: 58px;
+                    border-radius: 50%; background: #5765F2; border: none; cursor: pointer;
+                    display: flex; align-items: center; justify-content: center;
+                    box-shadow: 0 6px 18px rgba(87,101,242,0.35);
+                    z-index: 200; transition: transform 0.15s, box-shadow 0.15s;
+                }
+                .vchat-fab:hover { transform: scale(1.06); box-shadow: 0 8px 22px rgba(87,101,242,0.45); }
+                .vchat-window {
+                    position: fixed; bottom: 98px; right: 26px;
+                    width: 360px; max-width: calc(100vw - 40px);
+                    height: 520px; max-height: calc(100vh - 140px);
+                    background: #fff; border-radius: 14px; overflow: hidden;
+                    box-shadow: 0 14px 40px rgba(0,0,0,0.22);
+                    z-index: 200; display: flex; flex-direction: column;
+                    border: 1px solid var(--border);
+                    animation: vchat-pop 0.16s ease-out;
+                }
+                @keyframes vchat-pop {
+                    from { opacity: 0; transform: translateY(12px) scale(0.98); }
+                    to   { opacity: 1; transform: translateY(0) scale(1); }
+                }
+                .vchat-header {
+                    background: #5765F2; color: #fff; padding: 14px 16px;
+                    display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
+                }
+                .vchat-header-title { font-size: 13.5px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+                .vchat-close-btn { background: rgba(255,255,255,0.18); border: none; border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+                .vchat-close-btn:hover { background: rgba(255,255,255,0.3); }
+
+                @media (max-width: 480px) {
+                    .vchat-window { right: 12px; left: 12px; width: auto; bottom: 92px; }
+                    .vchat-fab { right: 18px; bottom: 18px; }
+                }
             `}</style>
 
             <div className="vwrap">
@@ -228,52 +207,8 @@ export default function VolunteerLayout({ children, title = 'Dashboard' }) {
                             <span className="vpage-title">{title}</span>
                         </div>
 
-                        {/* 🔔 Bell + 👤 Profile, magkatabi sa kanan — persistent sa lahat ng pages */}
+                        {/* 👤 Profile na lang sa kanan — tinanggal na ang bell */}
                         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                            <div style={{ position: 'relative' }} ref={bellRef}>
-                                <button className="vbell-btn" onClick={handleBellToggle} aria-label="Notifications">
-                                    <BellIcon />
-                                    {unreadCount > 0 && (
-                                        <span style={{ position: 'absolute', top: -2, right: -2, background: RED, color: 'white', fontSize: '9px', fontWeight: '700', width: '16px', height: '16px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid white', pointerEvents: 'none' }}>
-                                            {unreadCount > 9 ? '9+' : unreadCount}
-                                        </span>
-                                    )}
-                                </button>
-
-                                {showBellNotifs && (
-                                    <div style={{ position: 'absolute', right: 0, top: 44, width: 340, background: 'white', border: '1px solid #E5E7EB', borderRadius: '14px', zIndex: 200, boxShadow: '0 10px 32px rgba(0,0,0,0.14)', overflow: 'hidden' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '13px 16px', borderBottom: '1px solid #F3F4F6' }}>
-                                            <span style={{ fontSize: '13px', fontWeight: '700', color: '#111' }}>Notifications</span>
-                                            <span style={{ fontSize: '11px', color: '#9CA3AF' }}>Click to expand</span>
-                                        </div>
-
-                                        <div style={{ maxHeight: '420px', overflowY: 'auto' }}>
-                                            {notifications.length === 0 ? (
-                                                <div style={{ padding: '20px 16px', fontSize: '12px', color: '#D1D5DB', textAlign: 'center' }}>No notifications yet</div>
-                                            ) : notifications.map(n => {
-                                                const isExpanded = expandedId === n.id;
-                                                return (
-                                                    <div key={n.id} style={{ borderBottom: '1px solid #F9FAFB' }}>
-                                                        <div onClick={() => handleNotifClick(n.id)} style={{ display: 'flex', gap: '10px', padding: '10px 16px', background: isExpanded ? '#F9FAFB' : 'white', cursor: 'pointer' }}>
-                                                            <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: n.is_read ? '#D1D5DB' : RED, flexShrink: 0, marginTop: '5px' }} />
-                                                            <div style={{ flex: 1, minWidth: 0 }}>
-                                                                <div style={{ fontSize: '12px', fontWeight: '600', color: '#111', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{n.title || n.message}</div>
-                                                                <div style={{ fontSize: '11px', color: '#9CA3AF', marginTop: '2px' }}>{n.created_at}</div>
-                                                            </div>
-                                                        </div>
-                                                        {isExpanded && (
-                                                            <div style={{ padding: '0 16px 14px 33px', background: '#FAFAFA', borderTop: '1px solid #F3F4F6' }}>
-                                                                <div style={{ fontSize: '12px', color: '#374151', lineHeight: '1.6', paddingTop: '10px' }}>{n.message}</div>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-
                             {/* ✅ Papunta sa volunteer.profile para ma-edit */}
                             <Link href={route('volunteer.profile')} className="vtopbar-profile">
                                 <NavAvatar photoUrl={photoUrl} initials={initials} size={28} fontSize={10} />
@@ -287,6 +222,32 @@ export default function VolunteerLayout({ children, title = 'Dashboard' }) {
                     </div>
                 </main>
             </div>
+
+            {/* 🆕 FLOATING LIVE CHAT — lumalabas sa LAHAT ng volunteer pages */}
+            {chatOpen && (
+                <div className="vchat-window">
+                    <div className="vchat-header">
+                        <div className="vchat-header-title">
+                            <ChatBubbleIcon size={16} />
+                            Live Chat
+                        </div>
+                        <button className="vchat-close-btn" onClick={() => setChatOpen(false)}>
+                            <CloseIcon size={14} />
+                        </button>
+                    </div>
+                    <div style={{ flex: 1, overflow: 'hidden' }}>
+                        <LiveChatPanel mode="volunteer" currentUserId={volunteer?.id} />
+                    </div>
+                </div>
+            )}
+
+            <button
+                className="vchat-fab"
+                onClick={() => setChatOpen(o => !o)}
+                title={chatOpen ? 'Close chat' : 'Open live chat'}
+            >
+                {chatOpen ? <CloseIcon /> : <ChatBubbleIcon />}
+            </button>
         </>
     );
 }

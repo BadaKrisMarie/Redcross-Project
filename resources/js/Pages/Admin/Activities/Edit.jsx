@@ -1,6 +1,7 @@
 import React from 'react';
 import { Head, Link, useForm } from '@inertiajs/react';
 import { useState } from 'react';
+import AdminLayout from '@/Layouts/AdminLayout';
 
 export default function Edit({ activity, volunteers }) {
     const { data, setData, patch, processing, errors } = useForm({
@@ -106,9 +107,6 @@ export default function Edit({ activity, volunteers }) {
             <Head title="Edit Activity" />
             <div style={{ padding: '32px', maxWidth: '800px', margin: '0 auto' }}>
                 <div style={{ marginBottom: '24px' }}>
-                    <Link href={route('admin.activities.index')} style={{ color: '#6b7280', textDecoration: 'none', fontSize: '14px' }}>
-                        ← Back to Activities
-                    </Link>
                     <h1 style={{ fontSize: '24px', fontWeight: '700', margin: '8px 0 0' }}>Edit Activity</h1>
                 </div>
 
@@ -199,10 +197,14 @@ export default function Edit({ activity, volunteers }) {
                             {errors.location_name && <p style={errorStyle}>{errors.location_name}</p>}
                         </div>
 
-                        {/* Address Search */}
+                        {/* Address — search + Use My Location, walang naka-display na
+                            coordinates kahit saan. Yung lat/lng ay silently naka-store
+                            sa loob ng data.latitude / data.longitude (Inertia form state),
+                            ipinapadala pa rin sa backend on submit, pero hindi na
+                            ipinapakita sa admin. Same treatment gaya ng Create Activity. */}
                         <div>
-                            <label style={labelStyle}>Search Address (auto-fills coordinates)</label>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '12px' }}>
+                            <label style={labelStyle}>Address *</label>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: '12px' }}>
                                 <input
                                     type="text"
                                     id="location_search"
@@ -220,40 +222,8 @@ export default function Edit({ activity, volunteers }) {
                                         fontSize: '13px', fontWeight: '600', whiteSpace: 'nowrap',
                                     }}
                                 >
-                                    {searchLoading ? 'Searching...' : '🔍 Search'}
+                                    {searchLoading ? 'Searching...' : 'Search'}
                                 </button>
-                            </div>
-                            <p style={{ fontSize: '12px', color: '#6b7280', marginTop: '6px' }}>
-                                Search fills the coordinates automatically. Or click 📍 Use My Location below.
-                            </p>
-                        </div>
-
-                        {/* Coordinates */}
-                        <div>
-                            <label style={labelStyle}>GPS Coordinates *</label>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: '12px', alignItems: 'end' }}>
-                                <div>
-                                    <input
-                                        type="number"
-                                        step="any"
-                                        value={data.latitude}
-                                        onChange={e => setData('latitude', e.target.value)}
-                                        style={inputStyle}
-                                        placeholder="Latitude (auto-filled)"
-                                    />
-                                    {errors.latitude && <p style={errorStyle}>{errors.latitude}</p>}
-                                </div>
-                                <div>
-                                    <input
-                                        type="number"
-                                        step="any"
-                                        value={data.longitude}
-                                        onChange={e => setData('longitude', e.target.value)}
-                                        style={inputStyle}
-                                        placeholder="Longitude (auto-filled)"
-                                    />
-                                    {errors.longitude && <p style={errorStyle}>{errors.longitude}</p>}
-                                </div>
                                 <button
                                     type="button"
                                     onClick={detectLocation}
@@ -264,9 +234,20 @@ export default function Edit({ activity, volunteers }) {
                                         fontSize: '13px', fontWeight: '600', whiteSpace: 'nowrap',
                                     }}
                                 >
-                                    {locationLoading ? 'Detecting...' : '📍 Use My Location'}
+                                    {locationLoading ? 'Detecting...' : 'Use My Location'}
                                 </button>
                             </div>
+                            <p style={{
+                                fontSize: '12px', marginTop: '6px',
+                                color: data.latitude && data.longitude ? '#16a34a' : '#6b7280',
+                            }}>
+                                {data.latitude && data.longitude
+                                    ? '✓ Location set'
+                                    : 'Type an address and click Search, o gamitin ang Use My Location.'}
+                            </p>
+                            {(errors.latitude || errors.longitude) && (
+                                <p style={errorStyle}>Please set a location using Search or Use My Location.</p>
+                            )}
                         </div>
 
                         {/* Radius */}
@@ -340,7 +321,7 @@ export default function Edit({ activity, volunteers }) {
                                 type="submit"
                                 disabled={processing}
                                 style={{
-                                    padding: '10px 24px', background: '#ff0000', color: 'white',
+                                    padding: '10px 24px', background: '#1d4ed8', color: 'white',
                                     border: 'none', borderRadius: '8px', fontWeight: '600',
                                     cursor: processing ? 'not-allowed' : 'pointer',
                                 }}
@@ -354,3 +335,7 @@ export default function Edit({ activity, volunteers }) {
         </>
     );
 }
+
+// ✅ NEW: naka-apply na ang AdminLayout, para persistent na ang sidebar/topbar
+// habang nag-e-edit ng activity (dati wala pa nito kaya nawawala ang navigation).
+Edit.layout = (page) => <AdminLayout title="Edit Activity">{page}</AdminLayout>;

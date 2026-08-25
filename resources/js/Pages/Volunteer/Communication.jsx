@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Head, useForm } from '@inertiajs/react';
+import { Head, useForm, usePage } from '@inertiajs/react';
 import VolunteerLayout from '@/Layouts/VolunteerLayout'; // ⚠️ ayusin ang path base sa project mo
+import LiveChatPanel from '@/Components/LiveChatPanel'; // ⚠️ ayusin ang path base sa project mo
 
 const RED = '#ff0000';
 
@@ -9,6 +10,9 @@ const RED = '#ff0000';
  * Kaya persistent na siya at hindi na "magbabago" tuwing lilipat ka ng page.
  */
 function VolunteerCommunication({ sentEmails, announcements }) {
+    const { auth } = usePage().props;
+    const currentVolunteerId = auth?.user?.id;
+
     const emails = sentEmails || [];
     const announces = announcements || [];
     const [activeTab, setActiveTab] = useState('compose');
@@ -37,6 +41,7 @@ function VolunteerCommunication({ sentEmails, announcements }) {
         { key: 'inbox',         label: 'Inbox',         icon: <InboxIcon />,  badge: unreadReplies, badgeColor: RED },
         { key: 'announcements', label: 'Announcements', icon: <MegaphoneIcon />, badge: announces.length, badgeColor: '#F59E0B' },
         { key: 'sent',          label: 'Sent',          icon: <SendIcon /> },
+        { key: 'chat',          label: 'Live Chat',     icon: <ChatIcon /> },
     ];
 
     const tabStyle = (key) => ({
@@ -269,12 +274,23 @@ function VolunteerCommunication({ sentEmails, announcements }) {
                             <form onSubmit={handleSend} style={{ padding: '26px 28px 28px' }}>
                                 <div style={{ marginBottom: '18px' }}>
                                     <label style={labelStyle}>To</label>
-                                    <input
-                                        type="text" value={data.to} readOnly
+                                    {/* ✅ FIXED: dating readonly <input>, ngayon clickable mailto link na
+                                        magbubukas ng default mail app ng user papunta sa admin email.
+                                        Same pa rin ang itsura gamit ang inputStyle('to'). */}
+                                    <a
+                                        href={`mailto:${data.to}`}
                                         onFocus={() => setFocusedField('to')}
                                         onBlur={() => setFocusedField(null)}
-                                        style={inputStyle('to', { color: '#6B7280', cursor: 'default' })}
-                                    />
+                                        style={{
+                                            ...inputStyle('to', { color: '#374151', textDecoration: 'none' }),
+                                            display: 'flex', alignItems: 'center',
+                                            cursor: 'pointer',
+                                        }}
+                                        onMouseEnter={e => { e.currentTarget.style.background = '#F3F4F6'; }}
+                                        onMouseLeave={e => { e.currentTarget.style.background = focusedField === 'to' ? '#FFFFFF' : '#FAFAFA'; }}
+                                    >
+                                        {data.to}
+                                    </a>
                                     {errors.to && <div style={{ fontSize: '11px', color: RED, marginTop: '5px' }}>{errors.to}</div>}
                                 </div>
                                 <div style={{ marginBottom: '18px' }}>
@@ -455,6 +471,18 @@ function VolunteerCommunication({ sentEmails, announcements }) {
                     </div>
                 )}
 
+                {/* LIVE CHAT — real-time thread with admin, naka-dock sa gilid */}
+                {activeTab === 'chat' && (
+                    <div style={{ maxWidth: '520px', height: '560px' }}>
+                        <div style={{
+                            background: 'white', borderRadius: '16px', border: '1px solid #E5E7EB',
+                            boxShadow: '0 1px 3px rgba(0,0,0,0.03)', overflow: 'hidden', height: '100%',
+                        }}>
+                            <LiveChatPanel mode="volunteer" currentUserId={currentVolunteerId} />
+                        </div>
+                    </div>
+                )}
+
             </div>
 
             <style>{`
@@ -490,6 +518,9 @@ function SendIcon({ size = 14, color = 'currentColor' }) {
 function SendIconWhite({ small = false }) {
     const size = small ? 14 : 19;
     return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>;
+}
+function ChatIcon({ size = 14, color = 'currentColor' }) {
+    return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>;
 }
 
 // ✅ Ito ang susi — gagamitin na ang persistent VolunteerLayout, hindi na gagawa ng sarili niyang sidebar

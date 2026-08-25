@@ -1,6 +1,8 @@
 import React from 'react';
 import { Head, Link, useForm } from '@inertiajs/react';
 import { useState } from 'react';
+import AdminLayout from '@/Layouts/AdminLayout';
+import ActivityLocationMap from '@/Components/ActivityLocationMap';
 
 export default function Create({ volunteers }) {
     const { data, setData, post, processing, errors } = useForm({
@@ -20,6 +22,20 @@ export default function Create({ volunteers }) {
 
     const [locationLoading, setLocationLoading] = useState(false);
     const [searchLoading, setSearchLoading] = useState(false);
+    const [volunteerSearch, setVolunteerSearch] = useState('');
+
+    const avatarPalette = [
+        { bg: '#fee2e2', text: '#dc2626' },
+        { bg: '#dbeafe', text: '#2563eb' },
+        { bg: '#ede9fe', text: '#7c3aed' },
+        { bg: '#dcfce7', text: '#16a34a' },
+        { bg: '#fef3c7', text: '#b45309' },
+        { bg: '#fce7f3', text: '#db2777' },
+    ];
+
+    const getInitials = (name) => {
+        return name.trim().split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase();
+    };
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -104,19 +120,48 @@ export default function Create({ volunteers }) {
     return (
         <>
             <Head title="Create Activity" />
-            <div style={{ padding: '32px', maxWidth: '800px', margin: '0 auto' }}>
-                <div style={{ marginBottom: '24px' }}>
-                    <Link href={route('admin.activities.index')} style={{ color: '#6b7280', textDecoration: 'none', fontSize: '14px' }}>
-                        ← Back to Activities
-                    </Link>
-                    <h1 style={{ fontSize: '24px', fontWeight: '700', margin: '8px 0 0' }}>Create Activity</h1>
-                </div>
+            {/* Custom scrollbar para sa Assign Volunteers list — visible thumb sa gilid,
+                katulad ng scrollbar na makikita sa Recent Volunteers list ng dashboard. */}
+            <style>{`
+                .volunteer-scroll-list {
+                    scrollbar-width: thin;
+                    scrollbar-color: #d1d5db #f9fafb;
+                }
+                .volunteer-scroll-list::-webkit-scrollbar {
+                    width: 8px;
+                }
+                .volunteer-scroll-list::-webkit-scrollbar-track {
+                    background: #f9fafb;
+                    border-radius: 8px;
+                }
+                .volunteer-scroll-list::-webkit-scrollbar-thumb {
+                    background-color: #d1d5db;
+                    border-radius: 8px;
+                }
+                .volunteer-scroll-list::-webkit-scrollbar-thumb:hover {
+                    background-color: #4f46e5;
+                }
+                .volunteer-row {
+                    transition: background-color 0.12s ease;
+                }
+                .volunteer-row:hover {
+                    background-color: #eef2ff;
+                }
+                .volunteer-row input[type="checkbox"] {
+                    width: 17px;
+                    height: 17px;
+                    accent-color: #4f46e5;
+                    cursor: pointer;
+                    flex-shrink: 0;
+                }
+            `}</style>
+            <div style={{ padding: '32px 40px', width: '100%', boxSizing: 'border-box' }}>
 
                 <form onSubmit={handleSubmit}>
-                    <div style={{ background: 'white', borderRadius: '12px', padding: '24px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', display: 'grid', gap: '20px' }}>
+                    <div style={{ background: 'white', borderRadius: '12px', padding: '32px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px 24px' }}>
 
                         {/* Name */}
-                        <div>
+                        <div style={{ gridColumn: '1 / -1' }}>
                             <label style={labelStyle}>Activity Name *</label>
                             <input
                                 type="text"
@@ -129,7 +174,7 @@ export default function Create({ volunteers }) {
                         </div>
 
                         {/* Description */}
-                        <div>
+                        <div style={{ gridColumn: '1 / -1' }}>
                             <label style={labelStyle}>Description</label>
                             <textarea
                                 value={data.description}
@@ -152,8 +197,21 @@ export default function Create({ volunteers }) {
                             {errors.assigned_by && <p style={errorStyle}>{errors.assigned_by}</p>}
                         </div>
 
+                        {/* Location Name */}
+                        <div>
+                            <label style={labelStyle}>Location Name *</label>
+                            <input
+                                type="text"
+                                value={data.location_name}
+                                onChange={e => setData('location_name', e.target.value)}
+                                style={inputStyle}
+                                placeholder="e.g. Barangay Hall, Bulacan"
+                            />
+                            {errors.location_name && <p style={errorStyle}>{errors.location_name}</p>}
+                        </div>
+
                         {/* Date and Times */}
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px' }}>
+                        <div style={{ gridColumn: '1 / -1', display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px' }}>
                             <div>
                                 <label style={labelStyle}>Date *</label>
                                 <input
@@ -186,23 +244,14 @@ export default function Create({ volunteers }) {
                             </div>
                         </div>
 
-                        {/* Location Name */}
-                        <div>
-                            <label style={labelStyle}>Location Name *</label>
-                            <input
-                                type="text"
-                                value={data.location_name}
-                                onChange={e => setData('location_name', e.target.value)}
-                                style={inputStyle}
-                                placeholder="e.g. Barangay Hall, Bulacan"
-                            />
-                            {errors.location_name && <p style={errorStyle}>{errors.location_name}</p>}
-                        </div>
-
-                        {/* Address Search */}
-                        <div>
-                            <label style={labelStyle}>Search Address (auto-fills coordinates)</label>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '12px' }}>
+                        {/* Address — search + Use My Location, walang naka-display na
+                            coordinates kahit saan. Yung lat/lng ay silently naka-store
+                            sa loob ng data.latitude / data.longitude (Inertia form state),
+                            ipinapadala pa rin sa backend on submit, pero hindi na
+                            ipinapakita sa admin. */}
+                        <div style={{ gridColumn: '1 / -1' }}>
+                            <label style={labelStyle}>Address *</label>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: '12px' }}>
                                 <input
                                     type="text"
                                     id="location_search"
@@ -220,40 +269,8 @@ export default function Create({ volunteers }) {
                                         fontSize: '13px', fontWeight: '600', whiteSpace: 'nowrap',
                                     }}
                                 >
-                                    {searchLoading ? 'Searching...' : '🔍 Search'}
+                                    {searchLoading ? 'Searching...' : 'Search'}
                                 </button>
-                            </div>
-                            <p style={{ fontSize: '12px', color: '#6b7280', marginTop: '6px' }}>
-                                Search fills the coordinates automatically. Or click 📍 Use My Location below.
-                            </p>
-                        </div>
-
-                        {/* Coordinates */}
-                        <div>
-                            <label style={labelStyle}>GPS Coordinates *</label>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: '12px', alignItems: 'end' }}>
-                                <div>
-                                    <input
-                                        type="number"
-                                        step="any"
-                                        value={data.latitude}
-                                        onChange={e => setData('latitude', e.target.value)}
-                                        style={inputStyle}
-                                        placeholder="Latitude (auto-filled)"
-                                    />
-                                    {errors.latitude && <p style={errorStyle}>{errors.latitude}</p>}
-                                </div>
-                                <div>
-                                    <input
-                                        type="number"
-                                        step="any"
-                                        value={data.longitude}
-                                        onChange={e => setData('longitude', e.target.value)}
-                                        style={inputStyle}
-                                        placeholder="Longitude (auto-filled)"
-                                    />
-                                    {errors.longitude && <p style={errorStyle}>{errors.longitude}</p>}
-                                </div>
                                 <button
                                     type="button"
                                     onClick={detectLocation}
@@ -264,9 +281,13 @@ export default function Create({ volunteers }) {
                                         fontSize: '13px', fontWeight: '600', whiteSpace: 'nowrap',
                                     }}
                                 >
-                                    {locationLoading ? 'Detecting...' : '📍 Use My Location'}
+                                    {locationLoading ? 'Detecting...' : 'Use My Location'}
                                 </button>
                             </div>
+                           
+                            {(errors.latitude || errors.longitude) && (
+                                <p style={errorStyle}>Please set a location using Search or Use My Location.</p>
+                            )}
                         </div>
 
                         {/* Radius */}
@@ -276,7 +297,7 @@ export default function Create({ volunteers }) {
                                 type="number"
                                 value={data.radius_meters}
                                 onChange={e => setData('radius_meters', e.target.value)}
-                                style={{ ...inputStyle, width: '200px' }}
+                                style={inputStyle}
                                 min="50"
                                 max="99999"
                             />
@@ -300,33 +321,96 @@ export default function Create({ volunteers }) {
                             </select>
                         </div>
 
+                        {/* Location Preview Map — nagpapakita ng napiling coordinates
+                            at geofence radius habang pinupunan ang form sa itaas */}
+                        <div style={{ gridColumn: '1 / -1' }}>
+                            <ActivityLocationMap
+                                latitude={data.latitude}
+                                longitude={data.longitude}
+                                radius={data.radius_meters}
+                                locationName={data.location_name}
+                            />
+                        </div>
+
                         {/* Assign Volunteers */}
-                        <div>
-                            <label style={labelStyle}>Assign Volunteers</label>
+                        <div style={{ gridColumn: '1 / -1' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                                <label style={{ ...labelStyle, marginBottom: 0 }}>Assign Volunteers</label>
+                                {volunteers.length > 0 && (
+                                    <span style={{
+                                        fontSize: '12px', fontWeight: '600', color: '#4f46e5',
+                                        background: '#e0e7ff', padding: '3px 10px', borderRadius: '999px',
+                                    }}>
+                                        {data.volunteer_ids.length} selected
+                                    </span>
+                                )}
+                            </div>
+
                             {volunteers.length === 0 ? (
                                 <p style={{ color: '#6b7280', fontSize: '14px' }}>No approved volunteers yet.</p>
                             ) : (
-                                <div style={{ border: '1px solid #e5e7eb', borderRadius: '8px', maxHeight: '200px', overflowY: 'auto' }}>
-                                    {volunteers.map(v => (
-                                        <label key={v.id} style={{
-                                            display: 'flex', alignItems: 'center', gap: '10px',
-                                            padding: '10px 14px', cursor: 'pointer',
-                                            borderBottom: '1px solid #f3f4f6',
-                                        }}>
-                                            <input
-                                                type="checkbox"
-                                                checked={data.volunteer_ids.includes(v.id)}
-                                                onChange={() => handleVolunteerToggle(v.id)}
-                                            />
-                                            <span style={{ fontSize: '14px' }}>{v.name} <span style={{ color: '#9ca3af' }}>({v.email})</span></span>
-                                        </label>
-                                    ))}
+                                <div style={{ border: '1px solid #e5e7eb', borderRadius: '10px', overflow: 'hidden' }}>
+                                    <input
+                                        type="text"
+                                        value={volunteerSearch}
+                                        onChange={e => setVolunteerSearch(e.target.value)}
+                                        placeholder="Search volunteers by name or email..."
+                                        style={{
+                                            width: '100%', padding: '10px 14px', border: 'none',
+                                            borderBottom: '1px solid #e5e7eb', fontSize: '13px',
+                                            boxSizing: 'border-box', outline: 'none', background: '#fafafa',
+                                        }}
+                                    />
+                                    <div
+                                        className="volunteer-scroll-list"
+                                        style={{ maxHeight: '240px', overflowY: 'scroll' }}
+                                    >
+                                        {volunteers
+                                            .filter(v =>
+                                                v.name.toLowerCase().includes(volunteerSearch.toLowerCase()) ||
+                                                v.email.toLowerCase().includes(volunteerSearch.toLowerCase())
+                                            )
+                                            .map((v, i) => {
+                                                const color = avatarPalette[i % avatarPalette.length];
+                                                const checked = data.volunteer_ids.includes(v.id);
+                                                return (
+                                                    <label
+                                                        key={v.id}
+                                                        className="volunteer-row"
+                                                        style={{
+                                                            display: 'flex', alignItems: 'center', gap: '12px',
+                                                            padding: '12px 16px', cursor: 'pointer',
+                                                            borderBottom: '1px solid #f3f4f6',
+                                                            background: checked ? '#eef2ff' : 'transparent',
+                                                        }}
+                                                    >
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={checked}
+                                                            onChange={() => handleVolunteerToggle(v.id)}
+                                                        />
+                                                        <div style={{
+                                                            width: '34px', height: '34px', borderRadius: '50%',
+                                                            background: color.bg, color: color.text,
+                                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                            fontSize: '12px', fontWeight: '700', flexShrink: 0,
+                                                        }}>
+                                                            {getInitials(v.name)}
+                                                        </div>
+                                                        <div style={{ minWidth: 0 }}>
+                                                            <div style={{ fontSize: '14px', fontWeight: '600', color: '#111827' }}>{v.name}</div>
+                                                            <div style={{ fontSize: '12px', color: '#9ca3af' }}>{v.email}</div>
+                                                        </div>
+                                                    </label>
+                                                );
+                                            })}
+                                    </div>
                                 </div>
                             )}
                         </div>
 
                         {/* Submit */}
-                        <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+                        <div style={{ gridColumn: '1 / -1', display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
                             <Link
                                 href={route('admin.activities.index')}
                                 style={{
@@ -340,7 +424,7 @@ export default function Create({ volunteers }) {
                                 type="submit"
                                 disabled={processing}
                                 style={{
-                                    padding: '10px 24px', background: '#ff0000', color: 'white',
+                                    padding: '10px 24px', background: '#4f46e5', color: 'white',
                                     border: 'none', borderRadius: '8px', fontWeight: '600',
                                     cursor: processing ? 'not-allowed' : 'pointer',
                                 }}
@@ -354,3 +438,7 @@ export default function Create({ volunteers }) {
         </>
     );
 }
+
+// ✅ Persistent layout — para lumabas ang sidebar (AdminLayout) sa page na ito,
+// gaya ng ginagawa sa AdminDashboard at iba pang admin pages.
+Create.layout = (page) => <AdminLayout title="Create Activity">{page}</AdminLayout>;
