@@ -1,5 +1,4 @@
-import React from 'react';
-import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
+import React, { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
 
 export default forwardRef(function TextInput(
     { type = 'text', className = '', isFocused = false, ...props },
@@ -22,11 +21,10 @@ export default forwardRef(function TextInput(
             {...props}
             type={type}
             className={
-                'rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 ' +
+                'w-full rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-red-500 focus:ring-2 focus:ring-red-500/20 outline-none transition ' +
                 className
             }
             ref={localRef}
         />
     );
 });
-

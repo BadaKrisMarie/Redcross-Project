@@ -17,6 +17,11 @@
         "vite": "^8.0.13"
     },
     "dependencies": {
+        "@fullcalendar/core": "^6.1.21",
+        "@fullcalendar/daygrid": "^6.1.21",
+        "@fullcalendar/interaction": "^6.1.21",
+        "@fullcalendar/react": "^6.1.21",
+        "@fullcalendar/timegrid": "^6.1.21",
         "@headlessui/react": "^2.2.10",
         "@tailwindcss/forms": "^0.5.11",
         "@tailwindcss/postcss": "^4.2.4",
@@ -27,6 +32,7 @@
         "leaflet": "^1.9.4",
         "lucide-react": "^1.27.0",
         "postcss": "^8.5.14",
+        "recharts": "^3.10.1",
         "tailwindcss": "^4.2.4",
         "tesseract.js": "^7.0.0"
     }

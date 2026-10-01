@@ -1,31 +1,27 @@
 import React, { useMemo, useState } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
+import {
+    MapPin,
+    Calendar,
+    Clock,
+    Users,
+    Search,
+    Plus,
+    Edit3,
+    Trash2,
+    LayoutGrid,
+    List,
+    ChevronUp,
+    ChevronDown,
+    ChevronsUpDown,
+    ChevronLeft,
+    ChevronRight,
+    AlertTriangle,
+    X,
+} from 'lucide-react';
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50];
-
-// ✅ plain line-icon components — replacing emoji, no color changes elsewhere
-const IconPin = ({ size = 11 }) => (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <path strokeLinecap="round" strokeLinejoin="round" d="M17.657 16.657L13.414 20.9a2 2 0 01-2.828 0l-4.243-4.243a8 8 0 1111.314 0z"/>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
-    </svg>
-);
-const IconTable = ({ size = 13 }) => (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <rect x="3" y="4" width="18" height="16" rx="1"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="9" y1="10" x2="9" y2="20"/>
-    </svg>
-);
-const IconGrid = ({ size = 13 }) => (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
-    </svg>
-);
-const IconClipboard = ({ size = 28 }) => (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-        <rect x="6" y="4" width="12" height="17" rx="1.5"/><path d="M9 4V3a1 1 0 011-1h4a1 1 0 011 1v1"/><line x1="9" y1="10" x2="15" y2="10"/><line x1="9" y1="14" x2="15" y2="14"/>
-    </svg>
-);
 
 function Index({ activities = [] }) {
     const [view, setView] = useState('table');
@@ -33,7 +29,6 @@ function Index({ activities = [] }) {
     const [filterStatus, setFilterStatus] = useState('all');
     const [deleteTarget, setDeleteTarget] = useState(null);
 
-    // ✅ NEW: datatable state — sorting + pagination
     const [sortField, setSortField] = useState('date');
     const [sortDirection, setSortDirection] = useState('desc');
     const [pageSize, setPageSize] = useState(PAGE_SIZE_OPTIONS[0]);
@@ -49,33 +44,39 @@ function Index({ activities = [] }) {
         setDeleteTarget(null);
     };
 
-    const statusStyle = (status) => {
+    const statusBadge = (status) => {
         switch (status) {
-            case 'upcoming':  return { background: '#dbeafe', color: '#1e40af' };
-            case 'ongoing':   return { background: '#dcfce7', color: '#166534' };
-            case 'completed': return { background: '#f3f4f6', color: '#374151' };
-            case 'cancelled': return { background: '#fee2e2', color: '#991b1b' };
-            default:          return { background: '#f3f4f6', color: '#374151' };
+            case 'upcoming':
+                return { bg: 'bg-blue-50 text-blue-600', dot: 'bg-blue-600' };
+            case 'ongoing':
+                return { bg: 'bg-emerald-50 text-emerald-600', dot: 'bg-emerald-600' };
+            case 'completed':
+                return { bg: 'bg-gray-100 text-gray-700', dot: 'bg-gray-500' };
+            case 'cancelled':
+                return { bg: 'bg-red-50 text-red-600', dot: 'bg-red-600' };
+            default:
+                return { bg: 'bg-amber-50 text-amber-600', dot: 'bg-amber-600' };
         }
     };
 
-    const filtered = activities.filter(a => {
-        const matchSearch = a.name?.toLowerCase().includes(search.toLowerCase()) ||
-                            a.description?.toLowerCase().includes(search.toLowerCase());
+    const filtered = activities.filter((a) => {
+        const matchSearch =
+            (a.name || '').toLowerCase().includes(search.toLowerCase()) ||
+            (a.description || '').toLowerCase().includes(search.toLowerCase()) ||
+            (a.location_name || '').toLowerCase().includes(search.toLowerCase());
         const matchStatus = filterStatus === 'all' || a.status === filterStatus;
         return matchSearch && matchStatus;
     });
 
-    // ✅ NEW: datatable column definitions — accessor pulls a comparable value out of each record
     const columns = [
-        { key: 'name',        label: 'Activity',      sortable: true, accessor: (a) => a.name ?? '' },
-        { key: 'date',        label: 'Date & Time',   sortable: true, accessor: (a) => `${a.date ?? ''} ${a.start_time ?? ''}` },
-        { key: 'status',      label: 'Status',        sortable: true, accessor: (a) => a.status ?? '' },
-        { key: 'description', label: 'Description',   sortable: false, accessor: (a) => a.description ?? '' },
-        { key: 'actions',     label: 'Actions',       sortable: false, accessor: () => '' },
+        { key: 'name', label: 'Activity', sortable: true, accessor: (a) => a.name ?? '' },
+        { key: 'date', label: 'Date & Time', sortable: true, accessor: (a) => `${a.date ?? ''} ${a.start_time ?? ''}` },
+        { key: 'location', label: 'Location', sortable: true, accessor: (a) => a.location_name ?? '' },
+        { key: 'volunteers', label: 'Volunteers', sortable: false, accessor: (a) => a.volunteers?.length ?? 0 },
+        { key: 'status', label: 'Status', sortable: true, accessor: (a) => a.status ?? '' },
+        { key: 'actions', label: 'Actions', sortable: false, accessor: () => '' },
     ];
 
-    // ✅ NEW: sort the filtered set before paginating
     const sorted = useMemo(() => {
         const col = columns.find((c) => c.key === sortField);
         if (!col || !col.sortable) return filtered;
@@ -88,7 +89,6 @@ function Index({ activities = [] }) {
             return 0;
         });
         return copy;
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [filtered, sortField, sortDirection]);
 
     const totalPages = Math.max(1, Math.ceil(sorted.length / pageSize));
@@ -105,279 +105,356 @@ function Index({ activities = [] }) {
         setCurrentPage(1);
     };
 
-    const sortIndicator = (key) => {
-        if (sortField !== key) return '↕';
-        return sortDirection === 'asc' ? '↑' : '↓';
-    };
-
     return (
         <>
-            <Head title="Activities" />
+            <Head title="Activities - Admin Portal" />
 
-            <style>{`
-                .status-badge { font-size: 11px; padding: 3px 10px; border-radius: 20px; font-weight: 600; text-transform: capitalize; white-space: nowrap; }
-                .card { background: var(--white); border: 1px solid var(--border); border-radius: 10px; }
-                .act-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-                .act-table th { text-align: left; padding: 11px 16px; font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; border-bottom: 1px solid var(--border); background: var(--surface); }
-                .act-table th.sortable { cursor: pointer; user-select: none; white-space: nowrap; }
-                .act-table th.sortable:hover { color: var(--ink); }
-                .act-sort-icon { margin-left: 4px; font-size: 10px; opacity: .6; }
-                .act-sort-icon.active { opacity: 1; color: var(--red); }
-                .act-table td { padding: 13px 16px; border-bottom: 1px solid var(--border); color: var(--ink); vertical-align: top; }
-                .act-table tr:last-child td { border-bottom: none; }
-                .act-table tr:hover td { background: #fafafa; }
-                .act-card { background: var(--white); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; display: flex; flex-direction: column; gap: 10px; transition: border-color 0.15s, transform 0.15s; }
-                .act-card:hover { border-color: #ddd; transform: translateY(-2px); }
-                .btn-edit { background: var(--surface); border: 1px solid var(--border); color: var(--ink); padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: 500; text-decoration: none; cursor: pointer; transition: background 0.15s; white-space: nowrap; }
-                .btn-edit:hover { background: #ebebeb; }
-                .btn-del { background: #fee2e2; border: none; color: #991b1b; padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: 500; cursor: pointer; transition: background 0.15s; white-space: nowrap; }
-                .btn-del:hover { background: #fecaca; }
-                .view-toggle { display: flex; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
-                .view-toggle button { background: none; border: none; padding: 7px 12px; cursor: pointer; color: var(--muted); font-size: 12px; transition: all 0.15s; font-family: 'DM Sans', sans-serif; display: flex; align-items: center; gap: 6px; }
-                .view-toggle button.active { background: var(--white); color: var(--ink); font-weight: 500; }
-                .filter-select { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 7px 10px; font-size: 12px; color: var(--ink); font-family: 'DM Sans', sans-serif; outline: none; cursor: pointer; }
-                .new-btn { background: var(--red); color: #fff; border: none; border-radius: 8px; padding: 9px 18px; font-size: 13px; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; transition: background 0.15s; font-family: 'DM Sans', sans-serif; }
-                .new-btn:hover { background: var(--red-dark); }
-                .search-input { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 7px 12px; font-size: 12px; color: var(--ink); font-family: 'DM Sans', sans-serif; outline: none; width: 200px; transition: border-color 0.15s; }
-                .search-input:focus { border-color: #ccc; }
-                .search-input::placeholder { color: #aaa; }
-                .empty-state { text-align: center; padding: 60px 20px; color: var(--muted); }
+            <div className="space-y-6 max-w-7xl mx-auto">
+                {/* Header & Controls Bar */}
+                <div className="bg-white rounded-2xl p-4 sm:p-5 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                    <div>
+                        <h2 className="text-base font-bold text-gray-900">Activity Management</h2>
+                        <p className="text-xs text-gray-500 mt-0.5">
+                            {filtered.length} {filtered.length === 1 ? 'activity' : 'activities'} listed
+                        </p>
+                    </div>
 
-                /* ✅ NEW: pagination + page size controls */
-                .act-table-footer { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
-                .act-page-size { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
-                .act-page-size select { border: 1px solid var(--border); border-radius: 6px; padding: 4px 8px; font-size: 12px; background: #fff; cursor: pointer; font-family: 'DM Sans', sans-serif; }
-                .act-pagination { display: flex; align-items: center; gap: 8px; }
-                .act-page-btn { border: 1px solid var(--border); background: #fff; color: var(--ink); font-size: 12px; font-weight: 600; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-family: 'DM Sans', sans-serif; }
-                .act-page-btn:hover:not(:disabled) { border-color: #ccc; }
-                .act-page-btn:disabled { opacity: .4; cursor: not-allowed; }
-                .act-page-info { font-size: 12px; color: var(--muted); }
-            `}</style>
+                    <div className="flex flex-wrap items-center gap-2.5">
+                        {/* Search Input */}
+                        <div className="relative flex-1 sm:flex-initial sm:w-56">
+                            <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                            <input
+                                type="text"
+                                placeholder="Search activities..."
+                                value={search}
+                                onChange={(e) => {
+                                    setSearch(e.target.value);
+                                    setCurrentPage(1);
+                                }}
+                                className="w-full pl-9 pr-3 py-2 bg-white border border-gray-200 rounded-xl text-xs text-gray-900 placeholder:text-gray-400 focus:border-red-500 focus:ring-2 focus:ring-red-500/10 outline-none transition"
+                            />
+                        </div>
 
-            {/* Delete confirmation modal */}
+                        {/* Status Filter */}
+                        <select
+                            value={filterStatus}
+                            onChange={(e) => {
+                                setFilterStatus(e.target.value);
+                                setCurrentPage(1);
+                            }}
+                            className="px-3 py-2 bg-white border border-gray-200 rounded-xl text-xs text-gray-900 focus:border-red-500 focus:ring-2 focus:ring-red-500/10 outline-none font-medium transition"
+                        >
+                            <option value="all">All Status</option>
+                            <option value="upcoming">Upcoming</option>
+                            <option value="ongoing">Ongoing</option>
+                            <option value="completed">Completed</option>
+                            <option value="cancelled">Cancelled</option>
+                        </select>
+
+                        {/* View Mode Toggle */}
+                        <div className="flex items-center p-1 bg-gray-100 rounded-xl">
+                            <button
+                                onClick={() => setView('table')}
+                                className={`p-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1 ${
+                                    view === 'table' ? 'bg-white text-gray-900 shadow-xs' : 'text-gray-500 hover:text-gray-900'
+                                }`}
+                                title="Table view"
+                            >
+                                <List className="w-3.5 h-3.5" />
+                                <span className="hidden sm:inline">Table</span>
+                            </button>
+                            <button
+                                onClick={() => setView('cards')}
+                                className={`p-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1 ${
+                                    view === 'cards' ? 'bg-white text-gray-900 shadow-xs' : 'text-gray-500 hover:text-gray-900'
+                                }`}
+                                title="Card grid view"
+                            >
+                                <LayoutGrid className="w-3.5 h-3.5" />
+                                <span className="hidden sm:inline">Cards</span>
+                            </button>
+                        </div>
+
+                        {/* New Activity CTA */}
+                        <Link
+                            href={route('admin.activities.create')}
+                            className="px-3.5 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold transition flex items-center gap-1.5 shrink-0"
+                        >
+                            <Plus className="w-4 h-4" />
+                            <span>New Activity</span>
+                        </Link>
+                    </div>
+                </div>
+
+                {/* Empty State */}
+                {filtered.length === 0 ? (
+                    <div className="bg-white rounded-2xl p-16 text-center space-y-3">
+                        <Calendar className="w-10 h-10 mx-auto text-gray-300" />
+                        <h3 className="text-sm font-bold text-gray-900">No activities found</h3>
+                        <p className="text-xs text-gray-500 max-w-sm mx-auto">
+                            {search || filterStatus !== 'all'
+                                ? 'No records match your active search or filter criteria.'
+                                : 'Get started by creating the first volunteer activity schedule.'}
+                        </p>
+                        <Link
+                            href={route('admin.activities.create')}
+                            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold transition"
+                        >
+                            <Plus className="w-3.5 h-3.5" />
+                            <span>Create Activity</span>
+                        </Link>
+                    </div>
+                ) : view === 'table' ? (
+                    /* Table View */
+                    <div className="bg-white rounded-2xl overflow-hidden">
+                        {/* Pagination Top Bar */}
+                        <div className="px-5 py-3 border-b border-gray-50 bg-gray-50/50 flex flex-wrap items-center justify-between gap-3 text-xs text-gray-500">
+                            <div className="flex items-center gap-2">
+                                <span>Rows per page:</span>
+                                <select
+                                    value={pageSize}
+                                    onChange={(e) => {
+                                        setPageSize(Number(e.target.value));
+                                        setCurrentPage(1);
+                                    }}
+                                    className="px-2 py-1 bg-white border border-gray-200 rounded-lg text-xs outline-none"
+                                >
+                                    {PAGE_SIZE_OPTIONS.map((n) => (
+                                        <option key={n} value={n}>
+                                            {n}
+                                        </option>
+                                    ))}
+                                </select>
+                                <span className="text-gray-400">
+                                    Showing {(safePage - 1) * pageSize + 1}–{Math.min(safePage * pageSize, sorted.length)} of {sorted.length}
+                                </span>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                                    disabled={safePage === 1}
+                                    className="px-2.5 py-1 rounded-lg border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-40"
+                                >
+                                    <ChevronLeft className="w-3.5 h-3.5" />
+                                </button>
+                                <span className="font-semibold text-gray-700">
+                                    Page {safePage} of {totalPages}
+                                </span>
+                                <button
+                                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                                    disabled={safePage === totalPages}
+                                    className="px-2.5 py-1 rounded-lg border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-40"
+                                >
+                                    <ChevronRight className="w-3.5 h-3.5" />
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Table */}
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left border-collapse min-w-[760px]">
+                                <thead>
+                                    <tr className="border-b border-gray-100 bg-gray-50/70 text-xs font-bold text-gray-500">
+                                        {columns.map((col) => (
+                                            <th
+                                                key={col.key}
+                                                onClick={() => col.sortable && handleSort(col.key)}
+                                                className={`p-3.5 sm:px-5 ${
+                                                    col.sortable ? 'cursor-pointer select-none hover:text-gray-900' : ''
+                                                } ${col.key === 'actions' ? 'text-right' : ''}`}
+                                            >
+                                                <div className={`flex items-center gap-1.5 ${col.key === 'actions' ? 'justify-end' : ''}`}>
+                                                    <span>{col.label}</span>
+                                                    {col.sortable &&
+                                                        (sortField === col.key ? (
+                                                            sortDirection === 'asc' ? (
+                                                                <ChevronUp className="w-3.5 h-3.5 text-red-600" />
+                                                            ) : (
+                                                                <ChevronDown className="w-3.5 h-3.5 text-red-600" />
+                                                            )
+                                                        ) : (
+                                                            <ChevronsUpDown className="w-3.5 h-3.5 text-gray-400" />
+                                                        ))}
+                                                </div>
+                                            </th>
+                                        ))}
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-100 text-xs">
+                                    {paged.map((a) => {
+                                        const badge = statusBadge(a.status);
+                                        return (
+                                            <tr key={a.id} className="hover:bg-gray-50/60 transition">
+                                                <td className="p-3.5 sm:px-5">
+                                                    <div className="font-bold text-gray-900">{a.name}</div>
+                                                    {a.description && (
+                                                        <div className="text-[11px] text-gray-400 truncate max-w-xs mt-0.5">
+                                                            {a.description}
+                                                        </div>
+                                                    )}
+                                                </td>
+                                                <td className="p-3.5 sm:px-5 text-gray-700 whitespace-nowrap">
+                                                    <div className="font-semibold text-gray-900">{a.date}</div>
+                                                    {(a.start_time || a.end_time) && (
+                                                        <div className="text-[11px] text-gray-400">
+                                                            {a.start_time} – {a.end_time}
+                                                        </div>
+                                                    )}
+                                                </td>
+                                                <td className="p-3.5 sm:px-5 text-gray-600">
+                                                    <div className="flex items-center gap-1.5">
+                                                        <MapPin className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                                                        <span className="truncate max-w-[180px]">{a.location_name || '-'}</span>
+                                                    </div>
+                                                </td>
+                                                <td className="p-3.5 sm:px-5">
+                                                    <div className="flex items-center gap-1.5 text-gray-700 font-semibold">
+                                                        <Users className="w-3.5 h-3.5 text-gray-400" />
+                                                        <span>{a.volunteers?.length || 0}</span>
+                                                    </div>
+                                                </td>
+                                                <td className="p-3.5 sm:px-5">
+                                                    <span
+                                                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold ${badge.bg}`}
+                                                    >
+                                                        {a.status}
+                                                    </span>
+                                                </td>
+                                                <td className="p-3.5 sm:px-5 text-right">
+                                                    <div className="flex items-center justify-end gap-1.5">
+                                                        <Link
+                                                            href={route('admin.activities.edit', a.id)}
+                                                            className="p-1.5 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition"
+                                                            title="Edit Activity"
+                                                        >
+                                                            <Edit3 className="w-4 h-4" />
+                                                        </Link>
+                                                        <button
+                                                            onClick={() => handleDelete(a)}
+                                                            className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition"
+                                                            title="Delete Activity"
+                                                        >
+                                                            <Trash2 className="w-4 h-4" />
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                ) : (
+                    /* Cards Grid View */
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                        {paged.map((a) => {
+                            const badge = statusBadge(a.status);
+                            return (
+                                <div
+                                    key={a.id}
+                                    className="bg-white rounded-2xl p-5 space-y-4 hover:shadow-xs transition flex flex-col justify-between"
+                                >
+                                    <div className="space-y-3">
+                                        <div className="flex items-start justify-between gap-2">
+                                            <h3 className="text-sm font-bold text-gray-900 leading-snug">{a.name}</h3>
+                                            <span
+                                                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold shrink-0 ${badge.bg}`}
+                                            >
+                                                {a.status}
+                                            </span>
+                                        </div>
+
+                                        {a.description && (
+                                            <p className="text-xs text-gray-500 line-clamp-2 leading-relaxed">
+                                                {a.description}
+                                            </p>
+                                        )}
+
+                                        <div className="space-y-2 pt-2 border-t border-gray-100 text-xs text-gray-600">
+                                            <div className="flex items-center gap-2">
+                                                <Calendar className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                                                <span>{a.date}</span>
+                                            </div>
+                                            {(a.start_time || a.end_time) && (
+                                                <div className="flex items-center gap-2">
+                                                    <Clock className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                                                    <span>{a.start_time} – {a.end_time}</span>
+                                                </div>
+                                            )}
+                                            {a.location_name && (
+                                                <div className="flex items-center gap-2">
+                                                    <MapPin className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                                                    <span className="truncate">{a.location_name}</span>
+                                                </div>
+                                            )}
+                                            <div className="flex items-center gap-2">
+                                                <Users className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                                                <span>{a.volunteers?.length || 0} volunteers assigned</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center justify-end gap-2 pt-3 border-t border-gray-100">
+                                        <Link
+                                            href={route('admin.activities.edit', a.id)}
+                                            className="px-3 py-1.5 rounded-xl border border-gray-200 hover:bg-gray-50 text-gray-700 text-xs font-bold transition flex items-center gap-1.5"
+                                        >
+                                            <Edit3 className="w-3.5 h-3.5" />
+                                            <span>Edit</span>
+                                        </Link>
+                                        <button
+                                            onClick={() => handleDelete(a)}
+                                            className="px-3 py-1.5 rounded-xl border border-red-200 text-red-600 hover:bg-red-50 text-xs font-bold transition flex items-center gap-1.5"
+                                        >
+                                            <Trash2 className="w-3.5 h-3.5" />
+                                            <span>Delete</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
+            </div>
+
+            {/* Delete Confirmation Modal */}
             {deleteTarget && (
                 <div
                     onClick={() => setDeleteTarget(null)}
-                    style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}
+                    className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
                 >
                     <div
-                        onClick={e => e.stopPropagation()}
-                        style={{ background: '#fff', borderRadius: '12px', width: '100%', maxWidth: '380px', overflow: 'hidden', boxShadow: '0 20px 50px rgba(0,0,0,0.2)' }}
+                        onClick={(e) => e.stopPropagation()}
+                        className="bg-white rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl"
                     >
-                        <div style={{ padding: '24px 24px 16px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: '10px' }}>
-                            <div style={{ width: 46, height: 46, borderRadius: '50%', background: '#FEE2E2', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#991B1B" strokeWidth="2">
-                                    <path d="M3 6h18" /><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                                    <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-                                    <line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" />
-                                </svg>
+                        <div className="flex items-start gap-3.5">
+                            <div className="w-10 h-10 rounded-xl bg-red-100 text-red-600 flex items-center justify-center shrink-0">
+                                <AlertTriangle className="w-5 h-5" />
                             </div>
-                            <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: '19px', fontWeight: '700', color: '#1A1A1A', textTransform: 'uppercase' }}>
-                                Delete activity?
-                            </div>
-                            <div style={{ fontSize: '13px', color: '#6B6B6B', lineHeight: '1.5' }}>
-                                Are you sure you want to delete <strong style={{ color: '#1A1A1A' }}>{deleteTarget.name}</strong>? This action cannot be undone.
+                            <div>
+                                <h3 className="text-sm font-bold text-gray-900">Delete Activity?</h3>
+                                <p className="text-xs text-gray-500 mt-1 leading-relaxed">
+                                    Are you sure you want to delete <strong>{deleteTarget.name}</strong>? This action cannot be undone.
+                                </p>
                             </div>
                         </div>
-                        <div style={{ display: 'flex', gap: '8px', padding: '16px 24px 24px' }}>
+                        <div className="flex justify-end gap-2 pt-2 border-t border-gray-100">
                             <button
                                 onClick={() => setDeleteTarget(null)}
-                                style={{ flex: 1, background: '#F7F7F5', border: '1px solid #EDEDED', color: '#1A1A1A', padding: '10px', borderRadius: '8px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}
+                                className="px-4 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-xs font-bold text-gray-700 transition"
                             >
                                 Cancel
                             </button>
                             <button
                                 onClick={confirmDelete}
-                                style={{ flex: 1, background: '#ff0000', border: 'none', color: '#fff', padding: '10px', borderRadius: '8px', fontSize: '13px', fontWeight: '600', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}
+                                className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-xs font-bold text-white transition"
                             >
-                                Delete
+                                Delete Activity
                             </button>
                         </div>
                     </div>
-                </div>
-            )}
-
-            {/* PAGE HEADER */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', flexWrap: 'wrap', gap: '12px' }}>
-                <div>
-                    <div style={{ fontSize: '13px', color: 'var(--muted)', marginTop: '2px' }}>
-                        {filtered.length} activit{filtered.length !== 1 ? 'ies' : 'y'} found
-                    </div>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-                    <input
-                        className="search-input"
-                        placeholder="Search activities…"
-                        value={search}
-                        onChange={e => { setSearch(e.target.value); setCurrentPage(1); }}
-                    />
-                    <select className="filter-select" value={filterStatus} onChange={e => { setFilterStatus(e.target.value); setCurrentPage(1); }}>
-                        <option value="all">All Status</option>
-                        <option value="upcoming">Upcoming</option>
-                        <option value="ongoing">Ongoing</option>
-                        <option value="completed">Completed</option>
-                        <option value="cancelled">Cancelled</option>
-                    </select>
-                    <div className="view-toggle">
-                        <button className={view === 'table' ? 'active' : ''} onClick={() => setView('table')}>
-                            <IconTable /> Table
-                        </button>
-                        <button className={view === 'cards' ? 'active' : ''} onClick={() => setView('cards')}>
-                            <IconGrid /> Cards
-                        </button>
-                    </div>
-                    <Link href={route('admin.activities.create')} className="new-btn">
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                            <line x1="12" y1="5" x2="12" y2="19"/>
-                            <line x1="5" y1="12" x2="19" y2="12"/>
-                        </svg>
-                        New Activity
-                    </Link>
-                </div>
-            </div>
-
-            {filtered.length === 0 ? (
-                <div className="card empty-state">
-                    <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '12px', color: '#c7c7c7' }}><IconClipboard /></div>
-                    <div style={{ fontSize: '15px', fontWeight: '500', marginBottom: '6px', color: 'var(--ink)' }}>No activities found</div>
-                    <div style={{ fontSize: '13px', marginBottom: '16px' }}>
-                        {search || filterStatus !== 'all' ? 'Try adjusting your filters.' : 'Create your first activity to get started.'}
-                    </div>
-                    <Link href={route('admin.activities.create')} className="new-btn" style={{ display: 'inline-flex' }}>
-                        + New Activity
-                    </Link>
-                </div>
-            ) : view === 'table' ? (
-                /* ── TABLE VIEW ── */
-                <>
-                    {/* ✅ NEW: pagination + page size controls (above the table) */}
-                    <div className="act-table-footer">
-                        <div className="act-page-size">
-                            <span>Rows per page:</span>
-                            <select
-                                value={pageSize}
-                                onChange={(e) => { setPageSize(Number(e.target.value)); setCurrentPage(1); }}
-                            >
-                                {PAGE_SIZE_OPTIONS.map((n) => (
-                                    <option key={n} value={n}>{n}</option>
-                                ))}
-                            </select>
-                            <span className="act-page-info">
-                                {(safePage - 1) * pageSize + 1}–{Math.min(safePage * pageSize, sorted.length)} of {sorted.length}
-                            </span>
-                        </div>
-                        <div className="act-pagination">
-                            <button
-                                className="act-page-btn"
-                                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                                disabled={safePage === 1}
-                            >
-                                ‹ Prev
-                            </button>
-                            <span className="act-page-info">Page {safePage} of {totalPages}</span>
-                            <button
-                                className="act-page-btn"
-                                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                                disabled={safePage === totalPages}
-                            >
-                                Next ›
-                            </button>
-                        </div>
-                    </div>
-
-                    <div className="card" style={{ overflow: 'hidden' }}>
-                        <table className="act-table">
-                            <thead>
-                                <tr>
-                                    {columns.map((col) => (
-                                        <th
-                                            key={col.key}
-                                            className={col.sortable ? 'sortable' : ''}
-                                            onClick={() => col.sortable && handleSort(col.key)}
-                                            style={col.key === 'actions' ? { textAlign: 'right' } : undefined}
-                                        >
-                                            {col.label}
-                                            {col.sortable && (
-                                                <span className={`act-sort-icon ${sortField === col.key ? 'active' : ''}`}>
-                                                    {sortIndicator(col.key)}
-                                                </span>
-                                            )}
-                                        </th>
-                                    ))}
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {paged.map(activity => (
-                                    <tr key={activity.id}>
-                                        <td>
-                                            <div style={{ fontWeight: '500', color: 'var(--ink)', fontSize: '13px' }}>{activity.name}</div>
-                                            <div style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                <IconPin /> {activity.location_name ?? '—'}
-                                            </div>
-                                        </td>
-                                        <td style={{ whiteSpace: 'nowrap' }}>
-                                            <div style={{ fontSize: '12px', color: 'var(--ink)' }}>{activity.date}</div>
-                                            <div style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '2px' }}>{activity.start_time} – {activity.end_time}</div>
-                                        </td>
-                                        <td>
-                                            <span className="status-badge" style={statusStyle(activity.status)}>
-                                                {activity.status}
-                                            </span>
-                                        </td>
-                                        <td style={{ maxWidth: '260px' }}>
-                                            <div style={{ fontSize: '12px', color: 'var(--muted)', lineHeight: '1.5', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
-                                                {activity.description ?? '—'}
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
-                                                <Link href={route('admin.activities.edit', activity.id)} className="btn-edit">Edit</Link>
-                                                <button onClick={() => handleDelete(activity)} className="btn-del">Delete</button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </>
-            ) : (
-                /* ── CARDS VIEW ── */
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '16px' }}>
-                    {filtered.map(activity => (
-                        <div key={activity.id} className="act-card">
-                            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '10px' }}>
-                                <div style={{ fontWeight: '600', fontSize: '14px', color: 'var(--ink)', lineHeight: '1.3' }}>{activity.name}</div>
-                                <span className="status-badge" style={{ ...statusStyle(activity.status), flexShrink: 0 }}>
-                                    {activity.status}
-                                </span>
-                            </div>
-
-                            {activity.description && (
-                                <div style={{ fontSize: '12px', color: 'var(--muted)', lineHeight: '1.6', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
-                                    {activity.description}
-                                </div>
-                            )}
-
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                                <div style={{ fontSize: '12px', color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                                    {activity.date} &nbsp;·&nbsp; {activity.start_time} – {activity.end_time}
-                                </div>
-                                {activity.location_name && (
-                                    <div style={{ fontSize: '12px', color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-                                        {activity.location_name}
-                                    </div>
-                                )}
-                            </div>
-
-                            <div style={{ display: 'flex', gap: '8px', marginTop: '4px', borderTop: '1px solid var(--border)', paddingTop: '12px' }}>
-                                <Link href={route('admin.activities.edit', activity.id)} className="btn-edit" style={{ flex: 1, textAlign: 'center' }}>Edit</Link>
-                                <button onClick={() => handleDelete(activity)} className="btn-del" style={{ flex: 1 }}>Delete</button>
-                            </div>
-                        </div>
-                    ))}
                 </div>
             )}
         </>

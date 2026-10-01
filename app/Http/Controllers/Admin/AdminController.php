@@ -41,6 +41,7 @@ class AdminController extends Controller
             ->latest()
             ->get(['id', 'name', 'email', 'status', 'photo', 'is_available', 'is_online'])
             ->map(fn($user) => [
+                'id'           => $user->id,
                 'initials' => collect(explode(' ', $user->name))
                                 ->map(fn($w) => strtoupper($w[0] ?? ''))
                                 ->take(2)

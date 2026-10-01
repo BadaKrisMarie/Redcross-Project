@@ -3,7 +3,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
 /**
- * 🗺️ ActivityLocationMap
+ * ActivityLocationMap
  *
  * Live preview ng napiling activity location + geofence radius habang
  * pinupunan ang form (GPS Coordinates at Allowed Radius fields).
@@ -13,7 +13,7 @@ import 'leaflet/dist/leaflet.css';
  *   ...
  *   <GPS Coordinates fields>
  *   <Allowed Radius field>
- *   <ActivityLocationMap latitude={...} longitude={...} radius={...} locationName={...} />   👈 DITO
+ *   <ActivityLocationMap latitude={...} longitude={...} radius={...} locationName={...} />
  *   <Status field>
  *   ...
  *

@@ -13,7 +13,9 @@ export default {
     theme: {
         extend: {
             fontFamily: {
-                sans: ['Figtree', ...defaultTheme.fontFamily.sans],
+                sans: ['Montserrat', 'Manrope', ...defaultTheme.fontFamily.sans],
+                montserrat: ['Montserrat', 'sans-serif'],
+                manrope: ['Manrope', 'sans-serif'],
             },
         },
     },

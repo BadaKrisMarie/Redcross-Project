@@ -1,405 +1,371 @@
-import React, { useState } from 'react';
-import { Link, useForm, usePage } from '@inertiajs/react';
+import React from 'react';
+import PublicLayout from '@/Layouts/PublicLayout';
+import FadeIn from '@/Components/Public/FadeIn';
+import {
+    Phone,
+    Mail,
+    MapPin,
+    ShieldAlert,
+    Droplet,
+    Clock,
+    ExternalLink,
+    Globe,
+    Share2,
+} from 'lucide-react';
+
+/* ──────────────────────────── DATA DEFINITIONS ──────────────────────────── */
+
+const EMERGENCY_HOTLINES = [
+    {
+        label: 'PRC Nationwide Hotline',
+        number: '143',
+        sub: '24/7 Emergency & Rescue',
+        icon: ShieldAlert,
+        href: 'tel:143',
+    },
+    {
+        label: 'Muntinlupa Chapter Dispatch',
+        number: '(02) 8641-5364',
+        sub: '24/7 Ambulance & Operations',
+        icon: Phone,
+        href: 'tel:0286415364',
+    },
+    {
+        label: 'Disaster Duty Officer',
+        number: '+63 917 177 6143',
+        sub: 'Field Rescue & Disaster Relief',
+        icon: ShieldAlert,
+        href: 'tel:+639171776143',
+    },
+    {
+        label: 'Blood Bank & Donor Desk',
+        number: '+63 917 833 4929',
+        sub: 'Blood Requests & Drive Schedules',
+        icon: Droplet,
+        href: 'tel:+639178334929',
+    },
+];
+
+const OFFICIAL_LINKS = [
+    {
+        name: 'Official Website',
+        handle: 'redcross.org.ph',
+        url: 'https://www.redcross.org.ph',
+        icon: Globe,
+    },
+    {
+        name: 'PRC Muntinlupa Facebook',
+        handle: '@RedCrossMuntinlupa',
+        url: 'https://www.facebook.com/RedCrossMuntinlupa/',
+        icon: Share2,
+    },
+    {
+        name: 'National Facebook',
+        handle: '@phredcross',
+        url: 'https://www.facebook.com/phredcross/',
+        icon: Share2,
+    },
+    {
+        name: 'Twitter / X',
+        handle: '@philredcross',
+        url: 'https://twitter.com/philredcross',
+        icon: Share2,
+    },
+];
+
+/* ──────────────────────────── COMPONENT ──────────────────────────── */
 
 export default function Contact() {
-    const { flash } = usePage().props;
-    const [openTooltip, setOpenTooltip] = useState(null);
-
-    const { data, setData, post, processing, errors, reset } = useForm({
-        name: '',
-        email: '',
-        message: '',
-    });
-
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        post('/contact', {
-            onSuccess: () => reset(),
-        });
-    };
-
-    const phones = [
-        { dept: 'Admin',                    number: '+63 917-322-8143' },
-        { dept: 'Blood Bank',               number: '+63 917-833-4929' },
-        { dept: 'Safety Service Emergency', number: '+63 917-177-6143' },
-        { dept: 'Medical Service',          number: '+63 917-837-0446' },
-        { dept: 'Fund Generation',          number: '+63 917-831-3924' },
-    ];
-
-    const aboutItems = [
-        { label: 'Who We Are',  desc: 'Our story & background' },
-        { label: 'Our Mission', desc: 'Vision, mission & values' },
-        { label: 'Our Team',    desc: 'Meet our volunteers' },
-        { label: 'Our History', desc: 'Years of service' },
-    ];
-
-    const contactItems = [
-        { label: 'Get in Touch', desc: 'Send us a message' },
-        { label: 'Email Us',     desc: 'rizalmuntinlupa@redcross.org.ph' },
-        { label: 'Call Us',      desc: 'Hotline & emergency numbers' },
-        { label: 'Visit Us',     desc: 'Muntinlupa City Branch' },
-    ];
-
-    const tooltipBox = {
-        position: 'absolute', top: 'calc(100% + 10px)', left: '50%',
-        transform: 'translateX(-50%)',
-        background: '#1a1a1a', borderRadius: 8,
-        padding: '10px 14px', minWidth: 190, zIndex: 200,
-        pointerEvents: 'none',
-    };
-
-    const arrowStyle = {
-        position: 'absolute', top: -6, left: '50%', transform: 'translateX(-50%)',
-        borderLeft: '6px solid transparent', borderRight: '6px solid transparent',
-        borderBottom: '6px solid #1a1a1a',
-    };
-
     return (
-        <>
-            <style>{`
-                @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:wght@300;400;500;600&display=swap');
-                *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-                :root {
-                    --red: #ff0000; --red-dark: #A51818;
-                    --white: #ffffff; --offwhite: #f8f8f8;
-                    --charcoal: #1c1c1c; --gray: #6b6b6b;
-                    --light-gray: #e5e5e5; --navy: #1a2744;
-                }
-                body { font-family: 'monserrat, monserrat'; background: var(--white); color: var(--charcoal); overflow-x: hidden; }
+        <PublicLayout title="Contact Us - Philippine Red Cross Muntinlupa">
+            {/* ──────────────── 1. HERO SECTION ──────────────── */}
+            <section className="relative min-h-[45vh] sm:min-h-[50vh] flex flex-col items-center justify-center overflow-hidden pt-28 sm:pt-36 pb-10 sm:pb-14">
+                {/* Background Image Layer */}
+                <div className="absolute inset-0 z-0">
+                    <img
+                        src="/images/muntinlupa-map.jpg"
+                        alt="Muntinlupa City Map"
+                        className="w-full h-full object-cover object-center"
+                    />
+                    <div className="absolute inset-0 bg-slate-900/10" />
+                    <div className="absolute inset-0 bg-gradient-to-b from-white/70 via-white/50 to-white/90" />
+                </div>
 
-                .main-nav {
-                    width: 100%;
-                    background: #ffffff;
-                    display: flex;
-                    align-items: center;
-                    justify-content: space-between;
-                    padding: 14px 48px;
-                    border-bottom: 1px solid rgba(200,16,46,0.12);
-                    position: sticky;
-                    top: 0;
-                    z-index: 100;
-                    font-family: 'monserrat, monserrat';
-                }
-                .nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
-                .nav-logo-icon { width: 34px; height: 34px; background: #ff0000; border-radius: 4px; display: flex; align-items: center; justify-content: center; color: white; font-size: 20px; font-weight: 900; }
-                .nav-logo-texts .top { font-size: 12px; font-weight: 600; color: #111111; line-height: 1.2; display: block; }
-                .nav-logo-texts .bottom { font-size: 10px; color: #888880; display: block; }
-                .nav-links { display: flex; align-items: center; gap: 28px; list-style: none; margin: 0; padding: 0; }
-                .nav-links a { text-decoration: none; font-size: 13px; font-weight: 500; color: #444444; padding: 4px 10px; border-radius: 6px; transition: background 0.2s, color 0.2s; }
-                .nav-links a:hover, .nav-links a.active { color: #ff0000; background: rgba(220,38,38,0.08); }
-                .nav-links .login-btn a { background: #ff0000; color: white !important; font-weight: 600; padding: 8px 18px; border-radius: 6px; font-size: 12px; }
-                .nav-links .login-btn a:hover { background: var(--red-dark); }
-
-                .contact-hero { background: #1a1a1a; padding: 72px 60px; text-align: center; position: relative; overflow: hidden; background-image: url('https://scontent.fmnl8-1.fna.fbcdn.net/v/t39.30808-6/486253255_122117910200759224_1850104524729330657_n.jpg?_nc_cat=108&ccb=1-7&_nc_sid=127cfc&_nc_ohc=s3qPx72vL0QQ7kNvwEIiHPI&_nc_oc=AdqRmmyhVTdlpQ1ucKr3gwtRZUjigQziyUGexQspH0zfnd9XfILoSqGTRbOsO1TXLSzdeB3CaaEb3y_yR-Ejs5Rk&_nc_zt=23&_nc_ht=scontent.fmnl8-1.fna&_nc_gid=OEftzlaHV_BR3OPDU5Gs0g&_nc_ss=7b289&oh=00_Af5Y55emzOdxd-X1_8lK2G_kTNILcyfRuukztDwxOLT0bw&oe=6A1CBC37'); background-size: cover; background-position: center; }
-                .contact-hero::before { content: ''; position: absolute; inset: 0; background: linear-gradient(135deg, rgba(127,29,29,0.88) 0%, rgba(26,26,26,0.88) 60%); opacity: 1; z-index: 0; }
-                .contact-hero-grid { position: absolute; inset: 0; opacity: 0.05; background-image: repeating-linear-gradient(0deg, #fff 0, #fff 1px, transparent 1px, transparent 40px), repeating-linear-gradient(90deg, #fff 0, #fff 1px, transparent 1px, transparent 40px); z-index: 0; }
-                .contact-hero-ring1 { position: absolute; right: -40px; top: 50%; transform: translateY(-50%); width: 500px; height: 500px; border: 60px solid rgba(220,38,38,0.12); border-radius: 50%; z-index: 0; }
-                .contact-hero-ring2 { position: absolute; right: 60px; top: 50%; transform: translateY(-50%); width: 320px; height: 320px; border: 1.5px solid rgba(220,38,38,0.25); border-radius: 50%; z-index: 0; }
-                .hero-tag { display: inline-flex; align-items: center; gap: 8px; background: rgba(220,38,38,0.15); border: 1px solid rgba(220,38,38,0.35); color: #fca5a5; font-family: 'monserrat, monserrat'; font-size: 12px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; padding: 5px 16px; border-radius: 100px; margin-bottom: 18px; position: relative; z-index: 1; }
-                .contact-hero h1 { font-family: 'monserrat, monserrat'; font-weight: 900; font-size: clamp(52px, 7vw, 80px); line-height: 0.92; color: white; text-transform: uppercase; margin-bottom: 14px; position: relative; z-index: 1; }
-                .contact-hero p { color: rgba(255,255,255,0.6); font-size: 15px; font-weight: 300; line-height: 1.7; max-width: 460px; margin: 0 auto; position: relative; z-index: 1; }
-
-                .breadcrumb { padding: 13px 60px; background: var(--offwhite); border-bottom: 1px solid var(--light-gray); display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--gray); }
-                .breadcrumb a { color: var(--red); text-decoration: none; font-weight: 500; }
-
-                .contact-main { padding: 72px 60px; background: var(--white); }
-                .contact-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 48px; }
-
-                .ccard { background: var(--white); border: 1px solid var(--light-gray); border-radius: 12px; padding: 32px 26px; display: flex; flex-direction: column; align-items: center; text-align: center; transition: border-color 0.25s, box-shadow 0.25s, transform 0.25s; }
-                .ccard:hover { border-color: rgba(220,38,38,0.3); box-shadow: 0 10px 36px rgba(0,0,0,0.08); transform: translateY(-3px); }
-                .ccard.featured { border: 2px solid var(--red); box-shadow: 0 4px 24px rgba(220,38,38,0.1); }
-                .ccard-icon { width: 56px; height: 56px; border-radius: 50%; background: rgba(220,38,38,0.08); display: flex; align-items: center; justify-content: center; margin-bottom: 16px; font-size: 24px; }
-                .ccard h3 { font-family: 'monserrat, monserrat'; font-size: 22px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--charcoal); margin-bottom: 18px; }
-                .ccard-divider { width: 100%; height: 1px; background: var(--light-gray); margin: 14px 0; }
-                .ccard-desc { font-size: 13px; color: var(--gray); line-height: 1.7; margin-bottom: 16px; }
-
-                .phone-row { display: flex; justify-content: space-between; align-items: center; width: 100%; padding: 8px 0; border-bottom: 1px solid var(--light-gray); gap: 12px; }
-                .phone-row:last-of-type { border-bottom: none; }
-                .phone-dept { font-size: 12px; font-weight: 600; color: var(--red); text-align: left; flex: 1; line-height: 1.3; }
-                .phone-num { font-size: 13px; font-weight: 500; color: var(--charcoal); white-space: nowrap; }
-                .contact-info { font-size: 12px; color: var(--gray); line-height: 1.7; }
-                .contact-info a { color: var(--red); text-decoration: none; font-weight: 500; }
-                .address-block { font-size: 13px; color: var(--gray); line-height: 1.8; }
-                .address-block strong { display: block; font-size: 14px; color: var(--charcoal); margin-bottom: 4px; }
-
-                .form-group { display: flex; flex-direction: column; gap: 8px; width: 100%; margin-bottom: 10px; }
-                .form-group input, .form-group textarea { width: 100%; padding: 10px 14px; font-family: 'monserrat, monserrat'; font-size: 13px; color: var(--charcoal); background: var(--offwhite); border: 1px solid var(--light-gray); border-radius: 6px; outline: none; transition: border-color 0.2s; }
-                .form-group input:focus, .form-group textarea:focus { border-color: var(--red); background: var(--white); }
-                .form-group textarea { height: 80px; resize: none; }
-                .field-error { font-size: 11px; color: var(--red); margin-top: 2px; text-align: left; }
-                .btn-submit { width: 100%; background: var(--red); color: white; padding: 12px 24px; font-family: 'monserrat, monserrat'; font-weight: 700; font-size: 14px; letter-spacing: 0.1em; text-transform: uppercase; border: none; cursor: pointer; border-radius: 6px; display: flex; align-items: center; justify-content: center; gap: 8px; transition: background 0.2s, transform 0.2s; margin-top: 4px; }
-                .btn-submit:hover:not(:disabled) { background: var(--red-dark); transform: translateY(-1px); }
-                .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; }
-                .success-msg { background: rgba(34,139,34,0.08); border: 1px solid rgba(34,139,34,0.2); border-radius: 6px; padding: 12px 16px; font-size: 13px; color: #1a7a1a; font-weight: 500; text-align: center; width: 100%; }
-
-                .map-section { margin-top: 0; }
-                .map-label { font-family: 'monserrat, monserrat'; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: var(--gray); margin-bottom: 12px; }
-                .map-wrapper { position: relative; width: 100%; height: 320px; border-radius: 12px; overflow: hidden; border: 1px solid var(--light-gray); box-shadow: 0 4px 20px rgba(0,0,0,0.06); }
-                .map-wrapper iframe { width: 100%; height: 100%; border: 0; display: block; }
-                .map-open-btn { position: absolute; bottom: 14px; right: 14px; background: var(--red); color: white; padding: 9px 18px; border-radius: 8px; font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; text-decoration: none; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 16px rgba(220,38,38,0.35); transition: background 0.2s, transform 0.15s; z-index: 10; }
-                .map-open-btn:hover { background: var(--red-dark); transform: translateY(-1px); }
-
-                footer { background: #111; color: white; padding: 56px 60px 32px; }
-                .footer-grid { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 40px; padding-bottom: 40px; border-bottom: 1px solid rgba(255,255,255,0.08); margin-bottom: 28px; }
-                .footer-brand .logo-row { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
-                .footer-brand .logo-icon { width: 36px; height: 36px; background: var(--red); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-family: 'Barlow Condensed', sans-serif; font-size: 20px; font-weight: 900; color: white; }
-                .footer-brand .logo-text strong { display: block; font-family: 'monserrat, monserrat'; font-size: 16px; font-weight: 700; color: white; }
-                .footer-brand .logo-text span { font-size: 11px; color: rgba(255,255,255,0.4); }
-                .footer-brand p { font-size: 13px; color: rgba(255,255,255,0.45); line-height: 1.7; max-width: 240px; }
-                .footer-col h4 { font-family: 'monserrat, monserrat
-                ; font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: rgba(255,255,255,0.5); margin-bottom: 16px; }
-                .footer-col ul { list-style: none; display: flex; flex-direction: column; gap: 10px; }
-                .footer-col ul li a { font-size: 13px; color: rgba(255,255,255,0.6); text-decoration: none; transition: color 0.2s; }
-                .footer-col ul li a:hover { color: var(--red); }
-                .footer-bottom { display: flex; align-items: center; justify-content: space-between; }
-                .footer-bottom p { font-size: 12px; color: rgba(255,255,255,0.3); }
-                .footer-socials { display: flex; gap: 10px; }
-                .social { width: 34px; height: 34px; border-radius: 6px; background: rgba(255,255,255,0.07); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; font-family: 'Barlow Condensed', sans-serif; color: white; cursor: pointer; border: none; transition: background 0.2s; }
-                .social:hover { background: var(--red); }
-
-                @media (max-width: 900px) {
-                    .main-nav { padding: 14px 20px; }
-                    .contact-hero { padding: 60px 24px; }
-                    .breadcrumb { padding: 12px 24px; }
-                    .contact-main { padding: 52px 24px; }
-                    .contact-grid { grid-template-columns: 1fr; }
-                    footer { padding: 48px 24px 28px; }
-                    .footer-grid { grid-template-columns: 1fr 1fr; }
-                }
-            `}</style>
-
-            {/* ── NAV ── */}
-            <nav className="main-nav">
-                <Link href="/" className="nav-logo">
-                    <div className="nav-logo-icon">+</div>
-                    <div className="nav-logo-texts">
-                        <span className="top">Rizal Chapter</span>
-                        <span className="bottom">Muntinlupa City Branch</span>
-                    </div>
-                </Link>
-                <ul className="nav-links">
-                    <li><Link href="/">Home</Link></li>
-
-                    {/* ABOUT with tooltip */}
-                    <li
-                        style={{ position: 'relative' }}
-                        onMouseEnter={() => setOpenTooltip('about')}
-                        onMouseLeave={() => setOpenTooltip(null)}
-                    >
-                        <Link href="/about">About</Link>
-                        {openTooltip === 'about' && (
-                            <div style={tooltipBox}>
-                                <div style={arrowStyle} />
-                                {aboutItems.map((item, i) => (
-                                    <div key={item.label} style={{
-                                        padding: '5px 0',
-                                        borderBottom: i < aboutItems.length - 1 ? '1px solid rgba(255,255,255,0.06)' : 'none',
-                                    }}>
-                                        <div style={{ fontSize: 13, color: i === 0 ? '#fff' : '#ccc', fontWeight: i === 0 ? 600 : 500 }}>{item.label}</div>
-                                        <div style={{ fontSize: 11, color: '#888', marginTop: 1 }}>{item.desc}</div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </li>
-
-                    {/* CONTACT with tooltip */}
-                    <li
-                        style={{ position: 'relative' }}
-                        onMouseEnter={() => setOpenTooltip('contact')}
-                        onMouseLeave={() => setOpenTooltip(null)}
-                    >
-                        <Link href="/contact" className="active">Contact</Link>
-                        {openTooltip === 'contact' && (
-                            <div style={tooltipBox}>
-                                <div style={arrowStyle} />
-                                {contactItems.map((item, i) => (
-                                    <div key={item.label} style={{
-                                        padding: '5px 0',
-                                        borderBottom: i < contactItems.length - 1 ? '1px solid rgba(255,255,255,0.06)' : 'none',
-                                    }}>
-                                        <div style={{ fontSize: 13, color: i === 0 ? '#fff' : '#ccc', fontWeight: i === 0 ? 600 : 500 }}>{item.label}</div>
-                                        <div style={{ fontSize: 11, color: '#888', marginTop: 1 }}>{item.desc}</div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </li>
-
-                    <li className="login-btn"><Link href="/login">Log In</Link></li>
-                </ul>
-            </nav>
-
-            {/* ── HERO ── */}
-            <div className="contact-hero">
-                <div className="contact-hero-grid"></div>
-                <div className="contact-hero-ring1"></div>
-                <div className="contact-hero-ring2"></div>
-                <div className="hero-tag">Contact Us</div>
-                <h1>Get In Touch</h1>
-                <p>Reach out to us to learn more, volunteer, or support our initiatives in Muntinlupa. We're here to connect and make a difference together.</p>
-            </div>
-
-            {/* ── BREADCRUMB ── */}
-            <div className="breadcrumb">
-                <Link href="/">Home</Link>
-                <span>›</span>
-                <span>Contact</span>
-            </div>
-
-            {/* ── MAIN ── */}
-            <div className="contact-main">
-                <div className="contact-grid">
-
-                    {/* Visit Us */}
-                    <div className="ccard">
-                        <div className="ccard-icon"></div>
-                        <h3>Visit Us</h3>
-                        <p className="ccard-desc">Drop by our office in Muntinlupa and see how we're helping the community firsthand.</p>
-                        <div className="ccard-divider"></div>
-                        <div className="address-block">
-                            <strong>Red Cross Center</strong>
-                            Centennial Lane, Filinvest Corporate City,<br />
-                            Alabang, Muntinlupa City
+                {/* Center Hero Card */}
+                <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 w-full text-center">
+                    <div className="relative mx-auto max-w-2xl bg-white/95 backdrop-blur-md rounded-[28px] sm:rounded-[36px] shadow-[0_20px_50px_-15px_rgba(0,0,0,0.08)] pt-0 px-6 sm:px-12 pb-8 sm:pb-10 overflow-hidden">
+                        {/* Notch */}
+                        <div className="w-32 sm:w-40 h-5 bg-gray-100 rounded-b-2xl mx-auto flex items-center justify-center gap-2 mb-8 sm:mb-9">
+                            <span className="w-2 h-2 rounded-full bg-red-600 animate-pulse" />
+                            <span className="w-10 h-1.5 rounded-full bg-gray-300" />
                         </div>
-                    </div>
 
-                    {/* Call Us */}
-                    <div className="ccard featured">
-                        <div className="ccard-icon"></div>
-                        <h3>Call Us Now</h3>
-                        {phones.map((p, i) => (
-                            <div className="phone-row" key={i}>
-                                <span className="phone-dept">{p.dept}</span>
-                                <a href={`tel:${p.number.replace(/\s/g,'')}`} className="phone-num" style={{ textDecoration: 'none', color: 'inherit' }}>
-                                    {p.number}
+                        <FadeIn delay={0.06}>
+                            <h1 className="text-3xl sm:text-4xl md:text-5xl font-semibold tracking-tight leading-tight mb-2.5 font-manrope">
+                                <span className="text-gray-900 block">Contact Us</span>
+                            </h1>
+                        </FadeIn>
+
+                        <FadeIn delay={0.1}>
+                            <p className="text-sm sm:text-base text-gray-500 max-w-lg mx-auto leading-relaxed font-montserrat">
+                                Philippine Red Cross Rizal Chapter – Muntinlupa City Branch
+                            </p>
+                        </FadeIn>
+                    </div>
+                </div>
+            </section>
+
+            {/* ──────────────── 2. MAIN ORGANIZED CONTENT ──────────────── */}
+            <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-20 space-y-10 sm:space-y-14">
+                {/* ── ROW 1: CORE CONTACT DETAILS (3 CARDS) ── */}
+                <FadeIn>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        {/* Full Address */}
+                        <div className="bg-gray-50/80 rounded-2xl p-6 sm:p-7 shadow-none hover:shadow-md transition-all duration-200 flex flex-col justify-between group">
+                            <div>
+                                <div className="w-11 h-11 rounded-xl bg-white text-red-600 flex items-center justify-center mb-4 shadow-sm group-hover:bg-red-600 group-hover:text-white transition-colors duration-200">
+                                    <MapPin className="w-5 h-5" />
+                                </div>
+                                <h3 className="text-base font-semibold text-gray-900 mb-2 font-manrope">
+                                    Full Address
+                                </h3>
+                                <p className="text-xs sm:text-sm text-gray-700 font-montserrat leading-relaxed">
+                                    Red Cross Center, Centennial Lane, Filinvest Corporate City, Alabang, Muntinlupa City, Metro Manila, Philippines
+                                </p>
+                                <p className="text-xs text-gray-500 font-montserrat mt-2">
+                                    Postal Code: <span className="font-semibold text-gray-800">1780</span>
+                                </p>
+                            </div>
+                            <div className="mt-5">
+                                <a
+                                    href="https://maps.app.goo.gl/5617viaNwvSqUz5g7"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-red-600 hover:text-red-700 font-montserrat"
+                                >
+                                    <span>Open in Google Maps</span>
+                                    <ExternalLink className="w-3.5 h-3.5" />
                                 </a>
                             </div>
-                        ))}
-                        <div className="ccard-divider"></div>
-                        <div className="contact-info">
-                            <a href="mailto:rizalmuntinlupa@redcross.org.ph">
-                                rizalmuntinlupa@redcross.org.ph
-                            </a>
                         </div>
-                    </div>
 
-                    {/* Send Message */}
-                    <div className="ccard">
-                        <div className="ccard-icon">✉️</div>
-                        <h3>Send Message</h3>
-
-                        {flash?.success ? (
-                            <div className="success-msg">✅ {flash.success}</div>
-                        ) : (
-                            <form onSubmit={handleSubmit} style={{ width: '100%' }}>
-                                <div className="form-group">
-                                    <input
-                                        type="text"
-                                        placeholder="Your name"
-                                        value={data.name}
-                                        onChange={e => setData('name', e.target.value)}
-                                    />
-                                    {errors.name && <span className="field-error">{errors.name}</span>}
+                        {/* Contact # */}
+                        <div className="bg-gray-50/80 rounded-2xl p-6 sm:p-7 shadow-none hover:shadow-md transition-all duration-200 flex flex-col justify-between group">
+                            <div>
+                                <div className="w-11 h-11 rounded-xl bg-white text-red-600 flex items-center justify-center mb-4 shadow-sm group-hover:bg-red-600 group-hover:text-white transition-colors duration-200">
+                                    <Phone className="w-5 h-5" />
                                 </div>
-                                <div className="form-group">
-                                    <input
-                                        type="email"
-                                        placeholder="Your email"
-                                        value={data.email}
-                                        onChange={e => setData('email', e.target.value)}
-                                    />
-                                    {errors.email && <span className="field-error">{errors.email}</span>}
+                                <h3 className="text-base font-semibold text-gray-900 mb-2 font-manrope">
+                                    Contact Numbers
+                                </h3>
+                                <div className="space-y-1.5 text-xs sm:text-sm font-montserrat">
+                                    <div>
+                                        <span className="text-gray-400 block text-[11px]">Landline:</span>
+                                        <a href="tel:0286415364" className="font-bold text-gray-900 hover:text-red-600 font-mono">
+                                            (02) 8641-5364
+                                        </a>
+                                    </div>
+                                    <div>
+                                        <span className="text-gray-400 block text-[11px]">Mobile:</span>
+                                        <a href="tel:+639178348272" className="font-bold text-gray-900 hover:text-red-600 font-mono">
+                                            +63 917 834 8272
+                                        </a>
+                                    </div>
                                 </div>
-                                <div className="form-group">
-                                    <textarea
-                                        placeholder="Your message..."
-                                        value={data.message}
-                                        onChange={e => setData('message', e.target.value)}
-                                    />
-                                    {errors.message && <span className="field-error">{errors.message}</span>}
-                                </div>
-                                <button className="btn-submit" type="submit" disabled={processing}>
-                                    {processing ? 'Sending...' : 'Send Message →'}
-                                </button>
-                            </form>
-                        )}
-                    </div>
-                </div>
-
-                {/* ── MAP ── */}
-                <div className="map-section">
-                    <div className="map-label">Our Location</div>
-                    <div className="map-wrapper">
-                        <iframe
-                            title="Red Cross Muntinlupa Location"
-                            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3862.0!2d121.0347!3d14.4153!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3397d3b6c2f1234%3A0x5e0f1234abcd!2sRed+Cross+Center%2C+Filinvest+Corporate+City%2C+Alabang%2C+Muntinlupa+City!5e0!3m2!1sen!2sph!4v1716000000000"
-                            allowFullScreen=""
-                            loading="lazy"
-                            referrerPolicy="no-referrer-when-downgrade"
-                        />
-                        <a
-                            href="https://maps.app.goo.gl/6KXb5QSKdYh5g6yM8"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="map-open-btn"
-                        >
-                             Open in Google Maps
-                        </a>
-                    </div>
-                </div>
-            </div>
-
-            {/* ── FOOTER ── */}
-            <footer>
-                <div className="footer-grid">
-                    <div className="footer-brand">
-                        <div className="logo-row">
-                            <div className="logo-icon">+</div>
-                            <div className="logo-text">
-                                <strong>Rizal Chapter</strong>
-                                <span>Muntinlupa City Branch</span>
+                            </div>
+                            <div className="mt-5 text-[11px] text-gray-500 font-montserrat flex items-center gap-1.5">
+                                <Clock className="w-3.5 h-3.5 text-gray-400" />
+                                <span>Mon – Fri: 8:00 AM – 5:00 PM</span>
                             </div>
                         </div>
-                        <p>Committed to saving lives and serving the community with compassion, excellence, and urgency.</p>
+
+                        {/* Email */}
+                        <div className="bg-gray-50/80 rounded-2xl p-6 sm:p-7 shadow-none hover:shadow-md transition-all duration-200 flex flex-col justify-between group">
+                            <div>
+                                <div className="w-11 h-11 rounded-xl bg-white text-red-600 flex items-center justify-center mb-4 shadow-sm group-hover:bg-red-600 group-hover:text-white transition-colors duration-200">
+                                    <Mail className="w-5 h-5" />
+                                </div>
+                                <h3 className="text-base font-semibold text-gray-900 mb-2 font-manrope">
+                                    Email
+                                </h3>
+                                <p className="text-xs text-gray-400 mb-1 font-montserrat">Direct inquiries & support:</p>
+                                <a
+                                    href="mailto:muntinlupa@redcross.org.ph"
+                                    className="font-bold text-red-600 hover:text-red-700 text-xs sm:text-sm break-all font-montserrat"
+                                >
+                                    muntinlupa@redcross.org.ph
+                                </a>
+                            </div>
+                            <div className="mt-5 text-[11px] text-gray-400 font-montserrat">
+                                Response within 24 hours
+                            </div>
+                        </div>
                     </div>
-                    <div className="footer-col">
-                        <h4>Quick Links</h4>
-                        <ul>
-                            <li><Link href="/">Home</Link></li>
-                            <li><Link href="/about">About Us</Link></li>
-                            <li><Link href="/contact">Contact</Link></li>
-                        </ul>
+                </FadeIn>
+
+                {/* ── ROW 2: EMERGENCY HOTLINES (CLEAN NO BADGES) ── */}
+                <FadeIn delay={0.05}>
+                    <div>
+                        <div className="mb-4">
+                            <h2 className="text-lg sm:text-xl font-semibold text-gray-900 font-manrope">
+                                Emergency Hotlines
+                            </h2>
+                            <p className="text-xs text-gray-500 font-montserrat">
+                                24/7 priority emergency response lines
+                            </p>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                            {EMERGENCY_HOTLINES.map((item) => {
+                                const Icon = item.icon;
+                                return (
+                                    <a
+                                        key={item.label}
+                                        href={item.href}
+                                        className="bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition-all duration-200 flex flex-col justify-between group block"
+                                    >
+                                        <div className="w-9 h-9 rounded-lg bg-red-50 text-red-600 flex items-center justify-center mb-3 group-hover:bg-red-600 group-hover:text-white transition-colors">
+                                            <Icon className="w-4 h-4" />
+                                        </div>
+                                        <div>
+                                            <span className="text-xs text-gray-500 block font-montserrat">
+                                                {item.label}
+                                            </span>
+                                            <span className="text-xl font-bold text-gray-900 group-hover:text-red-600 font-manrope transition-colors block mt-0.5">
+                                                {item.number}
+                                            </span>
+                                            <span className="text-[11px] text-gray-400 block mt-1 font-montserrat">
+                                                {item.sub}
+                                            </span>
+                                        </div>
+                                    </a>
+                                );
+                            })}
+                        </div>
                     </div>
-                    <div className="footer-col">
-                        <h4>Services</h4>
-                        <ul>
-                            <li><a href="#">Blood Drive</a></li>
-                            <li><a href="#">Emergency Aid</a></li>
-                            <li><a href="#">Disaster Relief</a></li>
-                            <li><a href="#">Volunteer Training</a></li>
-                        </ul>
+                </FadeIn>
+
+                {/* ── ROW 3: MAP & DONATION QR CODE (SPLIT VIEW) ── */}
+                <FadeIn delay={0.1}>
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                        {/* Map Column */}
+                        <div className="lg:col-span-7 bg-white rounded-3xl p-6 sm:p-7 shadow-sm">
+                            <div className="flex items-center justify-between mb-4">
+                                <div>
+                                    <h2 className="text-lg sm:text-xl font-semibold text-gray-900 font-manrope">
+                                        Map
+                                    </h2>
+                                    <p className="text-xs text-gray-500 font-montserrat">
+                                        Centennial Lane, Filinvest Corporate City, Alabang
+                                    </p>
+                                </div>
+                                <a
+                                    href="https://maps.app.goo.gl/5617viaNwvSqUz5g7"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-xs font-semibold text-red-600 hover:text-red-700 font-montserrat inline-flex items-center gap-1"
+                                >
+                                    <span>Get Directions</span>
+                                    <ExternalLink className="w-3 h-3" />
+                                </a>
+                            </div>
+
+                            {/* Embedded Map */}
+                            <div className="w-full h-80 sm:h-96 rounded-2xl overflow-hidden bg-gray-100">
+                                <iframe
+                                    title="Philippine Red Cross Muntinlupa Location Map"
+                                    src="https://maps.google.com/maps?q=Red+Cross+Center+Centennial+Lane+Filinvest+Corporate+City+Alabang+Muntinlupa+1780&t=&z=15&ie=UTF8&iwloc=&output=embed"
+                                    width="100%"
+                                    height="100%"
+                                    style={{ border: 0 }}
+                                    allowFullScreen=""
+                                    loading="lazy"
+                                    referrerPolicy="no-referrer-when-downgrade"
+                                />
+                            </div>
+                        </div>
+
+                        {/* QR Code Donation Column */}
+                        <div className="lg:col-span-5 bg-white rounded-3xl p-6 sm:p-7 shadow-sm flex flex-col items-center text-center">
+                            <div className="w-full text-left mb-4">
+                                <h2 className="text-lg sm:text-xl font-semibold text-gray-900 font-manrope">
+                                    Donate via QR Code
+                                </h2>
+                                <p className="text-xs text-gray-500 font-montserrat">
+                                    For volunteers who wish to donate
+                                </p>
+                            </div>
+
+                            <div className="bg-gray-50 p-4 rounded-2xl shadow-none max-w-[240px] w-full mb-4">
+                                <img
+                                    src="/images/donation-qr.jpg"
+                                    alt="Philippine Red Cross Muntinlupa Donation QR Code"
+                                    className="w-full h-auto rounded-xl object-contain"
+                                    onError={(e) => {
+                                        e.target.src = 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=PhilippineRedCrossMuntinlupaDonation';
+                                    }}
+                                />
+                            </div>
+
+                            <div className="w-full text-center space-y-1 text-xs font-montserrat">
+                                <div className="font-semibold text-gray-800">
+                                    Scan with GCash • Maya • QR Ph
+                                </div>
+                                <div className="text-gray-500 text-[11px]">
+                                    Account Name: <span className="font-semibold text-gray-700">Philippine Red Cross</span>
+                                </div>
+                                <div className="text-gray-400 text-[11px] pt-2">
+                                    All contributions directly fund emergency relief and community blood services.
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div className="footer-col">
-                        <h4>Contact</h4>
-                        <ul>
-                            <li><a href="#">Muntinlupa City, NCR</a></li>
-                            <li><a href="#">Philippines</a></li>
-                            <li><a href="https://redcross.org.ph" target="_blank" rel="noreferrer">redcross.org.ph</a></li>
-                            <li><a href="tel:143">Hotline: 143</a></li>
-                        </ul>
+                </FadeIn>
+
+                {/* ── ROW 4: OFFICIAL LINKS ── */}
+                <FadeIn delay={0.15}>
+                    <div>
+                        <div className="mb-4">
+                            <h2 className="text-lg sm:text-xl font-semibold text-gray-900 font-manrope">
+                                Official Links
+                            </h2>
+                            <p className="text-xs text-gray-500 font-montserrat">
+                                Links to official Philippine Red Cross website and verified social media pages
+                            </p>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                            {OFFICIAL_LINKS.map((link) => {
+                                const Icon = link.icon;
+                                return (
+                                    <a
+                                        key={link.name}
+                                        href={link.url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="bg-white rounded-2xl p-5 shadow-sm hover:shadow-md transition-all duration-200 flex items-center justify-between group block"
+                                    >
+                                        <div className="flex items-center gap-3.5">
+                                            <div className="w-10 h-10 rounded-xl bg-gray-50 text-red-600 flex items-center justify-center group-hover:bg-red-600 group-hover:text-white transition-colors">
+                                                <Icon className="w-5 h-5" />
+                                            </div>
+                                            <div>
+                                                <span className="text-xs font-semibold text-gray-900 group-hover:text-red-600 font-manrope block transition-colors">
+                                                    {link.name}
+                                                </span>
+                                                <span className="text-[11px] text-gray-400 font-montserrat block">
+                                                    {link.handle}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <ExternalLink className="w-3.5 h-3.5 text-gray-300 group-hover:text-red-600 transition-colors" />
+                                    </a>
+                                );
+                            })}
+                        </div>
                     </div>
-                </div>
-                <div className="footer-bottom">
-                    <p style={{ fontSize: 16, fontWeight: 800, color: "rgba(255,255,255,1)", fontFamily: "'monserrat', monserrat" }}> 2026 Philippine Red Cross Muntinlupa City Branch. All rights reserved.</p>
-                    <div className="footer-socials">
-                        <button className="social">FB</button>
-                        <button className="social">TW</button>
-                        <button className="social">IG</button>
-                    </div>
-                </div>
-            </footer>
-        </>
+                </FadeIn>
+            </main>
+        </PublicLayout>
     );
 }
-

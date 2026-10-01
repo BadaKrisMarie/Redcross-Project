@@ -1,8 +1,9 @@
-﻿import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { MapPin } from 'lucide-react';
 
-const FALLBACK_CENTER = { lat: 14.3830, lng: 121.0480 };
+const FALLBACK_CENTER = { lat: 14.3830, lng: 121.0480 }; // Muntinlupa City
 
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -16,7 +17,7 @@ export default function ActivityLocationMap({
     longitude,
     radius = 100,
     locationName = 'Selected location',
-    height = 320,
+    height = 280,
 }) {
     const mapRef = useRef(null);
     const mapInstance = useRef(null);
@@ -27,6 +28,8 @@ export default function ActivityLocationMap({
     const hasCoords = !isNaN(lat) && !isNaN(lng);
 
     useEffect(() => {
+        if (!mapRef.current) return;
+
         mapInstance.current = L.map(mapRef.current, {
             zoomControl: true,
             attributionControl: false,
@@ -55,40 +58,46 @@ export default function ActivityLocationMap({
 
         L.circleMarker([lat, lng], {
             radius: 8,
-            color: '#CC0000',
-            fillColor: '#CC0000',
+            color: '#dc2626',
+            fillColor: '#dc2626',
             fillOpacity: 1,
-            weight: 1,
+            weight: 2,
         })
             .bindPopup(locationName || 'Activity location')
             .addTo(layerGroup.current);
 
         L.circle([lat, lng], {
             radius: parseFloat(radius) || 100,
-            color: '#CC0000',
-            weight: 1,
-            fillOpacity: 0.08,
+            color: '#dc2626',
+            weight: 1.5,
+            fillColor: '#dc2626',
+            fillOpacity: 0.12,
         }).addTo(layerGroup.current);
     }, [lat, lng, radius, locationName, hasCoords]);
 
     return (
-        <div>
-            <label style={{ display: 'block', fontWeight: 600, fontSize: 14, marginBottom: 8 }}>
-                Location Preview
-            </label>
+        <div className="space-y-2">
+            <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-gray-700 uppercase tracking-wider flex items-center gap-1.5">
+                    <MapPin className="w-3.5 h-3.5 text-red-600" />
+                    <span>Location & Geofence Radius Preview</span>
+                </label>
+                {hasCoords && (
+                    <span className="text-[11px] font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded-md">
+                        {radius}m Radius Active
+                    </span>
+                )}
+            </div>
+
             <div
                 ref={mapRef}
-                style={{
-                    width: '100%',
-                    height,
-                    borderRadius: 8,
-                    overflow: 'hidden',
-                    border: '1px solid #D1D5DB',
-                }}
+                style={{ height }}
+                className="w-full rounded-2xl overflow-hidden border border-gray-200 shadow-xs"
             />
+
             {!hasCoords && (
-                <p style={{ fontSize: 12, color: '#6B7280', marginTop: 6 }}>
-                    Search an address or use "Use My Location" to preview the geofence area here.
+                <p className="text-[11px] text-gray-500">
+                    Search an address or click "Detect GPS Location" above to preview the check-in geofence radius on the map.
                 </p>
             )}
         </div>

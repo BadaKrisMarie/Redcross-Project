@@ -1,133 +1,183 @@
-import React from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Head, router, useForm } from '@inertiajs/react';
-import { useState, useMemo, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import VolunteerLayout from '@/Layouts/VolunteerLayout';
 import { detectDocumentType } from '@/utils/detectDocumentType';
+import {
+    Folder,
+    FileText,
+    Upload,
+    Search,
+    X,
+    Trash2,
+    Award,
+    Briefcase,
+    Clock,
+    CheckCircle2,
+    AlertCircle,
+    Calendar,
+    MapPin,
+    Timer,
+    GraduationCap,
+    ClipboardList,
+    BarChart3,
+    Check,
+    Minus,
+    Download,
+    Eye,
+    ChevronRight,
+    MoreVertical,
+    FolderOpen,
+} from 'lucide-react';
 
-// 🎨 ACCENT is the sidebar's indigo/violet — used for all primary UI actions
-// (upload button, active states, links). RED is kept ONLY for destructive
-// actions (delete) and error states, so the meaning of red stays consistent.
-const ACCENT = '#4F46E5';
-const ACCENT_TINT = '#EEEDFE';
-const ACCENT_TINT_STRONG = '#C7C3F7';
-const RED = '#DC2626';
-const RADIUS = '12px';
-const BORDER = '1px solid #E9EAEC';
+/* ═══════════════════════════════════════════════════════════════
+   201 FILE — Volunteer Record Management (Google Drive Style)
+   Patterned directly after the application's folder card design.
+   ═══════════════════════════════════════════════════════════════ */
 
-const UploadCloudIcon = ({ size = 22, color = '#9CA3AF' }) => (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M7 18a4.5 4.5 0 0 1-.5-8.98A6 6 0 0 1 18 8.5a4 4 0 0 1-1.5 7.5" />
-        <path d="M12 12v9" />
-        <path d="m8.5 15.5 3.5-3.5 3.5 3.5" />
-    </svg>
-);
+// ── Helpers ──
+const fmtDate = (d, opts) => {
+    if (!d) return '—';
+    const date = new Date(d);
+    if (isNaN(date.getTime())) return '—';
+    return date.toLocaleDateString('en-PH', opts || { month: 'short', day: 'numeric', year: 'numeric' });
+};
 
-const DotsIcon = ({ size = 16 }) => (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
-        <circle cx="12" cy="5" r="1.8" />
-        <circle cx="12" cy="12" r="1.8" />
-        <circle cx="12" cy="19" r="1.8" />
-    </svg>
-);
+const fmtTime = (d) => {
+    if (!d) return '—';
+    const date = new Date(d);
+    if (isNaN(date.getTime())) return '—';
+    return date.toLocaleTimeString('en-PH', { hour: 'numeric', minute: '2-digit', hour12: true });
+};
 
-const SearchIcon = ({ size = 15, color = '#80868B' }) => (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="11" cy="11" r="8" />
-        <line x1="21" y1="21" x2="16.65" y2="16.65" />
-    </svg>
-);
+const fmtHours = (h) => {
+    if (h == null) return '—';
+    const num = parseFloat(h);
+    if (isNaN(num)) return '—';
+    return `${num.toFixed(1)}h`;
+};
 
-const FolderIcon = ({ size = 16, color }) => (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M3 7a2 2 0 0 1 2-2h4l2 2.5H19a2 2 0 0 1 2 2V17a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z" />
-    </svg>
-);
+const fmtFileSize = (bytes) => {
+    if (!bytes) return '';
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+};
 
-const FileIcon = ({ size = 14, color }) => (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill={color}>
-        <path d="M6 2h9l5 5v15a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z" />
-    </svg>
-);
+// Arrival / Departure status calculators
+function buildScheduleDateTime(dateStr, timeStr) {
+    if (!dateStr || !timeStr) return null;
+    const datePart = String(dateStr).split('T')[0];
+    const timePart = timeStr.length === 5 ? `${timeStr}:00` : timeStr;
+    const dt = new Date(`${datePart}T${timePart}`);
+    return isNaN(dt.getTime()) ? null : dt;
+}
 
-// Small spinner used while OCR/detection is running
-const SpinnerIcon = ({ size = 14, color = '#9CA3AF' }) => (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.4" strokeLinecap="round" style={{ animation: 'spin 0.8s linear infinite' }}>
-        <path d="M12 3a9 9 0 1 0 9 9" />
-    </svg>
-);
+function minutesOfDay(date) {
+    return date.getHours() * 60 + date.getMinutes();
+}
 
-const CheckIcon = ({ size = 14, color = '#3E9C6E' }) => (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M20 6 9 17l-5-5" />
-    </svg>
-);
+function getArrivalStatus(record) {
+    if (!record.time_in) return '—';
+    const scheduleDate = record.activity?.date || record.date;
+    const startTime = record.activity?.start_time;
+    if (!startTime) return 'Present';
 
-// ── Bulk-select checkbox icons (Gmail-style select all / select one) ──
-const CheckboxEmptyIcon = ({ size = 16 }) => (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="#B0B4BA" strokeWidth="1.8">
-        <rect x="3" y="3" width="18" height="18" rx="4" />
-    </svg>
-);
+    const start = buildScheduleDateTime(scheduleDate, startTime);
+    if (!start) return 'Present';
 
-const CheckboxCheckedIcon = ({ size = 16, color = ACCENT }) => (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-        <rect x="3" y="3" width="18" height="18" rx="4" fill={color} />
-        <path d="M7 12.5 10.5 16 17 8.5" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-    </svg>
-);
+    const timeIn = new Date(record.time_in);
+    const diff = minutesOfDay(timeIn) - minutesOfDay(start);
 
-const CheckboxIndeterminateIcon = ({ size = 16, color = ACCENT }) => (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-        <rect x="3" y="3" width="18" height="18" rx="4" fill={color} />
-        <line x1="7" y1="12" x2="17" y2="12" stroke="white" strokeWidth="2.4" strokeLinecap="round" />
-    </svg>
-);
+    if (diff < 0) return 'Early In';
+    if (diff === 0) return 'On Time';
+    return 'Late';
+}
 
-const TrashIcon = ({ size = 14, color = 'white' }) => (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M3 6h18" /><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-        <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-        <line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" />
-    </svg>
-);
+function getDepartureStatus(record) {
+    if (!record.time_out) return '—';
+    const scheduleDate = record.activity?.date || record.date;
+    const endTime = record.activity?.end_time;
+    if (!endTime) return 'Departed';
 
-function VolunteerDocuments({ documents, categories: initialCategories = [] }) {
-    const [showUpload, setShowUpload] = useState(false);
-    const [filterType, setFilterType] = useState('all');
-    const [deleteModal, setDeleteModal] = useState({ open: false, id: null });
-    const [dragActive, setDragActive] = useState(false);
+    const end = buildScheduleDateTime(scheduleDate, endTime);
+    if (!end) return 'Departed';
+
+    const timeOut = new Date(record.time_out);
+    const diff = minutesOfDay(timeOut) - minutesOfDay(end);
+
+    if (diff < 0) return 'Early Out';
+    return 'On Time';
+}
+
+const statusBadgeClasses = (status) => {
+    const key = String(status || '').toLowerCase().trim();
+    if (['completed', 'approved', 'active', 'on time', 'early in', 'present', 'departed'].includes(key)) {
+        return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+    }
+    if (['pending', 'upcoming', 'early out', 'under review'].includes(key)) {
+        return 'bg-amber-50 text-amber-700 border-amber-200';
+    }
+    if (['rejected', 'late', 'cancelled'].includes(key)) {
+        return 'bg-rose-50 text-rose-700 border-rose-200';
+    }
+    return 'bg-gray-100 text-gray-600 border-gray-200';
+};
+
+const statusIcon = (status) => {
+    const key = String(status || '').toLowerCase().trim();
+    if (['completed', 'approved', 'active', 'on time', 'early in'].includes(key)) {
+        return <CheckCircle2 className="w-3 h-3 shrink-0" />;
+    }
+    if (['pending', 'upcoming', 'under review', 'early out'].includes(key)) {
+        return <Clock className="w-3 h-3 shrink-0" />;
+    }
+    if (['rejected', 'late', 'cancelled'].includes(key)) {
+        return <AlertCircle className="w-3 h-3 shrink-0" />;
+    }
+    return null;
+};
+
+const capitalize = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : '');
+
+/* ═══════════════════════════════════════════════════════════════
+   MAIN COMPONENT
+   ═══════════════════════════════════════════════════════════════ */
+export default function VolunteerDocuments({
+    documents = [],
+    categories: initialCategories = [],
+    activities = [],
+    attendances = [],
+    attendanceSummary = {},
+}) {
+    // Current active main folder: 'training' | 'activities' | 'attendance' | 'documents'
+    const [activeFolder, setActiveFolder] = useState('training');
     const [search, setSearch] = useState('');
-    const [searchFocused, setSearchFocused] = useState(false);
-    const [sortBy, setSortBy] = useState('modified'); // modified | name | type
-    const [sortMenuOpen, setSortMenuOpen] = useState(false);
-    const [menuOpenId, setMenuOpenId] = useState(null);
-    const sortMenuRef = useRef(null);
-    const rowMenuRef = useRef(null);
-
-    // ── Bulk-select state (Gmail-style) ──
+    const [showUpload, setShowUpload] = useState(false);
+    const [uploadPreselectedType, setUploadPreselectedType] = useState('training');
+    const [deleteModal, setDeleteModal] = useState({ open: false, id: null });
     const [selectedIds, setSelectedIds] = useState([]);
     const [bulkDeleteModal, setBulkDeleteModal] = useState(false);
-
-    // ✅ document type "folders" come from the backend (document_categories
-    // table) instead of a hardcoded list of 4. Any custom folder an admin
-    // creates shows up here automatically, next time this page loads.
-    const [categories, setCategories] = useState(initialCategories);
-    useEffect(() => { setCategories(initialCategories); }, [initialCategories]);
-
+    const [filterCategory, setFilterCategory] = useState('all');
+    const [dragActive, setDragActive] = useState(false);
     const [fileError, setFileError] = useState('');
-    const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
-    const ALLOWED_TYPES = {
-        'application/pdf': { label: 'PDF', color: '#DC2626' },
-        'image/jpeg':      { label: 'JPG', color: '#2563EB' },
-        'image/jpg':       { label: 'JPG', color: '#2563EB' },
-        'image/png':       { label: 'PNG', color: '#7C3AED' },
-    };
-
-    // ── Auto-detect state ──
     const [detecting, setDetecting] = useState(false);
-    const [detectionResult, setDetectionResult] = useState(null); // { type, confidence, source }
+    const [detectionResult, setDetectionResult] = useState(null);
     const [manualOverride, setManualOverride] = useState(false);
-    const detectionRunId = useRef(0); // guards against stale async results
+    const [previewDoc, setPreviewDoc] = useState(null);
+    const [activityDetail, setActivityDetail] = useState(null);
+    const [rowMenuOpenId, setRowMenuOpenId] = useState(null);
+
+    const detectionRunId = useRef(0);
+    const menuRef = useRef(null);
+
+    const [categories, setCategories] = useState(initialCategories);
+    useEffect(() => {
+        setCategories(initialCategories);
+    }, [initialCategories]);
+
+    const MAX_FILE_SIZE = 5 * 1024 * 1024;
+    const ALLOWED_TYPES = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
 
     const { data, setData, post, processing, reset, errors } = useForm({
         type: initialCategories[0]?.key || 'nbi',
@@ -137,21 +187,91 @@ function VolunteerDocuments({ documents, categories: initialCategories = [] }) {
 
     const docs = documents || [];
 
-    // ✅ docTypes is built dynamically from `categories` (key -> { label, color })
-    // instead of a hardcoded object. Everything below that used to reference
-    // the old hardcoded `docTypes` object keeps working unchanged.
     const docTypes = useMemo(() => {
         const map = {};
         categories.forEach((c) => {
-            map[c.key] = { label: c.label, color: c.color || ACCENT };
+            map[c.key] = { label: c.label, color: c.color || '#DC2626' };
         });
         return map;
     }, [categories]);
 
-    const formatFileSize = (bytes) => {
-        if (bytes < 1024) return `${bytes} B`;
-        if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-        return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+    // Close row menu on click outside
+    useEffect(() => {
+        const fn = (e) => {
+            if (menuRef.current && !menuRef.current.contains(e.target)) {
+                setRowMenuOpenId(null);
+            }
+        };
+        document.addEventListener('mousedown', fn);
+        return () => document.removeEventListener('mousedown', fn);
+    }, []);
+
+    useEffect(() => {
+        setSelectedIds([]);
+    }, [filterCategory, search, activeFolder]);
+
+    // ── Training Records ──
+    const trainingRecords = useMemo(() => {
+        const list = docs.filter((d) => {
+            const t = (d.type || '').toLowerCase();
+            const n = (d.original_name || '').toLowerCase();
+            return t === 'training' || t.includes('cert') || n.includes('training') || n.includes('cert');
+        });
+
+        if (!search.trim()) return list;
+        const q = search.trim().toLowerCase();
+        return list.filter(
+            (d) =>
+                (d.original_name || '').toLowerCase().includes(q) ||
+                (docTypes[d.type]?.label || '').toLowerCase().includes(q)
+        );
+    }, [docs, search, docTypes]);
+
+    // ── Filtered Activities ──
+    const filteredActivities = useMemo(() => {
+        if (!search.trim()) return activities;
+        const q = search.trim().toLowerCase();
+        return activities.filter(
+            (a) =>
+                (a.name || '').toLowerCase().includes(q) ||
+                (a.location_name || '').toLowerCase().includes(q) ||
+                (a.description || '').toLowerCase().includes(q)
+        );
+    }, [activities, search]);
+
+    // ── Filtered Attendances ──
+    const filteredAttendances = useMemo(() => {
+        if (!search.trim()) return attendances;
+        const q = search.trim().toLowerCase();
+        return attendances.filter(
+            (a) =>
+                (a.activity?.name || '').toLowerCase().includes(q) ||
+                fmtDate(a.date).toLowerCase().includes(q)
+        );
+    }, [attendances, search]);
+
+    // ── Filtered 201 Documents ──
+    const filteredDocs = useMemo(() => {
+        let list = docs;
+        if (filterCategory !== 'all') {
+            list = list.filter((d) => d.type === filterCategory);
+        }
+        if (search.trim()) {
+            const q = search.trim().toLowerCase();
+            list = list.filter(
+                (d) =>
+                    (d.original_name || '').toLowerCase().includes(q) ||
+                    (docTypes[d.type]?.label || '').toLowerCase().includes(q)
+            );
+        }
+        return [...list].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    }, [docs, search, filterCategory, docTypes]);
+
+    // ── Upload Handlers ──
+    const openUploadModal = (preselected = 'training') => {
+        setUploadPreselectedType(preselected);
+        setData('type', preselected || categories[0]?.key || 'training');
+        setShowUpload(true);
     };
 
     const validateAndSetFile = async (file) => {
@@ -161,62 +281,36 @@ function VolunteerDocuments({ documents, categories: initialCategories = [] }) {
             setDetectionResult(null);
             return;
         }
-        const isAllowedType = Object.keys(ALLOWED_TYPES).includes(file.type);
-        const isTooBig = file.size > MAX_FILE_SIZE;
-
-        if (!isAllowedType) {
-            setFileError('Invalid file type. Only PDF, JPG, or PNG files are allowed.');
+        if (!ALLOWED_TYPES.includes(file.type)) {
+            setFileError('Only PDF, JPG, or PNG files are allowed.');
             setData('file', null);
-            setDetectionResult(null);
             return;
         }
-        if (isTooBig) {
-            setFileError(`File is too large (${formatFileSize(file.size)}). Max size is 5MB.`);
+        if (file.size > MAX_FILE_SIZE) {
+            setFileError(`File too large (${fmtFileSize(file.size)}). Maximum size is 5MB.`);
             setData('file', null);
-            setDetectionResult(null);
             return;
         }
-
         setFileError('');
         setData('file', file);
         setManualOverride(false);
         setDetectionResult(null);
 
-        // 🔍 Auto-detect document type (OCR first, filename fallback).
-        // Note: this only recognizes the original 4 document types — custom
-        // folders an admin creates won't be auto-detected and will need to
-        // be picked manually from the dropdown, which is expected.
         const runId = ++detectionRunId.current;
         setDetecting(true);
         const result = await detectDocumentType(file);
-
-        // Ignore result if a newer file was selected while this was running
         if (runId !== detectionRunId.current) return;
-
         setDetecting(false);
         setDetectionResult(result);
 
         if (result.type) {
-            setData(data => ({ ...data, type: result.type, detection_source: result.source }));
+            setData((d) => ({ ...d, type: result.type, detection_source: result.source }));
         } else {
-            setData(data => ({ ...data, detection_source: 'manual' }));
+            setData((d) => ({ ...d, detection_source: 'manual' }));
         }
     };
 
-    const handleFileChange = (e) => validateAndSetFile(e.target.files[0]);
-
-    const handleDrop = (e) => {
-        e.preventDefault();
-        setDragActive(false);
-        const file = e.dataTransfer.files?.[0];
-        if (file) validateAndSetFile(file);
-    };
-
-    const handleManualTypeChange = (value) => {
-        setData(data => ({ ...data, type: value, detection_source: 'manual' }));
-    };
-
-    const handleUpload = (e) => {
+    const handleUploadSubmit = (e) => {
         e.preventDefault();
         if (!data.file || fileError) return;
         post(route('volunteer.documents.store'), {
@@ -231,67 +325,17 @@ function VolunteerDocuments({ documents, categories: initialCategories = [] }) {
         });
     };
 
-    const handleDelete = (id) => { setDeleteModal({ open: true, id }); setMenuOpenId(null); };
+    // ── Deletion Handlers ──
+    const handleDelete = (id) => {
+        setDeleteModal({ open: true, id });
+        setRowMenuOpenId(null);
+    };
+
     const confirmDelete = () => {
-        router.delete(route('volunteer.documents.destroy', deleteModal.id));
-        setDeleteModal({ open: false, id: null });
-    };
-    const cancelDelete = () => setDeleteModal({ open: false, id: null });
-
-    // Close dropdown menus on outside click
-    useEffect(() => {
-        const onClick = (e) => {
-            if (sortMenuRef.current && !sortMenuRef.current.contains(e.target)) setSortMenuOpen(false);
-            if (rowMenuRef.current && !rowMenuRef.current.contains(e.target)) setMenuOpenId(null);
-        };
-        document.addEventListener('mousedown', onClick);
-        return () => document.removeEventListener('mousedown', onClick);
-    }, []);
-
-    // ✅ counts built dynamically from `categories` instead of a hardcoded
-    // nbi/medical/training/barangay lookup.
-    const counts = useMemo(() => {
-        const c = { all: docs.length };
-        categories.forEach((cat) => {
-            c[cat.key] = docs.filter((d) => d.type === cat.key).length;
+        router.delete(route('volunteer.documents.destroy', deleteModal.id), {
+            onSuccess: () => setDeleteModal({ open: false, id: null }),
         });
-        return c;
-    }, [docs, categories]);
-
-    const filtered = useMemo(() => {
-        let list = docs;
-        if (filterType !== 'all') {
-            list = list.filter(d => d.type === filterType);
-        }
-        if (search.trim()) {
-            const q = search.trim().toLowerCase();
-            list = list.filter(d =>
-                (d.original_name || '').toLowerCase().includes(q) ||
-                (docTypes[d.type]?.label || '').toLowerCase().includes(q)
-            );
-        }
-        const sorted = [...list];
-        if (sortBy === 'name') sorted.sort((a, b) => (a.original_name || '').localeCompare(b.original_name || ''));
-        else if (sortBy === 'type') sorted.sort((a, b) => (docTypes[a.type]?.label || '').localeCompare(docTypes[b.type]?.label || ''));
-        else sorted.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-        return sorted;
-    }, [docs, search, sortBy, filterType, docTypes]);
-
-    // ── Bulk-select derived state + handlers (Gmail-style) ──
-    const allSelected = filtered.length > 0 && selectedIds.length === filtered.length;
-    const someSelected = selectedIds.length > 0 && !allSelected;
-
-    const toggleSelectAll = () => {
-        setSelectedIds(allSelected ? [] : filtered.map(d => d.id));
     };
-
-    const toggleSelectOne = (id) => {
-        setSelectedIds(prev =>
-            prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
-        );
-    };
-
-    const clearSelection = () => setSelectedIds([]);
 
     const confirmBulkDelete = () => {
         router.delete(route('volunteer.documents.bulkDestroy'), {
@@ -303,595 +347,1277 @@ function VolunteerDocuments({ documents, categories: initialCategories = [] }) {
         });
     };
 
-    // Reset selection whenever the visible list changes (filter/search),
-    // so we never keep "selected" ids that are no longer visible.
-    useEffect(() => { setSelectedIds([]); }, [filterType, search]);
+    // ── Multi-selection ──
+    const allSelected = filteredDocs.length > 0 && selectedIds.length === filteredDocs.length;
+    const someSelected = selectedIds.length > 0 && !allSelected;
+    const toggleSelectAll = () => setSelectedIds(allSelected ? [] : filteredDocs.map((d) => d.id));
+    const toggleSelectOne = (id) =>
+        setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
 
-    const filePreview = data.file ? ALLOWED_TYPES[data.file.type] : null;
     const showAutoBadge = detectionResult?.type && !manualOverride;
 
-    const sortLabels = { modified: 'Last modified', name: 'Name', type: 'Type' };
+    const handleDownload = (doc) => {
+        if (doc.download_url) {
+            window.location.href = doc.download_url;
+        } else {
+            window.location.href = route('volunteer.documents.download', doc.id);
+        }
+    };
+
+    // Google Drive 4 main 201 File folders configuration
+    const mainFolders = [
+        {
+            key: 'training',
+            label: 'Training & Certifications',
+            countLabel: `${trainingRecords.length} ${trainingRecords.length === 1 ? 'file' : 'files'}`,
+        },
+        {
+            key: 'activities',
+            label: 'Assignment History',
+            countLabel: `${activities.length} ${activities.length === 1 ? 'activity' : 'activities'}`,
+        },
+        {
+            key: 'attendance',
+            label: 'Attendance & Hours',
+            countLabel: `${attendanceSummary.totalDays || attendances.length} records • ${attendanceSummary.totalHours || 0}h`,
+        },
+        {
+            key: 'documents',
+            label: '201 Documents',
+            countLabel: `${docs.length} ${docs.length === 1 ? 'file' : 'files'}`,
+        },
+    ];
+
+    const currentFolderInfo = mainFolders.find((f) => f.key === activeFolder) || mainFolders[0];
 
     return (
-        <div style={{ fontFamily: "'Montserrat', sans-serif", fontWeight: 400 }}>
-            <Head title="201 - Documents" />
-            <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+        <div className="font-sans text-gray-900">
+            <Head title="201 File — Volunteer Portal" />
 
-            {/* ── SINGLE DELETE MODAL ── */}
-            {deleteModal.open && (
-                <div style={{
-                    position: 'fixed', inset: 0, zIndex: 1000,
-                    background: 'rgba(17,17,17,0.5)', backdropFilter: 'blur(2px)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    animation: 'fadeIn 0.15s ease-out',
-                }}>
-                    <div style={{
-                        background: 'white', borderRadius: '16px',
-                        padding: '32px 28px', width: '380px', maxWidth: '90vw',
-                        boxShadow: '0 24px 60px rgba(0,0,0,0.22)',
-                        animation: 'popIn 0.18s ease-out',
-                    }}>
-                        <h2 style={{ fontSize: '16px', fontWeight: '700', color: '#111', textAlign: 'center', margin: '0 0 8px' }}>
-                            Delete Document
-                        </h2>
-                        <p style={{ fontSize: '13px', color: '#6B7280', textAlign: 'center', margin: '0 0 26px', lineHeight: '1.6' }}>
-                            Are you sure you want to delete this document? This action cannot be undone.
-                        </p>
-                        <div style={{ display: 'flex', gap: '10px' }}>
-                            <button
-                                onClick={cancelDelete}
-                                style={{
-                                    flex: 1, padding: '10px', borderRadius: '8px',
-                                    border: '1px solid #E5E7EB', background: 'white',
-                                    color: '#374151', fontSize: '13px', fontWeight: '600',
-                                    cursor: 'pointer',
-                                }}
-                            >Cancel</button>
-                            <button
-                                onClick={confirmDelete}
-                                style={{
-                                    flex: 1, padding: '10px', borderRadius: '8px',
-                                    border: 'none', background: RED,
-                                    color: 'white', fontSize: '13px', fontWeight: '600',
-                                    cursor: 'pointer', boxShadow: '0 4px 12px rgba(220,38,38,0.25)',
-                                }}
-                            >Yes, delete</button>
-                        </div>
+            <div className="max-w-7xl mx-auto space-y-6 pb-16 px-2 sm:px-4">
+
+                {/* ── TOP HEADER ── */}
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-2">
+                    <div>
+                        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 tracking-tight mt-1">
+                            201 File
+                        </h1>
                     </div>
-                </div>
-            )}
 
-            {/* ── BULK DELETE MODAL ── */}
-            {bulkDeleteModal && (
-                <div style={{
-                    position: 'fixed', inset: 0, zIndex: 1000,
-                    background: 'rgba(17,17,17,0.5)', backdropFilter: 'blur(2px)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    animation: 'fadeIn 0.15s ease-out',
-                }}>
-                    <div style={{
-                        background: 'white', borderRadius: '16px',
-                        padding: '32px 28px', width: '380px', maxWidth: '90vw',
-                        boxShadow: '0 24px 60px rgba(0,0,0,0.22)',
-                        animation: 'popIn 0.18s ease-out',
-                    }}>
-                        <h2 style={{ fontSize: '16px', fontWeight: '700', color: '#111', textAlign: 'center', margin: '0 0 8px' }}>
-                            Delete {selectedIds.length} Document{selectedIds.length > 1 ? 's' : ''}
-                        </h2>
-                        <p style={{ fontSize: '13px', color: '#6B7280', textAlign: 'center', margin: '0 0 26px', lineHeight: '1.6' }}>
-                            Are you sure you want to delete {selectedIds.length} document{selectedIds.length > 1 ? 's' : ''}? This action cannot be undone.
-                        </p>
-                        <div style={{ display: 'flex', gap: '10px' }}>
-                            <button
-                                onClick={() => setBulkDeleteModal(false)}
-                                style={{
-                                    flex: 1, padding: '10px', borderRadius: '8px',
-                                    border: '1px solid #E5E7EB', background: 'white',
-                                    color: '#374151', fontSize: '13px', fontWeight: '600',
-                                    cursor: 'pointer',
-                                }}
-                            >Cancel</button>
-                            <button
-                                onClick={confirmBulkDelete}
-                                style={{
-                                    flex: 1, padding: '10px', borderRadius: '8px',
-                                    border: 'none', background: RED,
-                                    color: 'white', fontSize: '13px', fontWeight: '600',
-                                    cursor: 'pointer', boxShadow: '0 4px 12px rgba(220,38,38,0.25)',
-                                }}
-                            >Yes, delete</button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* ── Local toolbar: search + upload trigger ── */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '28px' }}>
-                <div style={{
-                    flex: 1, maxWidth: '420px', display: 'flex', alignItems: 'center', gap: '10px',
-                    background: searchFocused ? 'white' : '#F1F3F4',
-                    borderRadius: '10px', padding: '0 14px', height: '42px',
-                    border: searchFocused ? `1.5px solid ${ACCENT}` : '1.5px solid transparent',
-                    boxShadow: searchFocused ? `0 0 0 3px ${ACCENT_TINT}` : 'none',
-                    transition: 'all 0.15s',
-                }}>
-                    <SearchIcon color={searchFocused ? ACCENT : '#80868B'} />
-                    <input
-                        value={search}
-                        onChange={e => setSearch(e.target.value)}
-                        onFocus={() => setSearchFocused(true)}
-                        onBlur={() => setSearchFocused(false)}
-                        placeholder="Search your documents"
-                        style={{ border: 'none', background: 'transparent', outline: 'none', fontSize: '13.5px', color: '#111', width: '100%', fontFamily: "'Montserrat', sans-serif" }}
-                    />
-                </div>
-                <div style={{ flex: 1 }} />
-                <button onClick={() => setShowUpload(!showUpload)} style={{
-                    display: 'flex', alignItems: 'center', gap: '7px',
-                    background: ACCENT, color: 'white', border: 'none',
-                    borderRadius: '8px', padding: '0 20px', height: '42px',
-                    fontSize: '13px', fontWeight: '600', cursor: 'pointer',
-                    boxShadow: '0 2px 8px rgba(79,70,229,0.25)',
-                    transition: 'transform 0.1s, box-shadow 0.15s', flexShrink: 0,
-                }}
-                    onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 4px 14px rgba(79,70,229,0.32)'; }}
-                    onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(79,70,229,0.25)'; }}
-                >
-                    Upload Document
-                </button>
-            </div>
-
-            {/* ── UPLOAD PANEL ── */}
-            {showUpload && (
-                <div style={{ background: 'white', borderRadius: RADIUS, border: BORDER, padding: '28px', marginBottom: '28px', boxShadow: '0 1px 3px rgba(16,24,40,0.04)' }}>
-                    <div style={{ marginBottom: '22px' }}>
-                        <span style={{ fontSize: '15px', fontWeight: '700', color: '#111' }}>Upload New Document</span>
-                    </div>
-                    <form onSubmit={handleUpload}>
-                        {/* File dropzone comes FIRST now — type is detected from it */}
-                        <label
-                            htmlFor="doc-file-input"
-                            onDragOver={e => { e.preventDefault(); setDragActive(true); }}
-                            onDragLeave={() => setDragActive(false)}
-                            onDrop={handleDrop}
-                            style={{
-                                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                                gap: '10px', padding: '36px 20px', borderRadius: '10px',
-                                border: `1.5px dashed ${dragActive ? ACCENT : '#D1D5DB'}`,
-                                background: dragActive ? ACCENT_TINT : '#FAFAFB',
-                                cursor: 'pointer', transition: 'all 0.15s', marginBottom: '6px',
-                            }}
+                    <div className="flex items-center gap-2">
+                        <button
+                            type="button"
+                            onClick={() => openUploadModal(activeFolder === 'training' ? 'training' : categories[0]?.key)}
+                            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 active:bg-red-800 text-white text-xs font-bold transition shadow-sm cursor-pointer"
                         >
-                            <input
-                                id="doc-file-input"
-                                type="file"
-                                accept=".pdf,.jpg,.jpeg,.png"
-                                onChange={handleFileChange}
-                                style={{ display: 'none' }}
-                            />
-                            <UploadCloudIcon color={dragActive ? ACCENT : '#9CA3AF'} />
-                            <div style={{ fontSize: '13px', fontWeight: '600', color: '#374151' }}>
-                                Click to browse or drag a file here
-                            </div>
-                            <div style={{ fontSize: '11.5px', color: '#9CA3AF' }}>
-                                PDF, JPG, or PNG — max 5MB. We'll detect the document type automatically.
-                            </div>
-                        </label>
-                        {errors.file && <div style={{ fontSize: '11.5px', color: RED, marginTop: '6px', fontWeight: '500' }}>{errors.file}</div>}
+                            <Upload className="w-3.5 h-3.5" />
+                            <span>{activeFolder === 'training' ? 'Upload Certificate' : 'Upload Document'}</span>
+                        </button>
+                    </div>
+                </div>
 
-                        {fileError && (
-                            <div style={{
-                                display: 'flex', alignItems: 'center', gap: '10px',
-                                background: '#FCE8E6', border: '1px solid #F6C1BC',
-                                borderRadius: '10px', padding: '11px 15px', marginTop: '14px',
-                            }}>
-                                <span style={{ fontSize: '12.5px', color: '#8A1E1A', fontWeight: '500' }}>{fileError}</span>
-                            </div>
-                        )}
-
-                        {!fileError && data.file && filePreview && (
-                            <div style={{
-                                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                                background: '#F9FAFB', border: '1px solid #E5E7EB',
-                                borderRadius: '10px', padding: '12px 15px', marginTop: '14px',
-                            }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '11px', minWidth: 0 }}>
-                                    <div style={{
-                                        width: 30, height: 30, borderRadius: '7px', flexShrink: 0,
-                                        background: `${filePreview.color}14`,
-                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    }}>
-                                        <FileIcon color={filePreview.color} />
+                {/* ══════════════════════════════════════════════
+                    GOOGLE DRIVE "DOCUMENT FOLDERS" GRID
+                    (Patterned directly after AdminDocumentsIndex)
+                ══════════════════════════════════════════════ */}
+                <div className="space-y-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+                        {mainFolders.map((folder) => {
+                            const isSelected = activeFolder === folder.key;
+                            return (
+                                <div
+                                    key={folder.key}
+                                    onClick={() => {
+                                        setActiveFolder(folder.key);
+                                        setSearch('');
+                                        setFilterCategory('all');
+                                    }}
+                                    className={`p-4 rounded-2xl transition cursor-pointer flex flex-col justify-between gap-3 relative group ${
+                                        isSelected
+                                            ? 'bg-red-50/70 ring-2 ring-red-500/20'
+                                            : 'bg-white hover:bg-gray-50/80 shadow-xs'
+                                    }`}
+                                >
+                                    <div className="flex items-start justify-between gap-2">
+                                        <div
+                                            className={`p-2.5 rounded-xl shrink-0 transition ${
+                                                isSelected ? 'bg-red-600 text-white shadow-xs' : 'bg-red-50 text-red-600'
+                                            }`}
+                                        >
+                                            <Folder className="w-5 h-5" />
+                                        </div>
+                                        {isSelected && (
+                                            <span className="px-2 py-0.5 rounded-full bg-red-100 text-red-700 font-bold text-[10px] tracking-wide uppercase">
+                                                Active
+                                            </span>
+                                        )}
                                     </div>
-                                    <div style={{ minWidth: 0 }}>
-                                        <div style={{
-                                            fontSize: '12.5px', fontWeight: '600', color: '#111',
-                                            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '280px',
-                                        }}>
-                                            {data.file.name}
-                                        </div>
-                                        <div style={{ fontSize: '11px', color: '#6B7280', marginTop: '2px' }}>
-                                            {formatFileSize(data.file.size)}
-                                        </div>
+
+                                    <div>
+                                        <h4 className="text-xs font-bold text-gray-900 truncate">
+                                            {folder.label}
+                                        </h4>
+                                        <p className="text-[11px] text-gray-500 mt-0.5 font-medium">
+                                            {folder.countLabel}
+                                        </p>
                                     </div>
                                 </div>
-                                <span style={{
-                                    background: `${filePreview.color}14`, color: filePreview.color,
-                                    padding: '3px 10px', borderRadius: '20px', fontSize: '10.5px', fontWeight: '700',
-                                    flexShrink: 0,
-                                }}>
-                                    {filePreview.label}
-                                </span>
+                            );
+                        })}
+                    </div>
+                </div>
+
+                {/* ══════════════════════════════════════════════
+                    SUB-FOLDERS: CATEGORY TILES (When in 201 Documents)
+                    Allows volunteer to click into NBI, Medical, Barangay, etc.
+                ══════════════════════════════════════════════ */}
+                {activeFolder === 'documents' && (
+                    <div className="space-y-2.5 pt-1">
+                        <div className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+                            Document Categories
+                        </div>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                            {/* All Files Category Folder */}
+                            <div
+                                onClick={() => setFilterCategory('all')}
+                                className={`p-3 rounded-xl transition cursor-pointer flex items-center gap-3 ${
+                                    filterCategory === 'all'
+                                        ? 'bg-red-50 ring-2 ring-red-500/20'
+                                        : 'bg-white hover:bg-gray-50/80 shadow-2xs'
+                                }`}
+                            >
+                                <div className={`p-2 rounded-lg shrink-0 ${
+                                    filterCategory === 'all' ? 'bg-red-600 text-white' : 'bg-gray-100 text-gray-600'
+                                }`}>
+                                    <Folder className="w-4 h-4" />
+                                </div>
+                                <div className="min-w-0">
+                                    <div className="text-xs font-bold text-gray-900 truncate">All Files</div>
+                                    <div className="text-[10px] text-gray-400">{docs.length} files</div>
+                                </div>
                             </div>
-                        )}
 
-                        {/* ── Document type — auto-detected, or manual dropdown built
-                             dynamically from the categories prop (includes any custom
-                             folders an admin has created) ── */}
-                        {data.file && !fileError && (
-                            <div style={{ marginTop: '18px' }}>
-                                <label style={{ fontSize: '12px', fontWeight: '600', color: '#374151', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '7px' }}>
-                                    Document Type
-                                    {showAutoBadge && (
-                                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', color: '#3E9C6E', fontWeight: '600', fontSize: '11px' }}>
-                                            <CheckIcon size={12} /> Auto-detected
-                                        </span>
-                                    )}
-                                </label>
-
-                                {detecting && (
-                                    <div style={{
-                                        display: 'flex', alignItems: 'center', gap: '9px',
-                                        background: '#F9FAFB', border: '1px solid #E5E7EB',
-                                        borderRadius: '8px', padding: '11px 14px',
-                                        fontSize: '12.5px', color: '#6B7280',
-                                    }}>
-                                        <SpinnerIcon />
-                                        Analyzing document…
+                            {/* Dynamic Category Folders */}
+                            {categories.map((cat) => {
+                                const count = docs.filter((d) => d.type === cat.key).length;
+                                const isSelected = filterCategory === cat.key;
+                                return (
+                                    <div
+                                        key={cat.key}
+                                        onClick={() => setFilterCategory(isSelected ? 'all' : cat.key)}
+                                        className={`p-3 rounded-xl transition cursor-pointer flex items-center gap-3 ${
+                                            isSelected
+                                                ? 'bg-red-50 ring-2 ring-red-500/20'
+                                                : 'bg-white hover:bg-gray-50/80 shadow-2xs'
+                                        }`}
+                                    >
+                                        <div className={`p-2 rounded-lg shrink-0 ${
+                                            isSelected ? 'bg-red-600 text-white' : 'bg-red-50 text-red-600'
+                                        }`}>
+                                            <Folder className="w-4 h-4" />
+                                        </div>
+                                        <div className="min-w-0">
+                                            <div className="text-xs font-bold text-gray-900 truncate">
+                                                {cat.label}
+                                            </div>
+                                            <div className="text-[10px] text-gray-400">
+                                                {count} {count === 1 ? 'file' : 'files'}
+                                            </div>
+                                        </div>
                                     </div>
-                                )}
+                                );
+                            })}
+                        </div>
+                    </div>
+                )}
 
-                                {!detecting && showAutoBadge && (
-                                    <div style={{
-                                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                                        background: '#F0FDF4', border: '1px solid #BBF7D0',
-                                        borderRadius: '8px', padding: '10px 14px',
-                                    }}>
-                                        <span style={{ fontSize: '13px', fontWeight: '600', color: '#111' }}>
-                                            {docTypes[data.type]?.label}
-                                        </span>
+                {/* ══════════════════════════════════════════════
+                    MAIN CONTENT CARD (Patterned after Admin Table Card)
+                ══════════════════════════════════════════════ */}
+                <div className="bg-white rounded-2xl shadow-xs overflow-hidden space-y-4 p-5">
+                    
+                    {/* Folder Header + Search Toolbar */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-1 border-b border-gray-100">
+                        <div className="flex items-center gap-2.5">
+                            <div className="p-2 rounded-xl bg-red-50 text-red-600 shrink-0">
+                                <FolderOpen className="w-4 h-4" />
+                            </div>
+                            <div>
+                                <div className="flex items-center gap-2">
+                                    <h3 className="text-sm font-bold text-gray-900">
+                                        {activeFolder === 'documents' && filterCategory !== 'all'
+                                            ? `${categories.find((c) => c.key === filterCategory)?.label || filterCategory} Files`
+                                            : currentFolderInfo.label}
+                                    </h3>
+                                    <span className="px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 text-xs font-bold">
+                                        {activeFolder === 'training' && trainingRecords.length}
+                                        {activeFolder === 'activities' && filteredActivities.length}
+                                        {activeFolder === 'attendance' && filteredAttendances.length}
+                                        {activeFolder === 'documents' && filteredDocs.length}
+                                    </span>
+                                    {activeFolder === 'documents' && filterCategory !== 'all' && (
                                         <button
                                             type="button"
-                                            onClick={() => setManualOverride(true)}
-                                            style={{ background: 'none', border: 'none', color: '#3E9C6E', fontSize: '12px', fontWeight: '600', cursor: 'pointer' }}
+                                            onClick={() => setFilterCategory('all')}
+                                            className="text-xs font-bold text-red-600 hover:text-red-700 ml-1 cursor-pointer"
                                         >
-                                            Not correct? Change
+                                            Show all
                                         </button>
-                                    </div>
-                                )}
-
-                                {!detecting && !showAutoBadge && (
-                                    <>
-                                        <select
-                                            value={data.type}
-                                            onChange={e => handleManualTypeChange(e.target.value)}
-                                            style={{ width: '280px', maxWidth: '100%', padding: '11px 12px', border: '1px solid #E5E7EB', borderRadius: '8px', fontSize: '13px', background: 'white', color: '#111', outline: 'none', fontFamily: "'Montserrat', sans-serif" }}
-                                        >
-                                            {categories.map((c) => (
-                                                <option key={c.key} value={c.key}>{c.label}</option>
-                                            ))}
-                                        </select>
-                                        {detectionResult && !detectionResult.type && (
-                                            <div style={{ fontSize: '11.5px', color: '#9CA3AF', marginTop: '6px' }}>
-                                                Couldn't auto-detect this document. Please select the type manually.
-                                            </div>
-                                        )}
-                                    </>
-                                )}
-                            </div>
-                        )}
-
-                        <div style={{ display: 'flex', gap: '10px', marginTop: '22px' }}>
-                            <button type="submit" disabled={processing || !data.file || !!fileError || detecting} style={{
-                                background: (!data.file || fileError || detecting) ? '#C7C3F7' : ACCENT,
-                                color: 'white', border: 'none',
-                                borderRadius: '8px', padding: '11px 22px',
-                                fontSize: '13px', fontWeight: '600',
-                                cursor: (!data.file || fileError || detecting) ? 'not-allowed' : 'pointer',
-                                boxShadow: (!data.file || fileError || detecting) ? 'none' : '0 2px 8px rgba(79,70,229,0.22)',
-                            }}>
-                                {processing ? 'Uploading…' : 'Upload Document'}
-                            </button>
-                            <button type="button" onClick={() => {
-                                setShowUpload(false);
-                                reset();
-                                setFileError('');
-                                setDetectionResult(null);
-                                setManualOverride(false);
-                            }} style={{
-                                background: 'white', color: '#374151', border: '1px solid #E5E7EB',
-                                borderRadius: '8px', padding: '11px 22px',
-                                fontSize: '13px', fontWeight: '600', cursor: 'pointer'
-                            }}>Cancel</button>
-                        </div>
-                    </form>
-                </div>
-            )}
-
-            {/* ── FOLDERS (document type cards) — driven by `docTypes`, which is
-                 itself built from the `categories` prop, so any admin-created
-                 folder appears here automatically. Empty folders are dimmed so
-                 folders with files stand out at a glance. ── */}
-            <div style={{ fontSize: '12.5px', fontWeight: '700', color: '#9AA0A6', letterSpacing: '0.5px', textTransform: 'uppercase', marginBottom: '14px' }}>Folders</div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '14px', marginBottom: '32px' }}>
-                {Object.entries(docTypes).map(([key, val]) => {
-                    const count = counts[key] || 0;
-                    const hasDoc = count > 0;
-                    const isSelected = filterType === key;
-                    return (
-                        <button
-                            key={key}
-                            onClick={() => setFilterType(isSelected ? 'all' : key)}
-                            style={{
-                                display: 'flex', alignItems: 'center', gap: '13px',
-                                background: 'white',
-                                border: isSelected ? `1.5px solid ${ACCENT}` : BORDER,
-                                boxShadow: isSelected ? `0 0 0 3px ${ACCENT_TINT}` : '0 1px 2px rgba(16,24,40,0.03)',
-                                borderRadius: RADIUS, padding: '16px', cursor: 'pointer',
-                                textAlign: 'left', font: 'inherit', transition: 'box-shadow .15s, border-color .15s, opacity .15s',
-                                opacity: hasDoc || isSelected ? 1 : 0.6,
-                            }}
-                            onMouseEnter={e => { if (!isSelected) { e.currentTarget.style.boxShadow = '0 4px 12px rgba(16,24,40,0.06)'; e.currentTarget.style.opacity = '1'; } }}
-                            onMouseLeave={e => { if (!isSelected) { e.currentTarget.style.boxShadow = '0 1px 2px rgba(16,24,40,0.03)'; e.currentTarget.style.opacity = hasDoc ? '1' : '0.6'; } }}
-                        >
-                            <div style={{
-                                width: 38, height: 38, borderRadius: '9px', flexShrink: 0,
-                                background: hasDoc ? ACCENT_TINT : '#F1F3F4',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            }}>
-                                <FolderIcon color={hasDoc ? ACCENT : '#9CA3AF'} />
-                            </div>
-                            <div style={{ minWidth: 0 }}>
-                                <div style={{ fontSize: '13px', fontWeight: '600', color: '#111', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{val.label}</div>
-                                <div style={{ fontSize: '11.5px', color: '#9AA0A6', marginTop: '2px' }}>
-                                    {hasDoc ? `${count} file${count > 1 ? 's' : ''}` : 'Empty'}
-                                </div>
-                            </div>
-                        </button>
-                    );
-                })}
-            </div>
-
-            {/* ── FILES LIST HEADER (sort control) ── */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
-                <div style={{ fontSize: '12.5px', fontWeight: '700', color: '#9AA0A6', letterSpacing: '0.5px', textTransform: 'uppercase' }}>
-                    Files
-                </div>
-                {filterType !== 'all' && (
-                    <button
-                        onClick={() => setFilterType('all')}
-                        style={{ background: 'none', border: 'none', color: ACCENT, fontSize: '12px', fontWeight: '600', cursor: 'pointer', marginRight: 'auto', marginLeft: '12px' }}
-                    >
-                        Clear folder filter ✕
-                    </button>
-                )}
-                <div ref={sortMenuRef} style={{ position: 'relative' }}>
-                    <button
-                        onClick={() => setSortMenuOpen(o => !o)}
-                        style={{
-                            display: 'flex', alignItems: 'center', gap: '6px',
-                            background: 'transparent', border: 'none', cursor: 'pointer',
-                            fontSize: '12.5px', color: '#5F6368', fontWeight: '600', padding: '6px 8px', borderRadius: '6px',
-                            fontFamily: "'Montserrat', sans-serif",
-                        }}
-                    >
-                        Sort: {sortLabels[sortBy]}
-                    </button>
-                    {sortMenuOpen && (
-                        <div style={{
-                            position: 'absolute', right: 0, top: '34px', background: 'white',
-                            border: '1px solid #EAECEF', borderRadius: '8px', boxShadow: '0 8px 24px rgba(16,24,40,0.12)',
-                            width: '160px', zIndex: 20, overflow: 'hidden',
-                        }}>
-                            {Object.entries(sortLabels).map(([key, label]) => (
-                                <div
-                                    key={key}
-                                    onClick={() => { setSortBy(key); setSortMenuOpen(false); }}
-                                    style={{
-                                        padding: '9px 14px', fontSize: '12.5px', cursor: 'pointer',
-                                        color: sortBy === key ? ACCENT : '#374151',
-                                        fontWeight: sortBy === key ? '600' : '400',
-                                        background: sortBy === key ? ACCENT_TINT : 'white',
-                                    }}
-                                >
-                                    {label}
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
-            </div>
-
-            {/* ── BULK ACTION BAR (appears when 1+ files selected, Gmail-style) ── */}
-            {selectedIds.length > 0 && (
-                <div style={{
-                    display: 'flex', alignItems: 'center', gap: '14px',
-                    background: ACCENT_TINT, border: `1px solid ${ACCENT_TINT_STRONG}`,
-                    borderRadius: RADIUS, padding: '10px 18px', marginBottom: '14px',
-                }}>
-                    <span style={{ fontSize: '13px', fontWeight: '600', color: ACCENT }}>
-                        {selectedIds.length} selected
-                    </span>
-                    <button onClick={clearSelection} style={{
-                        background: 'none', border: 'none', color: '#5F6368',
-                        fontSize: '12.5px', fontWeight: '600', cursor: 'pointer',
-                    }}>Clear</button>
-                    <div style={{ flex: 1 }} />
-                    <button onClick={() => setBulkDeleteModal(true)} style={{
-                        display: 'flex', alignItems: 'center', gap: '6px',
-                        background: RED, color: 'white', border: 'none',
-                        borderRadius: '8px', padding: '8px 16px',
-                        fontSize: '12.5px', fontWeight: '600', cursor: 'pointer',
-                    }}>
-                        <TrashIcon /> Delete
-                    </button>
-                </div>
-            )}
-
-            {/* ── FILES LIST ── */}
-            {filtered.length === 0 ? (
-                <div style={{ background: 'white', borderRadius: RADIUS, border: BORDER, padding: '64px 20px', textAlign: 'center' }}>
-                    <div style={{ fontSize: '14.5px', fontWeight: '700', color: '#374151', marginBottom: '6px' }}>
-                        {search ? 'No documents match your search' : 'No documents yet'}
-                    </div>
-                    <div style={{ fontSize: '13px', color: '#9CA3AF', marginBottom: '22px' }}>
-                        {search ? 'Try a different name or clear your search.' : 'Upload your clearances and certificates to get started.'}
-                    </div>
-                    {!search && (
-                        <button onClick={() => setShowUpload(true)} style={{
-                            background: ACCENT, color: 'white', border: 'none',
-                            borderRadius: '8px', padding: '10px 22px',
-                            fontSize: '13px', fontWeight: '600', cursor: 'pointer',
-                            boxShadow: '0 2px 8px rgba(79,70,229,0.25)',
-                        }}>Upload your first document</button>
-                    )}
-                </div>
-            ) : (
-                <div className={`doc-files-list${selectedIds.length > 0 ? ' selecting' : ''}`} style={{ background: 'white', borderRadius: RADIUS, border: BORDER, overflow: 'visible' }}>
-                    <div className="doc-row doc-header-row" style={{
-                        display: 'grid', gridTemplateColumns: '32px 1fr 130px 44px',
-                        padding: '12px 20px', borderBottom: '1px solid #EEF0F2',
-                        fontSize: '11px', fontWeight: '700', color: '#9AA0A6', letterSpacing: '0.5px',
-                        background: '#FBFBFC', borderRadius: `${RADIUS} ${RADIUS} 0 0`,
-                        alignItems: 'center',
-                    }}>
-                        <span className="doc-checkbox" onClick={toggleSelectAll} style={{ cursor: 'pointer', display: 'flex' }} title="Select all">
-                            {allSelected ? <CheckboxCheckedIcon /> : someSelected ? <CheckboxIndeterminateIcon /> : <CheckboxEmptyIcon />}
-                        </span>
-                        <span>NAME</span>
-                        <span>DATE</span>
-                        <span />
-                    </div>
-                    {filtered.map((doc, i) => {
-                        const dt = docTypes[doc.type];
-                        const isLast = i === filtered.length - 1;
-                        const isChecked = selectedIds.includes(doc.id);
-                        return (
-                            <div
-                                key={doc.id}
-                                className={`doc-row${isChecked ? ' checked' : ''}`}
-                                style={{
-                                    display: 'grid', gridTemplateColumns: '32px 1fr 130px 44px', alignItems: 'center',
-                                    padding: '13px 20px', borderBottom: isLast ? 'none' : '1px solid #F5F5F6',
-                                    position: 'relative', transition: 'background .12s',
-                                    background: isChecked ? '#F5F4FE' : 'transparent',
-                                }}
-                                onMouseEnter={e => { if (!isChecked) e.currentTarget.style.background = '#FAFAFB'; }}
-                                onMouseLeave={e => { e.currentTarget.style.background = isChecked ? '#F5F4FE' : 'transparent'; }}
-                            >
-                                <span className="doc-checkbox" onClick={() => toggleSelectOne(doc.id)} style={{ cursor: 'pointer', display: 'flex' }}>
-                                    {isChecked ? <CheckboxCheckedIcon /> : <CheckboxEmptyIcon />}
-                                </span>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
-                                    <div style={{
-                                        width: 32, height: 32, borderRadius: '7px', flexShrink: 0,
-                                        background: ACCENT_TINT,
-                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    }}>
-                                        <FileIcon color={ACCENT} />
-                                    </div>
-                                    <div style={{ minWidth: 0 }}>
-                                        <div style={{ fontSize: '13px', fontWeight: '600', color: '#111', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                            {doc.original_name}
-                                        </div>
-                                        <div style={{ fontSize: '11px', color: '#9CA3AF', marginTop: '1px' }}>
-                                            {dt?.label || doc.type}{doc.file_size != null ? ` · ${formatFileSize(doc.file_size)}` : ''}
-                                            {doc.detection_source && doc.detection_source !== 'manual' && (
-                                                <span style={{ color: '#3E9C6E', fontWeight: '600' }}> · Auto-detected</span>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                                <span style={{ fontSize: '12.5px', color: '#5F6368' }}>
-                                    {new Date(doc.created_at).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}
-                                </span>
-                                <div style={{ position: 'relative', display: 'flex', justifyContent: 'flex-end' }} ref={menuOpenId === doc.id ? rowMenuRef : null}>
-                                    <button
-                                        onClick={() => setMenuOpenId(menuOpenId === doc.id ? null : doc.id)}
-                                        style={{
-                                            background: 'transparent', border: 'none', cursor: 'pointer',
-                                            color: '#9AA0A6', width: 28, height: 28, borderRadius: '50%',
-                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                            transition: 'background .12s, color .12s',
-                                        }}
-                                        onMouseEnter={e => { e.currentTarget.style.background = '#F1F3F4'; e.currentTarget.style.color = '#374151'; }}
-                                        onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#9AA0A6'; }}
-                                    >
-                                        <DotsIcon />
-                                    </button>
-                                    {menuOpenId === doc.id && (
-                                        <div style={{
-                                            position: 'absolute', right: 0, top: '32px', background: 'white',
-                                            border: '1px solid #EAECEF', borderRadius: '8px', boxShadow: '0 8px 24px rgba(16,24,40,0.14)',
-                                            width: '140px', zIndex: 30, overflow: 'hidden',
-                                        }}>
-                                            <div
-                                                onClick={() => handleDelete(doc.id)}
-                                                style={{
-                                                    padding: '9px 14px', fontSize: '12.5px', color: RED,
-                                                    cursor: 'pointer', fontWeight: '500',
-                                                    borderBottom: '1px solid #F5F5F6',
-                                                }}
-                                                onMouseEnter={e => { e.currentTarget.style.background = '#FEF2F2'; }}
-                                                onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
-                                            >
-                                                Delete
-                                            </div>
-                                            <div
-                                                onClick={() => setMenuOpenId(null)}
-                                                style={{
-                                                    padding: '9px 14px', fontSize: '12.5px', color: '#374151',
-                                                    cursor: 'pointer', fontWeight: '500',
-                                                }}
-                                                onMouseEnter={e => { e.currentTarget.style.background = '#F9FAFB'; }}
-                                                onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
-                                            >
-                                                Cancel
-                                            </div>
-                                        </div>
                                     )}
                                 </div>
                             </div>
-                        );
-                    })}
+                        </div>
+
+                        {/* Search Input */}
+                        <div className="relative w-full sm:w-72">
+                            <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                            <input
+                                type="text"
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                placeholder={`Search in ${currentFolderInfo.label}...`}
+                                className="w-full pl-9 pr-8 py-1.5 bg-gray-50 hover:bg-gray-100/70 rounded-xl text-xs text-gray-900 placeholder:text-gray-400 focus:bg-white focus:ring-2 focus:ring-red-500/20 outline-none transition"
+                            />
+                            {search && (
+                                <button
+                                    type="button"
+                                    onClick={() => setSearch('')}
+                                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-0.5 cursor-pointer"
+                                >
+                                    <X className="w-3.5 h-3.5" />
+                                </button>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* ══════════════════════════════════════════════
+                        FOLDER CONTENT 1: TRAINING & CERTIFICATIONS
+                        • Training/Certification Name
+                        • Date Completed
+                        • Certificate/Document
+                        • Expiration Date
+                        • Remarks
+                        • View / Download
+                    ══════════════════════════════════════════════ */}
+                    {activeFolder === 'training' && (
+                        <div>
+                            {trainingRecords.length === 0 ? (
+                                <EmptyState
+                                    icon={GraduationCap}
+                                    title={search ? 'No matching certifications found' : 'This folder is empty'}
+                                    subtitle={
+                                        search
+                                            ? 'Try searching with different keywords.'
+                                            : 'Upload training certificates or courses to keep them archived in this folder.'
+                                    }
+                                    action={
+                                        !search && (
+                                            <button
+                                                type="button"
+                                                onClick={() => openUploadModal('training')}
+                                                className="mt-4 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold transition shadow-sm cursor-pointer"
+                                            >
+                                                <Upload className="w-3.5 h-3.5" /> Upload Certificate
+                                            </button>
+                                        )
+                                    }
+                                />
+                            ) : (
+                                <div className="overflow-x-auto -mx-5 -mb-5">
+                                    <table className="w-full text-left border-collapse min-w-[700px]">
+                                        <thead>
+                                            <tr className="border-t border-b border-gray-100 bg-gray-50/70 text-xs font-bold text-gray-500">
+                                                <th className="p-3.5 sm:px-5">Training / Certification Name</th>
+                                                <th className="p-3.5 sm:px-5">Date Completed</th>
+                                                <th className="p-3.5 sm:px-5">Certificate / Document</th>
+                                                <th className="p-3.5 sm:px-5">Expiration Date</th>
+                                                <th className="p-3.5 sm:px-5">Remarks</th>
+                                                <th className="p-3.5 sm:px-5 text-right">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-gray-100 text-xs">
+                                            {trainingRecords.map((doc) => (
+                                                <tr key={doc.id} className="hover:bg-gray-50/60 transition">
+                                                    {/* Name */}
+                                                    <td className="p-3.5 sm:px-5">
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="w-8 h-8 rounded-xl bg-red-50 text-red-600 flex items-center justify-center shrink-0">
+                                                                <Award className="w-4 h-4" />
+                                                            </div>
+                                                            <div className="min-w-0">
+                                                                <div className="font-bold text-gray-900 truncate max-w-[220px]">
+                                                                    {doc.original_name.replace(/\.[^/.]+$/, '')}
+                                                                </div>
+                                                                <div className="text-[11px] text-gray-400">
+                                                                    {docTypes[doc.type]?.label || 'Accredited Course'}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+
+                                                    {/* Date Completed */}
+                                                    <td className="p-3.5 sm:px-5 text-gray-600 font-medium whitespace-nowrap">
+                                                        {fmtDate(doc.created_at)}
+                                                    </td>
+
+                                                    {/* Certificate Document */}
+                                                    <td className="p-3.5 sm:px-5">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setPreviewDoc(doc)}
+                                                            className="inline-flex items-center gap-1.5 text-xs text-red-600 hover:text-red-700 font-medium max-w-[200px] truncate hover:underline cursor-pointer"
+                                                            title="Click to view file"
+                                                        >
+                                                            <FileText className="w-3.5 h-3.5 shrink-0 text-gray-400" />
+                                                            <span className="truncate">{doc.original_name}</span>
+                                                        </button>
+                                                        {doc.file_size && (
+                                                            <div className="text-[10px] text-gray-400 pl-5">
+                                                                {fmtFileSize(doc.file_size)}
+                                                            </div>
+                                                        )}
+                                                    </td>
+
+                                                    {/* Expiration Date */}
+                                                    <td className="p-3.5 sm:px-5 text-gray-500 whitespace-nowrap">
+                                                        <span className="text-[11px]">No expiration</span>
+                                                    </td>
+
+                                                    {/* Remarks */}
+                                                    <td className="p-3.5 sm:px-5 whitespace-nowrap">
+                                                        <StatusBadge status={doc.status || 'approved'} />
+                                                    </td>
+
+                                                    {/* Actions */}
+                                                    <td className="p-3.5 sm:px-5 text-right whitespace-nowrap">
+                                                        <div className="inline-flex items-center gap-1">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setPreviewDoc(doc)}
+                                                                className="p-1.5 rounded-lg text-gray-500 hover:text-gray-800 hover:bg-gray-100 transition cursor-pointer"
+                                                                title="Preview document"
+                                                            >
+                                                                <Eye className="w-3.5 h-3.5" />
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleDownload(doc)}
+                                                                className="p-1.5 rounded-lg text-gray-500 hover:text-gray-800 hover:bg-gray-100 transition cursor-pointer"
+                                                                title="Download file"
+                                                            >
+                                                                <Download className="w-3.5 h-3.5" />
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* ══════════════════════════════════════════════
+                        FOLDER CONTENT 2: ASSIGNMENT HISTORY
+                        • Activity Name
+                        • Date
+                        • Location
+                        • Role
+                        • Assignment / Schedule
+                        • Status
+                    ══════════════════════════════════════════════ */}
+                    {activeFolder === 'activities' && (
+                        <div>
+                            {filteredActivities.length === 0 ? (
+                                <EmptyState
+                                    icon={Briefcase}
+                                    title={search ? 'No matching assignments' : 'This folder is empty'}
+                                    subtitle={
+                                        search
+                                            ? 'Try searching with another activity title or location.'
+                                            : 'Activities and deployment assignments will populate here once scheduled.'
+                                    }
+                                />
+                            ) : (
+                                <div className="overflow-x-auto -mx-5 -mb-5">
+                                    <table className="w-full text-left border-collapse min-w-[700px]">
+                                        <thead>
+                                            <tr className="border-t border-b border-gray-100 bg-gray-50/70 text-xs font-bold text-gray-500">
+                                                <th className="p-3.5 sm:px-5">Activity Name</th>
+                                                <th className="p-3.5 sm:px-5">Date</th>
+                                                <th className="p-3.5 sm:px-5">Location</th>
+                                                <th className="p-3.5 sm:px-5">Role</th>
+                                                <th className="p-3.5 sm:px-5">Assignment / Schedule</th>
+                                                <th className="p-3.5 sm:px-5">Status</th>
+                                                <th className="p-3.5 sm:px-5 text-right">Details</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-gray-100 text-xs">
+                                            {filteredActivities.map((act) => (
+                                                <tr key={act.id} className="hover:bg-gray-50/60 transition">
+                                                    {/* Activity Name */}
+                                                    <td className="p-3.5 sm:px-5">
+                                                        <div className="font-bold text-gray-900 truncate max-w-[200px]">
+                                                            {act.name}
+                                                        </div>
+                                                        {act.description && (
+                                                            <div className="text-[11px] text-gray-400 truncate max-w-[200px] mt-0.5">
+                                                                {act.description}
+                                                            </div>
+                                                        )}
+                                                    </td>
+
+                                                    {/* Date */}
+                                                    <td className="p-3.5 sm:px-5 text-gray-600 font-medium whitespace-nowrap">
+                                                        {fmtDate(act.date)}
+                                                    </td>
+
+                                                    {/* Location */}
+                                                    <td className="p-3.5 sm:px-5 text-gray-600">
+                                                        <div className="flex items-center gap-1.5 truncate max-w-[170px]">
+                                                            <MapPin className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                                                            <span className="truncate">{act.location_name || 'Chapter Office'}</span>
+                                                        </div>
+                                                    </td>
+
+                                                    {/* Role */}
+                                                    <td className="p-3.5 sm:px-5">
+                                                        <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-medium bg-gray-100 text-gray-700 border border-gray-200">
+                                                            Volunteer
+                                                        </span>
+                                                    </td>
+
+                                                    {/* Schedule */}
+                                                    <td className="p-3.5 sm:px-5 text-gray-600 whitespace-nowrap">
+                                                        <div className="flex items-center gap-1">
+                                                            <Clock className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                                                            <span>
+                                                                {act.start_time
+                                                                    ? `${act.start_time.substring(0, 5)}${
+                                                                          act.end_time ? ` – ${act.end_time.substring(0, 5)}` : ''
+                                                                      }`
+                                                                    : 'Standard Shift'}
+                                                            </span>
+                                                        </div>
+                                                    </td>
+
+                                                    {/* Status */}
+                                                    <td className="p-3.5 sm:px-5 whitespace-nowrap">
+                                                        <StatusBadge status={act.status || 'upcoming'} />
+                                                    </td>
+
+                                                    {/* Action */}
+                                                    <td className="p-3.5 sm:px-5 text-right whitespace-nowrap">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setActivityDetail(act)}
+                                                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition cursor-pointer"
+                                                        >
+                                                            <span>View</span>
+                                                            <ChevronRight className="w-3.5 h-3.5" />
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* ══════════════════════════════════════════════
+                        FOLDER CONTENT 3: ATTENDANCE & HOURS
+                        • Summary cards on top
+                        • History table: Date, Activity, Time In, Arrival Status,
+                          Time Out, Departure Status, Total Hours
+                    ══════════════════════════════════════════════ */}
+                    {activeFolder === 'attendance' && (
+                        <div className="space-y-4">
+                            {/* Summary row */}
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                <StatCard
+                                    label="Total Hours Rendered"
+                                    value={`${attendanceSummary.totalHours || 0} hrs`}
+                                    subtitle="Accredited duty hours"
+                                    icon={BarChart3}
+                                />
+                                <StatCard
+                                    label="Days Attended"
+                                    value={attendanceSummary.totalDays || 0}
+                                    subtitle="Recorded service shifts"
+                                    icon={Calendar}
+                                />
+                                <StatCard
+                                    label="Average Hours / Session"
+                                    value={
+                                        attendanceSummary.totalDays > 0
+                                            ? `${(attendanceSummary.totalHours / attendanceSummary.totalDays).toFixed(1)} hrs`
+                                            : '0.0 hrs'
+                                    }
+                                    subtitle="Average time per check-in"
+                                    icon={Timer}
+                                />
+                            </div>
+
+                            {filteredAttendances.length === 0 ? (
+                                <EmptyState
+                                    icon={ClipboardList}
+                                    title={search ? 'No matching attendance records' : 'This folder is empty'}
+                                    subtitle={
+                                        search
+                                            ? 'Try searching with another activity title or date.'
+                                            : 'Attendance logs will accumulate here as you check in to activities.'
+                                    }
+                                />
+                            ) : (
+                                <div className="overflow-x-auto -mx-5 -mb-5">
+                                    <table className="w-full text-left border-collapse min-w-[700px]">
+                                        <thead>
+                                            <tr className="border-t border-b border-gray-100 bg-gray-50/70 text-xs font-bold text-gray-500">
+                                                <th className="p-3.5 sm:px-5">Date</th>
+                                                <th className="p-3.5 sm:px-5">Activity</th>
+                                                <th className="p-3.5 sm:px-5">Time In</th>
+                                                <th className="p-3.5 sm:px-5">Arrival Status</th>
+                                                <th className="p-3.5 sm:px-5">Time Out</th>
+                                                <th className="p-3.5 sm:px-5">Departure Status</th>
+                                                <th className="p-3.5 sm:px-5 text-right">Total Hours</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-gray-100 text-xs">
+                                            {filteredAttendances.map((att) => {
+                                                const arrivalStatus = getArrivalStatus(att);
+                                                const departureStatus = getDepartureStatus(att);
+                                                return (
+                                                    <tr key={att.id} className="hover:bg-gray-50/60 transition">
+                                                        {/* Date */}
+                                                        <td className="p-3.5 sm:px-5 text-gray-900 font-medium whitespace-nowrap">
+                                                            {fmtDate(att.date)}
+                                                        </td>
+
+                                                        {/* Activity */}
+                                                        <td className="p-3.5 sm:px-5">
+                                                            <div className="font-bold text-gray-900 truncate max-w-[200px]">
+                                                                {att.activity?.name || 'Assigned Duty'}
+                                                            </div>
+                                                            {att.method && (
+                                                                <div className="text-[10px] text-gray-400 capitalize">
+                                                                    Verified via {att.method}
+                                                                </div>
+                                                            )}
+                                                        </td>
+
+                                                        {/* Time In */}
+                                                        <td className="p-3.5 sm:px-5 text-gray-700 whitespace-nowrap">
+                                                            {fmtTime(att.time_in)}
+                                                        </td>
+
+                                                        {/* Arrival Status */}
+                                                        <td className="p-3.5 sm:px-5 whitespace-nowrap">
+                                                            {arrivalStatus !== '—' ? (
+                                                                <StatusBadge status={arrivalStatus} />
+                                                            ) : (
+                                                                <span className="text-gray-400">—</span>
+                                                            )}
+                                                        </td>
+
+                                                        {/* Time Out */}
+                                                        <td className="p-3.5 sm:px-5 text-gray-700 whitespace-nowrap">
+                                                            {att.time_out ? fmtTime(att.time_out) : '—'}
+                                                        </td>
+
+                                                        {/* Departure Status */}
+                                                        <td className="p-3.5 sm:px-5 whitespace-nowrap">
+                                                            {departureStatus !== '—' ? (
+                                                                <StatusBadge status={departureStatus} />
+                                                            ) : (
+                                                                <span className="text-gray-400">—</span>
+                                                            )}
+                                                        </td>
+
+                                                        {/* Total Hours */}
+                                                        <td className="p-3.5 sm:px-5 text-right font-bold text-gray-900 whitespace-nowrap">
+                                                            {fmtHours(att.hours_rendered)}
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* ══════════════════════════════════════════════
+                        FOLDER CONTENT 4: 201 DOCUMENTS
+                        • Checkbox (bulk selection)
+                        • Document Name
+                        • Document Type
+                        • Date
+                        • Status
+                        • View, Download, Delete actions
+                    ══════════════════════════════════════════════ */}
+                    {activeFolder === 'documents' && (
+                        <div className="space-y-4">
+                            {/* Bulk Action Bar */}
+                            {selectedIds.length > 0 && (
+                                <div className="flex items-center gap-3 bg-red-50 border border-red-200 rounded-xl px-4 py-2.5">
+                                    <span className="text-xs font-bold text-red-700">
+                                        {selectedIds.length} item{selectedIds.length > 1 ? 's' : ''} selected
+                                    </span>
+                                    <button
+                                        type="button"
+                                        onClick={() => setSelectedIds([])}
+                                        className="text-xs font-semibold text-gray-500 hover:text-gray-800 cursor-pointer"
+                                    >
+                                        Clear
+                                    </button>
+                                    <div className="flex-1" />
+                                    <button
+                                        type="button"
+                                        onClick={() => setBulkDeleteModal(true)}
+                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-xs font-bold transition cursor-pointer shadow-xs"
+                                    >
+                                        <Trash2 className="w-3.5 h-3.5" /> Delete Selected
+                                    </button>
+                                </div>
+                            )}
+
+                            {filteredDocs.length === 0 ? (
+                                <EmptyState
+                                    icon={FileText}
+                                    title={search ? 'No documents match your query' : 'This folder is empty'}
+                                    subtitle={
+                                        search
+                                            ? 'Try searching with another document name.'
+                                            : 'Upload clearances, valid IDs, or approved forms to store them in this folder.'
+                                    }
+                                    action={
+                                        !search && (
+                                            <button
+                                                type="button"
+                                                onClick={() => openUploadModal(filterCategory !== 'all' ? filterCategory : categories[0]?.key)}
+                                                className="mt-4 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold transition shadow-sm cursor-pointer"
+                                            >
+                                                <Upload className="w-3.5 h-3.5" /> Upload First Document
+                                            </button>
+                                        )
+                                    }
+                                />
+                            ) : (
+                                <div className="overflow-x-auto -mx-5 -mb-5">
+                                    <table className="w-full text-left border-collapse min-w-[700px]">
+                                        <thead>
+                                            <tr className="border-t border-b border-gray-100 bg-gray-50/70 text-xs font-bold text-gray-500">
+                                                <th className="p-3.5 sm:px-5 w-10">
+                                                    <span className="cursor-pointer flex" onClick={toggleSelectAll} title="Select all">
+                                                        <SelectBox checked={allSelected} indeterminate={someSelected} />
+                                                    </span>
+                                                </th>
+                                                <th className="p-3.5 sm:px-5">Document Name</th>
+                                                <th className="p-3.5 sm:px-5">Document Type</th>
+                                                <th className="p-3.5 sm:px-5">Date Uploaded</th>
+                                                <th className="p-3.5 sm:px-5">Status</th>
+                                                <th className="p-3.5 sm:px-5 text-right">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-gray-100 text-xs">
+                                            {filteredDocs.map((doc) => {
+                                                const dt = docTypes[doc.type];
+                                                const isChecked = selectedIds.includes(doc.id);
+                                                return (
+                                                    <tr
+                                                        key={doc.id}
+                                                        className={`transition ${
+                                                            isChecked ? 'bg-red-50/40' : 'hover:bg-gray-50/60'
+                                                        }`}
+                                                    >
+                                                        {/* Checkbox */}
+                                                        <td className="p-3.5 sm:px-5 w-10">
+                                                            <span
+                                                                className="cursor-pointer flex"
+                                                                onClick={() => toggleSelectOne(doc.id)}
+                                                            >
+                                                                <SelectBox checked={isChecked} />
+                                                            </span>
+                                                        </td>
+
+                                                        {/* Document Name */}
+                                                        <td className="p-3.5 sm:px-5">
+                                                            <div className="flex items-center gap-3">
+                                                                <div className="w-8 h-8 rounded-xl bg-red-50 text-red-600 flex items-center justify-center shrink-0">
+                                                                    <FileText className="w-4 h-4" />
+                                                                </div>
+                                                                <div className="min-w-0">
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => setPreviewDoc(doc)}
+                                                                        className="font-bold text-gray-900 hover:text-red-600 truncate block text-left transition cursor-pointer max-w-[280px]"
+                                                                        title={doc.original_name}
+                                                                    >
+                                                                        {doc.original_name}
+                                                                    </button>
+                                                                    {doc.file_size && (
+                                                                        <div className="text-[10px] text-gray-400 mt-0.5">
+                                                                            {fmtFileSize(doc.file_size)}
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        </td>
+
+                                                        {/* Document Type */}
+                                                        <td className="p-3.5 sm:px-5 whitespace-nowrap">
+                                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-700 border border-gray-200">
+                                                                {dt?.label || doc.type}
+                                                            </span>
+                                                        </td>
+
+                                                        {/* Date */}
+                                                        <td className="p-3.5 sm:px-5 text-gray-500 whitespace-nowrap">
+                                                            {fmtDate(doc.created_at)}
+                                                        </td>
+
+                                                        {/* Status */}
+                                                        <td className="p-3.5 sm:px-5 whitespace-nowrap">
+                                                            <StatusBadge status={doc.status || 'pending'} />
+                                                        </td>
+
+                                                        {/* Actions */}
+                                                        <td className="p-3.5 sm:px-5 text-right whitespace-nowrap">
+                                                            <div className="inline-flex items-center gap-1 relative">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => setPreviewDoc(doc)}
+                                                                    className="p-1.5 rounded-lg text-gray-500 hover:text-gray-800 hover:bg-gray-100 transition cursor-pointer"
+                                                                    title="Preview document"
+                                                                >
+                                                                    <Eye className="w-3.5 h-3.5" />
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => handleDownload(doc)}
+                                                                    className="p-1.5 rounded-lg text-gray-500 hover:text-gray-800 hover:bg-gray-100 transition cursor-pointer"
+                                                                    title="Download file"
+                                                                >
+                                                                    <Download className="w-3.5 h-3.5" />
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() =>
+                                                                        setRowMenuOpenId(rowMenuOpenId === doc.id ? null : doc.id)
+                                                                    }
+                                                                    className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition cursor-pointer"
+                                                                    title="More options"
+                                                                >
+                                                                    <MoreVertical className="w-3.5 h-3.5" />
+                                                                </button>
+
+                                                                {/* Dropdown */}
+                                                                {rowMenuOpenId === doc.id && (
+                                                                    <div
+                                                                        ref={menuRef}
+                                                                        className="absolute right-0 top-8 bg-white rounded-xl border border-gray-200 shadow-xl z-30 w-32 overflow-hidden py-1"
+                                                                    >
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => handleDelete(doc.id)}
+                                                                            className="w-full px-3.5 py-2 text-left text-xs font-semibold text-rose-600 hover:bg-rose-50 transition cursor-pointer flex items-center gap-2"
+                                                                        >
+                                                                            <Trash2 className="w-3.5 h-3.5" />
+                                                                            Delete
+                                                                        </button>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+                        </div>
+                    )}
                 </div>
+            </div>
+
+            {/* ════════════════════════════════════════════════════
+                PREVIEW DOCUMENT MODAL (Google Drive Style)
+            ════════════════════════════════════════════════════ */}
+            {previewDoc && createPortal(
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-6">
+                    <div
+                        className="fixed inset-0 bg-black/70 backdrop-blur-xs transition-opacity"
+                        onClick={() => setPreviewDoc(null)}
+                    />
+                    <div
+                        className="relative z-10 bg-white rounded-2xl shadow-2xl border border-gray-200 w-full max-w-4xl max-h-[92vh] flex flex-col overflow-hidden animate-fadeIn"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {/* Header */}
+                        <div className="px-5 py-3.5 border-b border-gray-200 flex items-center justify-between bg-white shrink-0">
+                            <div className="flex items-center gap-2.5 min-w-0 pr-3">
+                                <div className="w-8 h-8 rounded-xl bg-red-50 text-red-600 flex items-center justify-center shrink-0">
+                                    <FileText className="w-4 h-4" />
+                                </div>
+                                <div className="min-w-0">
+                                    <h3 className="text-sm font-bold text-gray-900 truncate">
+                                        {previewDoc.original_name}
+                                    </h3>
+                                    <div className="flex items-center gap-2 text-[11px] text-gray-500">
+                                        <span>{docTypes[previewDoc.type]?.label || previewDoc.type}</span>
+                                        {previewDoc.file_size && (
+                                            <>
+                                                <span>•</span>
+                                                <span>{fmtFileSize(previewDoc.file_size)}</span>
+                                            </>
+                                        )}
+                                        <span>•</span>
+                                        <StatusBadge status={previewDoc.status} />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="flex items-center gap-2 shrink-0">
+                                <button
+                                    type="button"
+                                    onClick={() => handleDownload(previewDoc)}
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 text-xs font-bold transition cursor-pointer"
+                                >
+                                    <Download className="w-3.5 h-3.5" />
+                                    <span>Download</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setPreviewDoc(null)}
+                                    className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition cursor-pointer"
+                                >
+                                    <X className="w-5 h-5" />
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Preview Body */}
+                        <div className="flex-1 bg-gray-100 overflow-auto p-4 flex items-center justify-center min-h-[380px]">
+                            {previewDoc.mime_type?.startsWith('image/') ||
+                            previewDoc.original_name?.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
+                                <img
+                                    src={previewDoc.file_url || route('volunteer.documents.file', previewDoc.id)}
+                                    alt={previewDoc.original_name}
+                                    className="max-w-full max-h-[72vh] object-contain rounded-xl shadow-sm bg-white"
+                                />
+                            ) : (
+                                <iframe
+                                    src={previewDoc.file_url || route('volunteer.documents.file', previewDoc.id)}
+                                    title={previewDoc.original_name}
+                                    className="w-full h-[72vh] border-0 rounded-xl shadow-sm bg-white"
+                                />
+                            )}
+                        </div>
+                    </div>
+                </div>,
+                document.body
             )}
 
-            <style>{`
-                @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-                @keyframes popIn { from { opacity: 0; transform: scale(0.94); } to { opacity: 1; transform: scale(1); } }
-                @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+            {/* ════════════════════════════════════════════════════
+                ACTIVITY DETAIL MODAL
+            ════════════════════════════════════════════════════ */}
+            {activityDetail && createPortal(
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                    <div
+                        className="fixed inset-0 bg-black/60 backdrop-blur-xs"
+                        onClick={() => setActivityDetail(null)}
+                    />
+                    <div
+                        className="relative z-10 bg-white rounded-2xl shadow-2xl border border-gray-100 w-full max-w-md p-6 space-y-4 animate-fadeIn"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+                            <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">
+                                Activity Details
+                            </span>
+                            <button
+                                type="button"
+                                onClick={() => setActivityDetail(null)}
+                                className="p-1 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition cursor-pointer"
+                            >
+                                <X className="w-4 h-4" />
+                            </button>
+                        </div>
 
-                /* ── Checkboxes invisible by default, like Gmail ──
-                   They only appear when: hovering the row/header, a row is
-                   already checked, or the list is in "selecting" mode
-                   (i.e. at least one document is currently selected). */
-                .doc-checkbox {
-                    opacity: 0;
-                    transition: opacity 0.12s ease;
-                }
-                .doc-row:hover .doc-checkbox,
-                .doc-row.checked .doc-checkbox,
-                .doc-files-list.selecting .doc-checkbox {
-                    opacity: 1;
-                }
-            `}</style>
+                        <div>
+                            <h3 className="text-base font-bold text-gray-900">
+                                {activityDetail.name}
+                            </h3>
+                            <div className="mt-1">
+                                <StatusBadge status={activityDetail.status || 'upcoming'} />
+                            </div>
+                        </div>
+
+                        {activityDetail.description && (
+                            <p className="text-xs text-gray-600 leading-relaxed bg-gray-50 p-3 rounded-xl border border-gray-100">
+                                {activityDetail.description}
+                            </p>
+                        )}
+
+                        <div className="space-y-2 text-xs text-gray-600 pt-1">
+                            <div className="flex items-center gap-2.5">
+                                <Calendar className="w-4 h-4 text-red-600 shrink-0" />
+                                <span>{fmtDate(activityDetail.date, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</span>
+                            </div>
+                            <div className="flex items-center gap-2.5">
+                                <Clock className="w-4 h-4 text-red-600 shrink-0" />
+                                <span>
+                                    {activityDetail.start_time
+                                        ? `${activityDetail.start_time.substring(0, 5)}${
+                                              activityDetail.end_time ? ` – ${activityDetail.end_time.substring(0, 5)}` : ''
+                                          }`
+                                        : 'Not specified'}
+                                </span>
+                            </div>
+                            <div className="flex items-center gap-2.5">
+                                <MapPin className="w-4 h-4 text-red-600 shrink-0" />
+                                <span>{activityDetail.location_name || 'Chapter Office'}</span>
+                            </div>
+                        </div>
+
+                        <div className="pt-3 border-t border-gray-100 flex justify-end">
+                            <button
+                                type="button"
+                                onClick={() => setActivityDetail(null)}
+                                className="px-4 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold transition cursor-pointer"
+                            >
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>,
+                document.body
+            )}
+
+            {/* ════════════════════════════════════════════════════
+                UPLOAD DOCUMENT MODAL
+            ════════════════════════════════════════════════════ */}
+            {showUpload && createPortal(
+                <div className="fixed inset-0 z-[100] overflow-y-auto">
+                    <div
+                        className="fixed inset-0 bg-black/60 backdrop-blur-xs"
+                        onClick={() => {
+                            setShowUpload(false);
+                            reset();
+                            setFileError('');
+                            setDetectionResult(null);
+                            setManualOverride(false);
+                        }}
+                    />
+                    <div className="flex min-h-full items-center justify-center p-4">
+                        <div
+                            className="w-full max-w-lg rounded-2xl bg-white shadow-2xl border border-gray-100 relative z-10 flex flex-col overflow-hidden animate-fadeIn"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            {/* Header */}
+                            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                                <div className="flex items-center gap-2.5">
+                                    <div className="w-8 h-8 rounded-xl bg-red-50 text-red-600 flex items-center justify-center shrink-0">
+                                        <Upload className="w-4 h-4" />
+                                    </div>
+                                    <h3 className="text-base font-bold text-gray-900">
+                                        {uploadPreselectedType === 'training'
+                                            ? 'Upload Training Certificate'
+                                            : 'Upload Document'}
+                                    </h3>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setShowUpload(false);
+                                        reset();
+                                        setFileError('');
+                                        setDetectionResult(null);
+                                        setManualOverride(false);
+                                    }}
+                                    className="w-8 h-8 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-gray-700 flex items-center justify-center transition cursor-pointer"
+                                >
+                                    <X className="w-4 h-4" />
+                                </button>
+                            </div>
+
+                            <form onSubmit={handleUploadSubmit} className="p-6 space-y-4">
+                                {/* Dropzone */}
+                                <label
+                                    htmlFor="doc-file-input"
+                                    onDragOver={(e) => {
+                                        e.preventDefault();
+                                        setDragActive(true);
+                                    }}
+                                    onDragLeave={() => setDragActive(false)}
+                                    onDrop={(e) => {
+                                        e.preventDefault();
+                                        setDragActive(false);
+                                        validateAndSetFile(e.dataTransfer.files?.[0]);
+                                    }}
+                                    className={`flex flex-col items-center justify-center gap-2 p-8 rounded-2xl border-2 border-dashed cursor-pointer transition ${
+                                        dragActive
+                                            ? 'border-red-500 bg-red-50/20'
+                                            : 'border-gray-200 bg-gray-50/40 hover:border-gray-300'
+                                    }`}
+                                >
+                                    <input
+                                        id="doc-file-input"
+                                        type="file"
+                                        accept=".pdf,.jpg,.jpeg,.png"
+                                        onChange={(e) => validateAndSetFile(e.target.files[0])}
+                                        className="hidden"
+                                    />
+                                    <Upload className={`w-7 h-7 ${dragActive ? 'text-red-500' : 'text-gray-400'}`} />
+                                    <div className="text-xs font-bold text-gray-700">
+                                        Click to browse or drag and drop a file
+                                    </div>
+                                    <div className="text-[11px] text-gray-400">
+                                        PDF, JPG, or PNG up to 5MB
+                                    </div>
+                                </label>
+
+                                {errors.file && <p className="text-xs text-red-600 font-medium">{errors.file}</p>}
+                                {fileError && (
+                                    <div className="flex items-center gap-2 bg-rose-50 border border-rose-200 rounded-xl px-4 py-2.5 text-xs text-rose-700 font-medium">
+                                        <AlertCircle className="w-4 h-4 shrink-0" /> {fileError}
+                                    </div>
+                                )}
+
+                                {/* Selected File Preview Card */}
+                                {!fileError && data.file && (
+                                    <div className="flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3">
+                                        <div className="w-8 h-8 rounded-lg bg-red-50 text-red-600 flex items-center justify-center shrink-0">
+                                            <FileText className="w-4 h-4" />
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <div className="text-xs font-bold text-gray-900 truncate">
+                                                {data.file.name}
+                                            </div>
+                                            <div className="text-[11px] text-gray-400 mt-0.5">
+                                                {fmtFileSize(data.file.size)}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Document Type Selection */}
+                                {data.file && !fileError && (
+                                    <div>
+                                        <label className="text-xs font-bold text-gray-700 mb-1.5 flex items-center gap-1.5">
+                                            Document Category / Type
+                                            {detecting && (
+                                                <span className="text-gray-400 font-normal animate-pulse">
+                                                    Analyzing…
+                                                </span>
+                                            )}
+                                            {showAutoBadge && (
+                                                <span className="inline-flex items-center gap-1 text-emerald-600 font-medium text-[11px]">
+                                                    <CheckCircle2 className="w-3 h-3" /> Auto-detected
+                                                </span>
+                                            )}
+                                        </label>
+
+                                        {!detecting && showAutoBadge ? (
+                                            <div className="flex items-center justify-between bg-emerald-50/70 border border-emerald-200 rounded-xl px-4 py-2.5">
+                                                <span className="text-xs font-bold text-gray-900">
+                                                    {docTypes[data.type]?.label || data.type}
+                                                </span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setManualOverride(true)}
+                                                    className="text-xs font-bold text-emerald-700 hover:text-emerald-900 cursor-pointer underline"
+                                                >
+                                                    Change
+                                                </button>
+                                            </div>
+                                        ) : !detecting ? (
+                                            <>
+                                                <select
+                                                    value={data.type}
+                                                    onChange={(e) =>
+                                                        setData((d) => ({
+                                                            ...d,
+                                                            type: e.target.value,
+                                                            detection_source: 'manual',
+                                                        }))
+                                                    }
+                                                    className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-xs text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition font-sans cursor-pointer"
+                                                >
+                                                    {categories.map((c) => (
+                                                        <option key={c.key} value={c.key}>
+                                                            {c.label}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                                {detectionResult && !detectionResult.type && (
+                                                    <p className="text-[11px] text-gray-400 mt-1">
+                                                        Could not auto-detect type — please select manually.
+                                                    </p>
+                                                )}
+                                            </>
+                                        ) : null}
+                                    </div>
+                                )}
+
+                                {/* Action Buttons */}
+                                <div className="pt-3 border-t border-gray-100 flex items-center justify-end gap-2.5">
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setShowUpload(false);
+                                            reset();
+                                            setFileError('');
+                                            setDetectionResult(null);
+                                            setManualOverride(false);
+                                        }}
+                                        className="px-4 py-2 rounded-xl text-xs font-semibold text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition cursor-pointer"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        disabled={processing || !data.file || !!fileError || detecting}
+                                        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 active:bg-red-800 text-white text-xs font-bold shadow-sm transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        <Upload className="w-3.5 h-3.5" />
+                                        <span>{processing ? 'Uploading…' : 'Upload'}</span>
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>,
+                document.body
+            )}
+
+            {/* ── Single Delete Confirmation Modal ── */}
+            {deleteModal.open && createPortal(
+                <ConfirmModal
+                    title="Delete Document"
+                    message="Are you sure you want to remove this document from your 201 file? This action cannot be undone."
+                    onCancel={() => setDeleteModal({ open: false, id: null })}
+                    onConfirm={confirmDelete}
+                />,
+                document.body
+            )}
+
+            {/* ── Bulk Delete Confirmation Modal ── */}
+            {bulkDeleteModal && createPortal(
+                <ConfirmModal
+                    title={`Delete ${selectedIds.length} Document${selectedIds.length > 1 ? 's' : ''}`}
+                    message={`Are you sure you want to delete ${selectedIds.length} selected document${
+                        selectedIds.length > 1 ? 's' : ''
+                    }? This action cannot be undone.`}
+                    onCancel={() => setBulkDeleteModal(false)}
+                    onConfirm={confirmBulkDelete}
+                />,
+                document.body
+            )}
         </div>
     );
 }
 
-// ✅ Persistent layout — the sidebar stays mounted and doesn't re-render
-// or reset every time the volunteer navigates to or away from this page.
-VolunteerDocuments.layout = (page) => <VolunteerLayout title="201 / Documents">{page}</VolunteerLayout>;
+/* ═══════════════════════════════════════════════════════════════
+   SUB-COMPONENTS (Unified Red Cross Design System)
+   ═══════════════════════════════════════════════════════════════ */
 
-export default VolunteerDocuments;
+function StatusBadge({ status }) {
+    return (
+        <span
+            className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold border ${statusBadgeClasses(
+                status
+            )}`}
+        >
+            {statusIcon(status)}
+            <span>{capitalize(status || 'pending')}</span>
+        </span>
+    );
+}
+
+function StatCard({ label, value, subtitle, icon: Icon }) {
+    return (
+        <div className="bg-white rounded-2xl shadow-xs p-4 flex items-center gap-3.5">
+            <div className="p-2.5 rounded-xl bg-red-50 text-red-600 shrink-0">
+                <Icon className="w-5 h-5" />
+            </div>
+            <div className="min-w-0">
+                <div className="text-xl font-bold text-gray-900 tracking-tight">{value}</div>
+                <div className="text-xs font-bold text-gray-700">{label}</div>
+                {subtitle && <div className="text-[11px] text-gray-400 mt-0.5">{subtitle}</div>}
+            </div>
+        </div>
+    );
+}
+
+function SelectBox({ checked, indeterminate }) {
+    if (checked) {
+        return (
+            <span className="w-4 h-4 rounded bg-red-600 flex items-center justify-center shrink-0">
+                <Check className="w-3 h-3 text-white" />
+            </span>
+        );
+    }
+    if (indeterminate) {
+        return (
+            <span className="w-4 h-4 rounded bg-red-600 flex items-center justify-center shrink-0">
+                <Minus className="w-3 h-3 text-white" />
+            </span>
+        );
+    }
+    return <span className="w-4 h-4 rounded border-2 border-gray-300 shrink-0 hover:border-gray-400 transition" />;
+}
+
+function EmptyState({ icon: Icon, title, subtitle, action }) {
+    return (
+        <div className="py-16 text-center px-4">
+            <div className="w-12 h-12 rounded-2xl bg-gray-100 text-gray-400 flex items-center justify-center mx-auto mb-3">
+                <Icon className="w-6 h-6" />
+            </div>
+            <h3 className="text-sm font-bold text-gray-800">{title}</h3>
+            <p className="text-xs text-gray-500 mt-1 max-w-sm mx-auto leading-relaxed">{subtitle}</p>
+            {action}
+        </div>
+    );
+}
+
+function ConfirmModal({ title, message, onCancel, onConfirm }) {
+    return (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-xs" onClick={onCancel} />
+            <div
+                className="relative z-10 bg-white rounded-2xl shadow-2xl p-6 sm:p-7 w-full max-w-sm border border-gray-100 animate-fadeIn"
+                onClick={(e) => e.stopPropagation()}
+            >
+                <div className="w-10 h-10 rounded-xl bg-red-50 text-red-600 flex items-center justify-center mx-auto mb-3">
+                    <Trash2 className="w-5 h-5" />
+                </div>
+                <h2 className="text-base font-bold text-gray-900 text-center mb-1.5">{title}</h2>
+                <p className="text-xs text-gray-500 text-center mb-5 leading-relaxed">{message}</p>
+                <div className="flex gap-2.5">
+                    <button
+                        type="button"
+                        onClick={onCancel}
+                        className="flex-1 py-2 rounded-xl border border-gray-200 bg-white text-gray-700 text-xs font-bold hover:bg-gray-50 transition cursor-pointer"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        type="button"
+                        onClick={onConfirm}
+                        className="flex-1 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold shadow-sm transition cursor-pointer"
+                    >
+                        Yes, Delete
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+VolunteerDocuments.layout = (page) => <VolunteerLayout title="201 File">{page}</VolunteerLayout>;

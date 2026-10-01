@@ -1,305 +1,154 @@
-import React, { useState } from 'react';
-import { Head } from '@inertiajs/react';
-import SiteNavbar from './SiteNavbar';
+import React from 'react';
+import { Link } from '@inertiajs/react';
+import PublicLayout from '@/Layouts/PublicLayout';
+import PageHero from '@/Components/Public/PageHero';
+import SectionContainer from '@/Components/Public/SectionContainer';
+import SectionHeading from '@/Components/Public/SectionHeading';
+import Accordion from '@/Components/Public/Accordion';
+import CTASection from '@/Components/Public/CTASection';
+import FadeIn from '@/Components/Public/FadeIn';
+import { BLOOD_SERVICE_INFO } from '@/data/servicesData';
+import { BRANCH_CONTACT_INFO } from '@/data/navigationData';
+import { Droplet, Heart, HelpCircle, MapPin, Phone, Mail, Clock, CheckCircle2 } from 'lucide-react';
 
-const RED = '#ff0000';
-const HERO_IMAGE = '/images/training-hero.jpg';
-
-const faqs = [
-  {
-    question: 'HOW OFTEN CAN A PERSON DONATE?',
-    answer: 'A healthy individual may donate every three months.',
-    red: false,
-  },
-  {
-    question: 'WILL DONATING BLOOD MAKE A PERSON WEAK?',
-    answer: 'No, it will not make you weak. Donating 450cc will not cause any ill effects or weakness. The human body has the capacity to compensate for the new fluid volume. Further, the bone marrow is stimulated to produce new blood cells which in turn makes the blood-forming organs function more effectively.',
-    red: false,
-  },
-  {
-    question: 'CAN A PERSON WHO HAS A TATTOO OR BODY PIERCING STILL DONATE BLOOD?',
-    answer: 'If the tattooing procedure or the piercing was done a year ago, he/she may donate. This is also applicable to acupuncture, and other procedures involving needles.',
-    red: false,
-  },
-  {
-    question: 'HOW LONG WILL IT TAKE TO DONATE BLOOD?',
-    answer: 'The whole process of blood donation, from the registration up to the recovery, will only take an average of 30 minutes. The blood extraction will take about 5-10 minutes. The blood volume will start replenishing within 24 hours. Theoretically, by the end of the month, the body will have the blood status before the blood donation.',
-    red: false,
-  },
-  {
-    question: 'WILL I CONTRACT THE DISEASE THROUGH BLOOD DONATION?',
-    answer: 'No, we use sterile, disposable needles and syringes.',
-    red: false,
-  },
+const BLOOD_FAQS = [
+    {
+        q: 'How often can a person donate blood?',
+        a: 'A healthy individual may safely donate whole blood every three months (up to 4 times a year). The body begins replenishing lost fluid within 24 hours.',
+    },
+    {
+        q: 'Will donating blood make me weak or sick?',
+        a: 'No. Donating one standard unit (450ml) will not cause any ill effects or weakness in healthy individuals. The bone marrow is stimulated to generate fresh, healthy red blood cells.',
+    },
+    {
+        q: 'Can a person with a tattoo or body piercing donate blood?',
+        a: 'Yes, provided that the tattooing or piercing procedure was done at least 12 months prior to donation, and sterile procedures were observed.',
+    },
+    {
+        q: 'How long does the entire blood donation process take?',
+        a: 'The entire process from registration, vitals check, and health screening up to rest and recovery takes only 25–30 minutes. The actual blood collection takes only 8–10 minutes.',
+    },
+    {
+        q: 'Is there any risk of contracting an infection or disease?',
+        a: 'None whatsoever. The Philippine Red Cross strictly uses sterile, single-use, disposable needles and collection bags that are safely incinerated after use.',
+    },
 ];
-
-const mainCenters = [
-  { name: 'NATIONAL BLOOD CENTER (PRC TOWER)', details: { address: 'Bloodbank, 3rd Floor, PRC Tower, 37 EDSA corner Boni Avenue, Mandaluyong City', phone: '(02) 8790-2300', hours: 'Monday to Sunday, 24 hours' } },
-  { name: 'NATIONAL BLOOD CENTER (MANILA)', details: { address: 'Philippine Red Cross, Bloodbank, 1000 Batangas Street, Sta. Ana, Manila', phone: '(02) 8563-3481', hours: 'Monday to Sunday, 24 hours' } },
-  { name: 'EASTERN VISAYAS REGIONAL BLOOD CENTER', details: { address: 'PRC Leyte Chapter, Bloodbank, Magsaysay Boulevard, Tacloban City', phone: '(053) 321-3726', hours: 'Monday to Sunday, 24 hours' } },
-  { name: 'WESTERN VISAYAS REGIONAL BLOOD CENTER', details: { address: 'PRC Iloilo Chapter, Bloodbank, Quezon Street, Iloilo City', phone: '(033) 337-4946', hours: 'Monday to Sunday, 24 hours' } },
-  { name: 'MINDANAO REGIONAL BLOOD CENTER', details: { address: 'PRC Davao Chapter, Bloodbank, San Pedro Street, Davao City', phone: '(082) 221-4591', hours: 'Monday to Sunday, 24 hours' } },
-  { name: 'RIZAL CHAPTER — MUNTINLUPA CITY BRANCH', details: { address: 'Muntinlupa City Hall Compound, National Road, Tunasan, Muntinlupa City', phone: '0917 322 8143', email: 'rizalmuntinlupa@redcross.org.ph', hours: 'Monday to Friday, 8:00 AM – 5:00 PM' } },
-];
-
-const northernLuzonChapters = [
-  'ALAMINOS CITY-WESTERN PANGASINAN', 'BAGUIO CITY', 'BATAAN', 'BENGUET',
-  'BULACAN-BALIWAG', { name: 'BULACAN-MALOLOS', red: true }, 'BULACAN-MARILAO',
-  'BULACAN-SAN RAFAEL', 'CAGAYAN', 'IFUGAO', 'ILOCOS NORTE', 'ILOCOS SUR',
-  'ISABELA', 'KALINGA', 'LA UNION-SAN FERNANDO CITY', 'NUEVA ECIJA',
-  'NUEVA VIZCAYA', 'OLONGAPO CITY', 'PAMPANGA', 'PAMPANGA-ANGELES CITY',
-  'PANGASINAN-DAGUPAN CITY-SAN CARLOS CITY', 'PANGASINAN-URDANETA CITY',
-  'QUIRINO', { name: 'SANTIAGO CITY', red: true }, 'TARLAC', 'ZAMBALES',
-];
-
-const ncrChapters = [
-  'CALOOCAN CITY', 'MAKATI', 'MUNTINLUPA', 'PASAY CITY',
-  'QUEZON CITY', 'RIZAL-MAIN', 'RIZAL-EAST', { name: 'VALENZUELA CITY', red: true },
-];
-
-const southernTagalogChapters = [
-  'BATANGAS', 'CAVITE', 'CAVITE-DASMARINAS', { name: 'LAGUNA', red: true },
-  'LAGUNA-CALAMBA', 'LAGUNA-STA. CRUZ', 'LAGUNA-STA. ROSA', 'LAGUNA-SINILOAN',
-  'OCCIDENTAL MINDORO', 'PALAWAN', 'QUEZON-LUCENA', 'ROMBLON', 'SAN PABLO CITY',
-];
-
-const bicolChapters = [
-  'ALBAY-LEGASPI CITY', 'CAMARINES SUR', 'CATANDUANES', 'MASBATE',
-];
-
-const visayasChapters = [
-  'AKLAN', 'ANTIQUE', 'BOHOL', 'CAPIZ', 'CEBU-BOGO CITY', 'CEBU-MANDAUE CITY',
-  'EASTERN SAMAR', 'GUIMARAS', 'LAPU-LAPU CITY', 'LEYTE',
-  'NEGROS OCCIDENTAL \u2013BACOLOD CITY', 'NEGROS ORIENTAL', 'NORTHERN SAMAR',
-  'ORMOC CITY', 'PASSI CITY', 'SOUTHERN LEYTE',
-];
-
-const mindanaoChapters = [
-  'AGUSAN DEL NORTE-BUTUAN CITY', 'AGUSAN DEL SUR', 'BUKIDNON', 'COTABATO',
-  'DAVAO CITY', 'DAVAO DEL NORTE', 'DAVAO DEL SUR', 'DAVAO ORIENTAL',
-  { name: 'GENERAL SANTOS', red: true }, 'GINGOOG CITY', 'ILIGAN CITY',
-  'OZAMIS', 'SOUTH COTABATO', 'SULTAN KUDARAT PROVINCE-TACURONG CITY CHAPTER',
-  'SULU', 'SURIGAO DEL NORTE', 'SURIGAO DEL SUR', 'TANGUB CITY',
-  'ZAMBOANGA CITY', 'ZAMBOANGA DEL NORTE',
-  'ZAMBOANGA DEL SUR \u2013PAGADIAN CITY', 'ZAMBOANGA -SIBUGAY SUB-CHAPTER',
-];
-
-function AccordionItem({ question, answer, red, name, details }) {
-  const [open, setOpen] = useState(false);
-  const label = question || name;
-
-  return (
-    <div style={{
-      border: '1px solid #e5e7eb', borderRadius: 6,
-      marginBottom: 10, background: open ? 'white' : '#f5f5f5',
-    }}>
-      <button
-        onClick={() => setOpen(!open)}
-        style={{
-          width: '100%', display: 'flex', alignItems: 'center',
-          justifyContent: 'space-between', padding: '16px 20px',
-          background: 'none', border: 'none', cursor: 'pointer',
-          textAlign: 'left', gap: 16,
-        }}
-      >
-        <span style={{ fontSize: 13, fontWeight: 700, color: red ? RED : '#555', letterSpacing: '0.04em', lineHeight: 1.4 }}>
-          {label}
-        </span>
-        <div style={{
-          width: 28, height: 28, borderRadius: '50%', background: RED,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          flexShrink: 0, color: 'white', fontSize: 18, fontWeight: 700,
-          transform: open ? 'rotate(45deg)' : 'rotate(0deg)',
-          transition: 'transform 0.2s',
-        }}>+</div>
-      </button>
-
-      {open && (
-        <div style={{ padding: '4px 20px 18px', borderTop: '1px solid #e5e7eb' }}>
-          {/* FAQ answer */}
-          {answer && (
-            <p style={{ fontSize: 14, color: '#374151', lineHeight: 1.8, margin: 0 }}>{answer}</p>
-          )}
-          {/* Blood center details */}
-          {details && (
-            <>
-              {details.address && <div style={{ marginBottom: 10 }}><div style={{ fontSize: 12, fontWeight: 700, color: '#9ca3af', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 2 }}>Address</div><div style={{ fontSize: 14, color: '#374151', lineHeight: 1.6 }}>{details.address}</div></div>}
-              {details.phone && <div style={{ marginBottom: 10 }}><div style={{ fontSize: 12, fontWeight: 700, color: '#9ca3af', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 2 }}>Phone</div><div style={{ fontSize: 14, color: '#374151' }}>{details.phone}</div></div>}
-              {details.email && <div style={{ marginBottom: 10 }}><div style={{ fontSize: 12, fontWeight: 700, color: '#9ca3af', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 2 }}>Email</div><div style={{ fontSize: 14, color: RED }}>{details.email}</div></div>}
-              {details.hours && <div><div style={{ fontSize: 12, fontWeight: 700, color: '#9ca3af', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 2 }}>Hours</div><div style={{ fontSize: 14, color: '#374151' }}>{details.hours}</div></div>}
-            </>
-          )}
-          {/* Chapter placeholder */}
-          {!answer && !details && (
-            <p style={{ fontSize: 14, color: '#9ca3af', fontStyle: 'italic', margin: 0 }}>Contact details coming soon.</p>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function SectionTitle({ children }) {
-  return (
-    <>
-      <h2 style={{ fontSize: 38, fontWeight: 800, color: RED, marginBottom: 12, fontFamily: 'monserrat, monserrat' }}>
-        {children}
-      </h2>
-      <div style={{ width: 80, height: 2, background: '#ccc', marginBottom: 32 }} />
-    </>
-  );
-}
 
 export default function GiveBlood() {
-  const [showNCR, setShowNCR] = useState(false);
-  return (
-    <>
-      <Head title="Give Blood - Philippine Red Cross" />
-      <div style={{ fontFamily: "'monserrat', 'monserrat'", margin: 0, padding: 0 }}>
+    return (
+        <PublicLayout title="Give Blood Today - Philippine Red Cross">
+            <PageHero
+                title="Give Blood, Share Life"
+                subtitle="Philippine Red Cross - Muntinlupa City Blood Service"
+                description="Your voluntary blood donation is a vital lifeline for accident victims, surgical patients, cancer fighters, and mothers in critical childbirth across Muntinlupa."
+                breadcrumbs={[
+                    { label: 'Services', href: '/about' },
+                    { label: 'National Blood Service', href: '/national-blood-service' },
+                    { label: 'Give Blood' },
+                ]}
+            />
 
-        <SiteNavbar />
-        {/* FULL-BLEED HERO BANNER */}
-        <div style={{
-          marginTop: 56, position: 'relative', height: 380,
-          overflow: 'hidden', background: '#1a1a1a',
-          width: '100vw', marginLeft: 'calc(50% - 50vw)',
-        }}>
-          <img src={HERO_IMAGE} alt="Give Blood"
-            style={{
-              position: 'absolute', inset: 0, width: '100%', height: '100%',
-              objectFit: 'cover',
-            }} />
-          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(rgba(255,0,0,0.25), rgba(255,0,0,0.25))' }} />
-          <div style={{
-            position: 'absolute', left: '5%', right: '5%', bottom: 40, zIndex: 2,
-          }}>
-            <h1 style={{
-              fontSize: 56, fontWeight: 800, color: '#fff', margin: 0,
-              fontFamily: 'monserrat, monserrat', letterSpacing: '-0.01em',
-              lineHeight: 1.15, textShadow: '0 2px 12px rgba(0,0,0,0.35)',
-              maxWidth: 900,
-            }}>
-              Give Blood. Save Lives.
-            </h1>
-          </div>
-        </div>
+            {/* Donation Flow Steps */}
+            <SectionContainer bg="white">
+                <FadeIn>
+                    <SectionHeading
+                        title="Simple 5-Step Blood Donation Journey"
+                        subtitle="Our certified phlebotomists and medical staff ensure a comfortable and rewarding experience."
+                    />
+                </FadeIn>
 
-        <div style={{ marginTop: 56, paddingTop: 60, paddingLeft: 80, paddingRight: 80, paddingBottom: 0, width: '100%', boxSizing: 'border-box' }}>
-
-          {/* SECTION 1: HOW TO DONATE */}
-          <SectionTitle>How to Donate</SectionTitle>
-          <div style={{ marginBottom: 64 }}>
-            {faqs.map((faq, i) => (
-              <AccordionItem key={i} question={faq.question} answer={faq.answer} red={faq.red} />
-            ))}
-          </div>
-
-          {/* SECTION 2: BLOOD BANK LOCATOR */}
-          <SectionTitle>Blood Bank Locator</SectionTitle>
-          <div style={{ marginBottom: 40 }}>
-            {mainCenters.map((c, i) => (
-              <AccordionItem key={i} name={c.name} details={c.details} />
-            ))}
-          </div>
-
-          
-        </div>
-
-        {/* PROGRAMS SECTION */}
-        <div style={{ paddingTop: '20px', paddingLeft: 80, paddingRight: 80, paddingBottom: '60px', width: '100%', boxSizing: 'border-box' }}>
-          <h2 style={{ fontSize: 38, fontWeight: 800, color: RED, marginBottom: 12, fontFamily: 'monserrat, monserrat' }}>
-            Programs
-          </h2>
-          <div style={{ width: 80, height: 2, background: '#ccc', marginBottom: 36 }} />
-
-          {[
-            {
-              title: 'DONOR RECRUITMENT AND RETENTION',
-              text: 'To meet the increasing demand for blood and augment the national blood requirement, the PRC conducts education and recruitment sessions to encourage regular voluntary blood donations from communities, different companies, organizations, colleges and universities nationwide.',
-            },
-            {
-              title: 'BLOOD COLLECTION',
-              text: 'With different PRC blood service facilities strategically located in the entire country, the PRC collects blood from voluntary, non-remunerated blood donors with their donations accounting to almost 50% share of the nation\'s blood supply.',
-            },
-            {
-              title: 'BLOOD COMPONENT PROCESSING',
-              text: 'Whole blood donations are separated into components using a special equipment to generate one unit each of red blood cells, plasma and platelets. Thus, one donation can help save three lives.',
-            },
-            {
-              title: 'BLOOD STORAGE AND ISSUANCE',
-              text: 'Once blood is suitable for transfusion, blood is stored in a temperature controlled blood bank refrigerator. Clients or patients needing blood for transfusion may request from any PRC blood facilities upon presentation of blood request form issued by the hospital or physician.',
-            },
-            {
-              title: 'BLOOD SAMARITAN PROGRAM',
-              text: 'The Blood Samaritan Program is aimed mainly to assist indigent patients needing blood transfusion. The PRC seeks kind-hearted individuals/groups that are willing to give financial donations to support the blood needs of the indigents. The donated money covers the payment of blood processing fees of legitimate indigent patients.',
-            },
-            {
-              title: 'BLOOD DONOR RECOGNITION',
-              text: 'We have instituted different awards to recognize and thank individuals and different groups who untiringly help us attain our mission. Blood Galloner pins, certificates, medals and plaques are some of the tokens we issue during the annual Blood Donors Recognition Ceremony held every month July in celebration of the Blood Donors Month.',
-            },
-          ].map((item, i) => (
-            <div key={i} style={{ marginBottom: 36 }}>
-              <h3 style={{
-                fontSize: 14, fontWeight: 800, color: '#6b7280',
-                letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 12,
-              }}>{item.title}</h3>
-              <p style={{ fontSize: 15, color: '#374151', lineHeight: 1.8, margin: 0 }}>{item.text}</p>
-            </div>
-          ))}
-        </div>
-
-        {/* SAVE LIVES BANNER */}
-        <div style={{
-          position: 'relative', padding: '32px 40px',
-          background: '#f5f5f5', textAlign: 'center',
-          overflow: 'hidden',
-        }}>
-          <div style={{ position: 'relative', zIndex: 1 }}>
-            <h2 style={{
-              fontSize: 48, fontWeight: 800, color: '#ff0000',
-              marginBottom: 16, fontFamily: 'monserrat, monserrat',
-            }}>
-              Save Lives. Join the Red Cross.
-            </h2>
-            <p style={{ fontSize: 15, color: '#6b7280', maxWidth: 560, margin: '0 auto 32px', lineHeight: 1.7 }}>
-              We take pride in urging all Filipinos to take part in the heroism of the Philippine Red Cross by becoming a full-fledged member, volunteer, or donor.
-            </p>
-            <a href="/register" style={{
-              display: 'inline-block',
-              background: RED, color: 'white', textDecoration: 'none',
-              padding: '14px 40px', borderRadius: 100,
-              fontSize: 14, fontWeight: 800, letterSpacing: '0.08em',
-            }}>JOIN US</a>
-          </div>
-        </div>
-
-        {/* FOOTER */}
-                <div style={{ background: '#1e3a8a', padding: '18px 80px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-                    <span style={{ fontSize: '13px', color: '#ffffff', fontWeight: 700, letterSpacing: '0.3px' }}>
-                        © 2026 Philippine Red Cross – Muntinlupa City Branch. All rights reserved.
-                    </span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+                    {BLOOD_SERVICE_INFO.donationSteps.map((step, i) => (
+                        <FadeIn key={step.step} delay={0.04 * i}>
+                            <div className="bg-gray-50 rounded-2xl border border-gray-200/80 p-6 flex flex-col justify-between hover:border-red-300 transition-colors duration-200 group h-full">
+                                <div>
+                                    <div className="w-10 h-10 rounded-full bg-red-600 text-white font-black text-sm flex items-center justify-center mb-4">
+                                        {step.step}
+                                    </div>
+                                    <h4 className="font-bold text-gray-900 mb-2 group-hover:text-red-600 transition-colors text-base">
+                                        {step.title}
+                                    </h4>
+                                    <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">
+                                        {step.desc}
+                                    </p>
+                                </div>
+                            </div>
+                        </FadeIn>
+                    ))}
                 </div>
-            </div>
-        </>
+            </SectionContainer>
+
+            {/* FAQs Accordion & Chapter Location */}
+            <SectionContainer bg="gray-50">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                    {/* FAQ Column */}
+                    <div className="lg:col-span-7 space-y-6">
+                        <FadeIn>
+                            <SectionHeading
+                                title="Common Questions on Blood Donation"
+                                subtitle="Learn about safety, eligibility, and what to do before and after donating."
+                            />
+                            <Accordion items={BLOOD_FAQS} defaultOpenIndex={0} />
+                        </FadeIn>
+                    </div>
+
+                    {/* Muntinlupa Blood Facility Card */}
+                    <div className="lg:col-span-5">
+                        <FadeIn delay={0.08}>
+                            <div className="bg-white rounded-2xl border border-gray-200/80 p-6 sm:p-8 space-y-5 h-full">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-xl bg-red-100 text-red-600 flex items-center justify-center">
+                                        <MapPin className="w-5 h-5" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-xl font-bold text-gray-900">Muntinlupa Blood Center</h3>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-3.5 text-xs sm:text-sm">
+                                    <div className="flex items-start gap-2.5 text-gray-700">
+                                        <MapPin className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+                                        <span>{BRANCH_CONTACT_INFO.address}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2.5 text-gray-700">
+                                        <Phone className="w-4 h-4 text-red-600 shrink-0" />
+                                        <span>{BRANCH_CONTACT_INFO.phone} / {BRANCH_CONTACT_INFO.mobile}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2.5 text-gray-700">
+                                        <Mail className="w-4 h-4 text-red-600 shrink-0" />
+                                        <span>{BRANCH_CONTACT_INFO.email}</span>
+                                    </div>
+                                    <div className="flex items-center gap-2.5 text-gray-700">
+                                        <Clock className="w-4 h-4 text-red-600 shrink-0" />
+                                        <span>{BRANCH_CONTACT_INFO.operatingHours}</span>
+                                    </div>
+                                </div>
+
+                                <div className="pt-3 border-t border-gray-100">
+                                    <a
+                                        href={BRANCH_CONTACT_INFO.mapUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold transition-colors"
+                                    >
+                                        <MapPin className="w-3.5 h-3.5" />
+                                        <span>Open Google Maps Directions</span>
+                                    </a>
+                                </div>
+                            </div>
+                        </FadeIn>
+                    </div>
+                </div>
+            </SectionContainer>
+
+            <CTASection
+                title="Be a Hero, Save a Life"
+                description="Sign up for our regular voluntary blood donor roster or visit our Muntinlupa branch."
+                primaryBtnText="Register as Blood Donor"
+                primaryBtnHref="/register"
+                secondaryBtnText="Explore Blood Services"
+                secondaryBtnHref="/national-blood-service"
+            />
+        </PublicLayout>
     );
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

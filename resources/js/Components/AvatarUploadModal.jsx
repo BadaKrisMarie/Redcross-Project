@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react';
+import { X, UploadCloud } from 'lucide-react';
 
 export default function AvatarUploadModal({ onClose, onUpload }) {
   const [preview, setPreview]   = useState(null);
@@ -45,7 +46,9 @@ export default function AvatarUploadModal({ onClose, onUpload }) {
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-head">
           <h3>Upload profile photo</h3>
-          <button className="modal-close" onClick={onClose} aria-label="Close">✕</button>
+          <button className="modal-close" onClick={onClose} aria-label="Close">
+            <X style={{ width: 16, height: 16 }} />
+          </button>
         </div>
 
         <div className="modal-body">
@@ -69,7 +72,7 @@ export default function AvatarUploadModal({ onClose, onUpload }) {
               tabIndex={0}
               onKeyDown={(e) => e.key === 'Enter' && inputRef.current.click()}
             >
-              <span className="upload-icon">☁</span>
+              <UploadCloud style={{ width: 36, height: 36, margin: '0 auto 8px', color: '#9CA3AF' }} />
               <p>Click to browse or drag &amp; drop</p>
               <span className="upload-hint">JPG, PNG, WebP — max 5 MB</span>
             </div>

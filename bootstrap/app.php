@@ -4,6 +4,14 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 
+// Polyfill for PHP 8.4 request_parse_body when running on PHP < 8.4
+if (!function_exists('request_parse_body')) {
+    function request_parse_body(?array $options = null): array
+    {
+        return [$_POST, $_FILES];
+    }
+}
+
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__.'/../routes/web.php',

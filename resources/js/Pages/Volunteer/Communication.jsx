@@ -1,529 +1,1023 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { Head, useForm, usePage } from '@inertiajs/react';
-import VolunteerLayout from '@/Layouts/VolunteerLayout'; // ⚠️ ayusin ang path base sa project mo
-import LiveChatPanel from '@/Components/LiveChatPanel'; // ⚠️ ayusin ang path base sa project mo
+import VolunteerLayout from '@/Layouts/VolunteerLayout';
+import {
+    PenSquare,
+    Inbox,
+    Send,
+    Megaphone,
+    Mail,
+    Search,
+    X,
+    ArrowLeft,
+    Reply,
+    CheckCircle2,
+    Clock,
+    ChevronRight,
+    Filter,
+    CheckCheck,
+    CornerDownRight,
+} from 'lucide-react';
 
-const RED = '#ff0000';
+const AUTHORIZED_CONTACTS = [
+    {
+        name: 'Philippine Red Cross — Rizal Chapter (Muntinlupa)',
+        email: 'rizalmuntinlupa@redcross.org.ph',
+        department: 'Chapter Administration & General Inquiries',
+    },
+    {
+        name: 'Volunteer Operations & Services Desk',
+        email: 'volunteers.muntinlupa@redcross.org.ph',
+        department: 'Volunteer Deployments & Schedules',
+    },
+    {
+        name: 'Disaster Management Services (DMS)',
+        email: 'dms.muntinlupa@redcross.org.ph',
+        department: 'Disaster Preparedness & Relief',
+    },
+    {
+        name: 'Safety Services & First Aid Training',
+        email: 'safety.muntinlupa@redcross.org.ph',
+        department: 'CPR, Safety & Training Certifications',
+    },
+    {
+        name: 'Health & Community Welfare Services',
+        email: 'welfare.muntinlupa@redcross.org.ph',
+        department: 'Blood Services & Welfare Programs',
+    },
+];
 
-/**
- * ✅ Hindi na dito ginagawa ang sidebar/topbar — galing na sa VolunteerLayout.
- * Kaya persistent na siya at hindi na "magbabago" tuwing lilipat ka ng page.
- */
-function VolunteerCommunication({ sentEmails, announcements }) {
+export default function VolunteerCommunication({ sentEmails = [], announcements = [] }) {
     const { auth } = usePage().props;
-    const currentVolunteerId = auth?.user?.id;
+    const volunteer = auth?.user;
+    const currentVolunteerId = volunteer?.id || 'guest';
+    const volunteerName = volunteer?.name || 'Volunteer';
+    const volunteerEmail = volunteer?.email || 'volunteer@redcross.org.ph';
 
     const emails = sentEmails || [];
     const announces = announcements || [];
-    const [activeTab, setActiveTab] = useState('compose');
-    const [selectedInbox, setSelectedInbox] = useState(null);
-    const [selectedAnnouncement, setSelectedAnnouncement] = useState(null);
-    const [focusedField, setFocusedField] = useState(null);
 
+    // State
+    const [currentFolder, setCurrentFolder] = useState('inbox'); // 'inbox' | 'sent' | 'announcements'
+    const [selectedEmail, setSelectedEmail] = useState(null);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [filterUnreadOnly, setFilterUnreadOnly] = useState(false);
+    const [composeOpen, setComposeOpen] = useState(false);
+    const [replyNotice, setReplyNotice] = useState(null);
+    const [successBanner, setSuccessBanner] = useState('');
+
+    // Read/Unread tracking persisted to localStorage
+    const [readSet, setReadSet] = useState(() => {
+        try {
+            const saved = localStorage.getItem(`prc_read_emails_${currentVolunteerId}`);
+            return saved ? new Set(JSON.parse(saved)) : new Set();
+        } catch {
+            return new Set();
+        }
+    });
+
+    const persistReadSet = (updatedSet) => {
+        setReadSet(updatedSet);
+        try {
+            localStorage.setItem(
+                `prc_read_emails_${currentVolunteerId}`,
+                JSON.stringify(Array.from(updatedSet))
+            );
+        } catch {}
+    };
+
+    // Compose Form
     const { data, setData, post, processing, reset, errors } = useForm({
-        to: 'rizalmuntinlupa@redcross.org.ph',
+        to: AUTHORIZED_CONTACTS[0].email,
         subject: '',
         message: '',
     });
 
-    const handleSend = (e) => {
-        e.preventDefault();
-        post(route('volunteer.communication.send'), {
-            onSuccess: () => { reset('subject', 'message'); setActiveTab('sent'); },
+    // Process Inbox items: Replied inquiries from Admin
+    const inboxItems = useMemo(() => {
+        return emails
+            .filter((e) => Boolean(e.reply))
+            .map((e) => {
+                const key = `inbox_${e.id}`;
+                const subject = e.subject?.startsWith('Re:') ? e.subject : `Re: ${e.subject || 'Inquiry'}`;
+                return {
+                    id: e.id,
+                    key,
+                    folder: 'inbox',
+                    senderName: 'PRC Chapter Administration',
+                    senderEmail: 'rizalmuntinlupa@redcross.org.ph',
+                    senderBadge: 'Official PRC Reply',
+                    recipient: `${volunteerName} <${volunteerEmail}>`,
+                    subject,
+                    preview: e.reply || '',
+                    body: e.reply || '',
+                    originalInquiry: {
+                        to: e.to,
+                        subject: e.subject,
+                        message: e.message,
+                        sentAt: e.created_at,
+                    },
+                    date: e.replied_at || e.updated_at || e.created_at,
+                    raw: e,
+                };
+            });
+    }, [emails, volunteerName, volunteerEmail]);
+
+    // Process Sent items: Emails dispatched by the volunteer
+    const sentItems = useMemo(() => {
+        return emails.map((e) => {
+            const key = `sent_${e.id}`;
+            return {
+                id: e.id,
+                key,
+                folder: 'sent',
+                senderName: `${volunteerName} (You)`,
+                senderEmail: volunteerEmail,
+                recipientName: 'Philippine Red Cross — Muntinlupa Branch',
+                recipient: e.to,
+                subject: e.subject || 'No Subject',
+                preview: e.message || '',
+                body: e.message || '',
+                hasReply: Boolean(e.reply),
+                replyText: e.reply,
+                repliedAt: e.replied_at,
+                date: e.created_at,
+                raw: e,
+            };
+        });
+    }, [emails, volunteerName, volunteerEmail]);
+
+    // Process Announcements items: Official circulars
+    const announcementItems = useMemo(() => {
+        return announces.map((a) => {
+            const key = `announcement_${a.id}`;
+            const adminName = a.admin?.name || 'PRC Chapter Administration';
+            return {
+                id: a.id,
+                key,
+                folder: 'announcements',
+                senderName: `${adminName} (PRC Chapter)`,
+                senderEmail: 'admin@redcross.org.ph',
+                senderBadge: 'Official Notice',
+                recipient: 'All Approved Volunteers',
+                subject: a.title || 'Official Announcement',
+                preview: a.body || '',
+                body: a.body || '',
+                date: a.created_at,
+                raw: a,
+            };
+        });
+    }, [announces]);
+
+    // Unread count calculations
+    const inboxUnreadCount = useMemo(() => {
+        return inboxItems.filter((item) => !readSet.has(item.key)).length;
+    }, [inboxItems, readSet]);
+
+    const announcementsUnreadCount = useMemo(() => {
+        return announcementItems.filter((item) => !readSet.has(item.key)).length;
+    }, [announcementItems, readSet]);
+
+    // Current folder items based on selected tab
+    const currentFolderItems = useMemo(() => {
+        if (currentFolder === 'inbox') return inboxItems;
+        if (currentFolder === 'sent') return sentItems;
+        if (currentFolder === 'announcements') return announcementItems;
+        return [];
+    }, [currentFolder, inboxItems, sentItems, announcementItems]);
+
+    // Filter items based on search and unread toggle
+    const filteredItems = useMemo(() => {
+        let items = currentFolderItems;
+
+        if (filterUnreadOnly && currentFolder !== 'sent') {
+            items = items.filter((item) => !readSet.has(item.key));
+        }
+
+        if (searchQuery.trim()) {
+            const q = searchQuery.toLowerCase().trim();
+            items = items.filter(
+                (item) =>
+                    item.subject.toLowerCase().includes(q) ||
+                    item.preview.toLowerCase().includes(q) ||
+                    item.senderName.toLowerCase().includes(q) ||
+                    (item.recipient && item.recipient.toLowerCase().includes(q))
+            );
+        }
+
+        return items;
+    }, [currentFolderItems, filterUnreadOnly, currentFolder, readSet, searchQuery]);
+
+    // Open email details and mark as read
+    const handleOpenEmail = (email) => {
+        setSelectedEmail(email);
+
+        if (!readSet.has(email.key)) {
+            const updated = new Set(readSet);
+            updated.add(email.key);
+            persistReadSet(updated);
+        }
+    };
+
+    // Toggle Read / Unread status
+    const handleToggleRead = (e, emailKey) => {
+        e.stopPropagation();
+        const updated = new Set(readSet);
+        if (updated.has(emailKey)) {
+            updated.delete(emailKey);
+        } else {
+            updated.add(emailKey);
+        }
+        persistReadSet(updated);
+    };
+
+    // Mark all as read in current folder
+    const handleMarkAllRead = () => {
+        const updated = new Set(readSet);
+        currentFolderItems.forEach((item) => updated.add(item.key));
+        persistReadSet(updated);
+    };
+
+    // Switch Folder
+    const handleSwitchFolder = (folderKey) => {
+        setCurrentFolder(folderKey);
+        setSelectedEmail(null);
+        setFilterUnreadOnly(false);
+    };
+
+    // Open Compose modal
+    const handleOpenCompose = (prefill = null) => {
+        if (prefill) {
+            setData({
+                to: prefill.to || AUTHORIZED_CONTACTS[0].email,
+                subject: prefill.subject || '',
+                message: prefill.message || '',
+            });
+            setReplyNotice(prefill.replyNotice || null);
+        } else {
+            setData({
+                to: AUTHORIZED_CONTACTS[0].email,
+                subject: '',
+                message: '',
+            });
+            setReplyNotice(null);
+        }
+        setComposeOpen(true);
+    };
+
+    // Reply action inside Email Detail
+    const handleReplyToEmail = (emailItem) => {
+        const subjectPrefix = emailItem.subject.startsWith('Re:')
+            ? emailItem.subject
+            : `Re: ${emailItem.subject}`;
+        const recipientEmail = emailItem.senderEmail?.includes('@')
+            ? emailItem.senderEmail
+            : AUTHORIZED_CONTACTS[0].email;
+
+        handleOpenCompose({
+            to: recipientEmail,
+            subject: subjectPrefix,
+            message: '',
+            replyNotice: `Replying regarding "${emailItem.subject}"`,
         });
     };
 
-    const repliedEmails = emails.filter(e => e.reply);
-    const unreadReplies = repliedEmails.length;
+    // Handle Form Submit
+    const handleSendEmail = (e) => {
+        e.preventDefault();
+        post(route('volunteer.communication.send'), {
+            onSuccess: () => {
+                reset();
+                setComposeOpen(false);
+                setReplyNotice(null);
+                setSuccessBanner('Your email was sent successfully to PRC Chapter Administration.');
+                setTimeout(() => setSuccessBanner(''), 5000);
+                setCurrentFolder('sent');
+                setSelectedEmail(null);
+            },
+        });
+    };
 
-    const tabs = [
-        { key: 'compose',       label: 'Compose',       icon: <PencilIcon /> },
-        { key: 'inbox',         label: 'Inbox',         icon: <InboxIcon />,  badge: unreadReplies, badgeColor: RED },
-        { key: 'announcements', label: 'Announcements', icon: <MegaphoneIcon />, badge: announces.length, badgeColor: '#F59E0B' },
-        { key: 'sent',          label: 'Sent',          icon: <SendIcon /> },
-        { key: 'chat',          label: 'Live Chat',     icon: <ChatIcon /> },
+    // Formatters
+    const formatShortDate = (dateString) => {
+        if (!dateString) return '';
+        const date = new Date(dateString);
+        if (isNaN(date.getTime())) return '';
+
+        const now = new Date();
+        const isToday =
+            date.getDate() === now.getDate() &&
+            date.getMonth() === now.getMonth() &&
+            date.getFullYear() === now.getFullYear();
+
+        if (isToday) {
+            return date.toLocaleTimeString('en-US', {
+                hour: 'numeric',
+                minute: '2-digit',
+                hour12: true,
+            });
+        }
+
+        const isThisYear = date.getFullYear() === now.getFullYear();
+        if (isThisYear) {
+            return date.toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+            });
+        }
+
+        return date.toLocaleDateString('en-US', {
+            month: 'numeric',
+            day: 'numeric',
+            year: '2-digit',
+        });
+    };
+
+    const formatFullDate = (dateString) => {
+        if (!dateString) return '';
+        const date = new Date(dateString);
+        if (isNaN(date.getTime())) return '';
+        return date.toLocaleDateString('en-PH', {
+            weekday: 'short',
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true,
+        });
+    };
+
+    const folders = [
+        {
+            key: 'inbox',
+            label: 'Inbox',
+            icon: Inbox,
+            count: inboxItems.length,
+            unread: inboxUnreadCount,
+        },
+        {
+            key: 'sent',
+            label: 'Sent',
+            icon: Send,
+            count: sentItems.length,
+            unread: 0,
+        },
+        {
+            key: 'announcements',
+            label: 'Announcements',
+            icon: Megaphone,
+            count: announcementItems.length,
+            unread: announcementsUnreadCount,
+        },
     ];
 
-    const tabStyle = (key) => ({
-        display: 'flex', alignItems: 'center', gap: '7px',
-        padding: '13px 18px', fontSize: '13px',
-        fontWeight: activeTab === key ? '700' : '500',
-        color: activeTab === key ? RED : '#6B7280',
-        borderBottom: activeTab === key ? `2.5px solid ${RED}` : '2.5px solid transparent',
-        background: 'none', border: 'none', cursor: 'pointer', whiteSpace: 'nowrap',
-        transition: 'color 0.15s',
-    });
-
-    const inputStyle = (field, extra = {}) => ({
-        width: '100%', padding: '12px 15px',
-        border: focusedField === field ? `1.5px solid ${RED}` : '1.5px solid #E5E7EB',
-        borderRadius: '10px', fontSize: '13.5px', outline: 'none',
-        boxSizing: 'border-box', fontFamily: "'Montserrat', sans-serif", color: '#111827',
-        background: focusedField === field ? '#FFFFFF' : '#FAFAFA',
-        boxShadow: focusedField === field ? '0 0 0 4px rgba(255,0,0,0.08)' : 'none',
-        transition: 'border-color 0.15s, box-shadow 0.15s, background 0.15s',
-        ...extra,
-    });
-
-    const labelStyle = { fontSize: '12.5px', fontWeight: '600', color: '#374151', display: 'block', marginBottom: '7px', letterSpacing: '0.1px' };
-
     return (
-        // ✅ FIXED: dating <> fragment, ngayon <div> na may fontFamily para lumaganap
-        // ang Montserrat sa LAHAT ng text sa page — headers, tabs, modals, list items —
-        // hindi lang sa inputs.
-        <div style={{ fontFamily: "'Montserrat', sans-serif" }}>
-            <Head title="Communication" />
-            {/* ✅ FIXED: "monserrat" (typo, lowercase) -> "Montserrat" (case-sensitive sa Google Fonts,
-                kaya dati hindi talaga naglo-load ang tamang font) */}
-            <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+        <>
+            <Head title="Communication - Volunteer Portal" />
 
-            {/* ── INBOX MODAL ── */}
-            {selectedInbox !== null && (
-                <div
-                    onClick={() => setSelectedInbox(null)}
-                    style={{
-                        position: 'fixed', inset: 0, zIndex: 200,
-                        background: 'rgba(17,17,17,0.5)', backdropFilter: 'blur(2px)',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        padding: '24px', animation: 'fadeIn 0.15s ease-out',
-                    }}
-                >
-                    <div
-                        onClick={e => e.stopPropagation()}
-                        style={{
-                            background: 'white', borderRadius: '18px',
-                            width: '100%', maxWidth: '560px',
-                            maxHeight: '80vh', overflowY: 'auto',
-                            boxShadow: '0 24px 60px rgba(0,0,0,0.25)',
-                            animation: 'popIn 0.18s ease-out',
-                        }}
+            <div className="max-w-6xl mx-auto space-y-4 pb-12 font-sans">
+                {/* ── Page Header: Clean & Simple (No tracking, no subtitle) ── */}
+                <div className="flex items-center justify-between pt-1">
+                    <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
+                        Communications
+                    </h1>
+
+                    <button
+                        type="button"
+                        onClick={() => handleOpenCompose()}
+                        className="sm:hidden inline-flex items-center justify-center gap-2 px-3.5 py-2 rounded-xl bg-red-600 hover:bg-red-700 active:bg-red-800 text-white text-xs font-semibold shadow-xs transition"
                     >
-                        <div style={{
-                            padding: '22px 26px 18px',
-                            borderBottom: '1px solid #F3F4F6',
-                            display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px',
-                        }}>
-                            <div>
-                                <div style={{ fontSize: '17px', fontWeight: '700', color: '#111', marginBottom: '5px' }}>
-                                    {selectedInbox.subject}
-                                </div>
-                                <div style={{ fontSize: '12px', color: '#9CA3AF' }}>
-                                    {selectedInbox.replied_at
-                                        ? new Date(selectedInbox.replied_at).toLocaleDateString('en-PH', { month: 'long', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })
-                                        : ''}
-                                </div>
-                            </div>
+                        <PenSquare className="w-4 h-4" />
+                        <span>Compose</span>
+                    </button>
+                </div>
+
+                {/* ── Success Alert Banner ── */}
+                {successBanner && (
+                    <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 px-4 py-2.5 rounded-xl flex items-center justify-between text-xs sm:text-sm">
+                        <div className="flex items-center gap-2">
+                            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                            <span className="font-medium">{successBanner}</span>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => setSuccessBanner('')}
+                            className="text-emerald-600 hover:text-emerald-800 p-1"
+                        >
+                            <X className="w-4 h-4" />
+                        </button>
+                    </div>
+                )}
+
+                {/* ── Main Mailbox Card ── */}
+                <div className="bg-white rounded-2xl border border-gray-200/90 shadow-xs overflow-hidden flex flex-col md:flex-row min-h-[640px]">
+                    {/* ══════════════════════════════════════════════
+                        SIDEBAR: COMPOSE & MAILBOX FOLDERS
+                    ══════════════════════════════════════════════ */}
+                    <aside className="w-full md:w-60 bg-gray-50/60 border-b md:border-b-0 md:border-r border-gray-200/80 p-3.5 flex flex-col justify-between shrink-0">
+                        <div className="space-y-3">
+                            {/* Compose Button */}
                             <button
-                                onClick={() => setSelectedInbox(null)}
-                                style={{
-                                    background: '#F3F4F6', border: 'none', borderRadius: '9px',
-                                    width: '32px', height: '32px', cursor: 'pointer',
-                                    fontSize: '15px', color: '#6B7280', flexShrink: 0,
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    transition: 'background 0.15s',
-                                }}
-                                onMouseEnter={e => e.currentTarget.style.background = '#E5E7EB'}
-                                onMouseLeave={e => e.currentTarget.style.background = '#F3F4F6'}
-                            >✕</button>
+                                type="button"
+                                onClick={() => handleOpenCompose()}
+                                className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 active:bg-red-800 text-white text-xs sm:text-sm font-semibold shadow-xs shadow-red-600/20 transition cursor-pointer"
+                            >
+                                <PenSquare className="w-4 h-4" />
+                                <span>Compose</span>
+                            </button>
+
+                            {/* Folders List with Active Background */}
+                            <nav className="space-y-1">
+                                {folders.map((f) => {
+                                    const Icon = f.icon;
+                                    const isActive = currentFolder === f.key;
+                                    return (
+                                        <button
+                                            key={f.key}
+                                            type="button"
+                                            onClick={() => handleSwitchFolder(f.key)}
+                                            className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-medium transition cursor-pointer ${
+                                                isActive
+                                                    ? 'bg-red-600 text-white font-semibold shadow-xs'
+                                                    : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                                            }`}
+                                        >
+                                            <div className="flex items-center gap-2.5 min-w-0">
+                                                <Icon
+                                                    className={`w-4 h-4 shrink-0 ${
+                                                        isActive ? 'text-white' : 'text-gray-400'
+                                                    }`}
+                                                />
+                                                <span className="truncate">{f.label}</span>
+                                            </div>
+
+                                            <div className="flex items-center gap-1.5 shrink-0">
+                                                {f.unread > 0 ? (
+                                                    <span
+                                                        className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                                            isActive
+                                                                ? 'bg-white text-red-600'
+                                                                : 'bg-red-600 text-white'
+                                                        }`}
+                                                    >
+                                                        {f.unread}
+                                                    </span>
+                                                ) : f.count > 0 ? (
+                                                    <span
+                                                        className={`text-[11px] ${
+                                                            isActive ? 'text-white/80' : 'text-gray-400'
+                                                        }`}
+                                                    >
+                                                        {f.count}
+                                                    </span>
+                                                ) : null}
+                                            </div>
+                                        </button>
+                                    );
+                                })}
+                            </nav>
                         </div>
 
-                        <div style={{ padding: '20px 26px 4px' }}>
-                            <div style={{ fontSize: '11px', fontWeight: '700', color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: '9px' }}>Your Message</div>
-                            <div style={{
-                                background: '#F9FAFB', border: '1px solid #E5E7EB',
-                                borderRadius: '12px', padding: '15px 17px',
-                                fontSize: '13px', color: '#374151', lineHeight: '1.7',
-                            }}>
-                                {selectedInbox.message}
+                        {/* Clean & Simple Footer Contact Info */}
+                        <div className="pt-3 border-t border-gray-200/80">
+                            <div className="flex items-center gap-2 text-[11px] text-gray-500">
+                                <Mail className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                                <span className="truncate">rizalmuntinlupa@redcross.org.ph</span>
                             </div>
                         </div>
+                    </aside>
 
-                        <div style={{ padding: '18px 26px 26px' }}>
-                            <div style={{ fontSize: '11px', fontWeight: '700', color: RED, textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: '9px' }}>Admin Reply</div>
-                            <div style={{
-                                background: '#FEF2F2', border: '1px solid #FECACA',
-                                borderRadius: '12px', padding: '15px 17px',
-                            }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '9px', marginBottom: '11px' }}>
-                                    <div style={{
-                                        width: '30px', height: '30px', borderRadius: '50%',
-                                        background: RED, display: 'flex', alignItems: 'center',
-                                        justifyContent: 'center', color: 'white', fontSize: '11px', fontWeight: '700',
-                                        boxShadow: '0 2px 6px rgba(255,0,0,0.3)',
-                                    }}>A</div>
-                                    <div>
-                                        <div style={{ fontSize: '12px', fontWeight: '700', color: RED }}>Admin</div>
-                                        <div style={{ fontSize: '11px', color: '#9CA3AF' }}>Rizal Chapter · Muntinlupa</div>
+                    {/* ══════════════════════════════════════════════
+                        MAIN CONTENT: EMAIL LIST OR EMAIL DETAIL
+                    ══════════════════════════════════════════════ */}
+                    <main className="flex-1 flex flex-col min-w-0 bg-white">
+                        {/* ──────────────────────────────────────────
+                            1. EMAIL DETAIL VIEW (READING PANE)
+                        ────────────────────────────────────────── */}
+                        {selectedEmail !== null ? (
+                            <div className="flex-1 flex flex-col min-w-0">
+                                {/* Detail Toolbar */}
+                                <div className="px-5 py-3 border-b border-gray-200/80 flex items-center justify-between gap-3 bg-gray-50/40">
+                                    <button
+                                        type="button"
+                                        onClick={() => setSelectedEmail(null)}
+                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-100 text-xs font-medium text-gray-700 transition cursor-pointer"
+                                    >
+                                        <ArrowLeft className="w-3.5 h-3.5 text-gray-500" />
+                                        <span>Back</span>
+                                    </button>
+
+                                    <div className="flex items-center gap-2">
+                                        {/* Toggle Read/Unread */}
+                                        {selectedEmail.folder !== 'sent' && (
+                                            <button
+                                                type="button"
+                                                onClick={(e) => handleToggleRead(e, selectedEmail.key)}
+                                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 bg-white hover:bg-gray-100 text-xs font-medium text-gray-600 transition cursor-pointer"
+                                                title={readSet.has(selectedEmail.key) ? 'Mark as unread' : 'Mark as read'}
+                                            >
+                                                <Mail className="w-3.5 h-3.5 text-gray-400" />
+                                                <span className="hidden sm:inline">
+                                                    {readSet.has(selectedEmail.key) ? 'Mark as unread' : 'Mark as read'}
+                                                </span>
+                                            </button>
+                                        )}
+
+                                        {/* Reply Option */}
+                                        {selectedEmail.folder === 'inbox' && (
+                                            <button
+                                                type="button"
+                                                onClick={() => handleReplyToEmail(selectedEmail)}
+                                                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-xs font-medium shadow-2xs transition cursor-pointer"
+                                            >
+                                                <Reply className="w-3.5 h-3.5" />
+                                                <span>Reply</span>
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
-                                <div style={{ fontSize: '13px', color: '#374151', lineHeight: '1.7' }}>{selectedInbox.reply}</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
 
-            {/* ── ANNOUNCEMENT MODAL ── */}
-            {selectedAnnouncement !== null && (
-                <div
-                    onClick={() => setSelectedAnnouncement(null)}
-                    style={{
-                        position: 'fixed', inset: 0, zIndex: 200,
-                        background: 'rgba(17,17,17,0.5)', backdropFilter: 'blur(2px)',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        padding: '24px', animation: 'fadeIn 0.15s ease-out',
-                    }}
-                >
-                    <div
-                        onClick={e => e.stopPropagation()}
-                        style={{
-                            background: 'white', borderRadius: '18px',
-                            width: '100%', maxWidth: '560px',
-                            maxHeight: '80vh', overflowY: 'auto',
-                            boxShadow: '0 24px 60px rgba(0,0,0,0.25)',
-                            animation: 'popIn 0.18s ease-out',
-                        }}
-                    >
-                        <div style={{
-                            padding: '22px 26px 18px',
-                            borderBottom: '1px solid #F3F4F6',
-                            display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px',
-                        }}>
-                            <div>
-                                <span style={{
-                                    background: '#FEF2F2', color: RED,
-                                    fontSize: '10px', fontWeight: '700',
-                                    padding: '3px 9px', borderRadius: '10px',
-                                    display: 'inline-block', marginBottom: '9px', letterSpacing: '0.3px',
-                                }}>ANNOUNCEMENT</span>
-                                <div style={{ fontSize: '17px', fontWeight: '700', color: '#111', marginBottom: '5px' }}>
-                                    {selectedAnnouncement.title}
+                                {/* Detail Reading View */}
+                                <div className="p-6 overflow-y-auto space-y-5 flex-1">
+                                    {/* Subject Title & Tags */}
+                                    <div className="space-y-1">
+                                        <div className="flex flex-wrap items-center gap-2">
+                                            <h2 className="text-lg sm:text-xl font-bold text-gray-900 leading-snug">
+                                                {selectedEmail.subject}
+                                            </h2>
+                                            {selectedEmail.senderBadge && (
+                                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-50 text-red-700 border border-red-200">
+                                                    <ShieldCheck className="w-3 h-3 text-red-600" />
+                                                    {selectedEmail.senderBadge}
+                                                </span>
+                                            )}
+                                            {selectedEmail.folder === 'sent' && (
+                                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
+                                                    <Send className="w-3 h-3 text-blue-600" />
+                                                    Sent Email
+                                                </span>
+                                            )}
+                                        </div>
+                                        <p className="text-xs text-gray-400">
+                                            {formatFullDate(selectedEmail.date)}
+                                        </p>
+                                    </div>
+
+                                    {/* Sender & Recipient Box */}
+                                    <div className="p-3.5 rounded-xl bg-gray-50/70 border border-gray-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-8 h-8 rounded-lg bg-red-600 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-2xs">
+                                                {selectedEmail.folder === 'sent'
+                                                    ? volunteerName.slice(0, 2)
+                                                    : 'PRC'}
+                                            </div>
+                                            <div className="min-w-0">
+                                                <div className="font-semibold text-gray-900 text-xs sm:text-sm truncate">
+                                                    {selectedEmail.senderName}
+                                                    <span className="font-normal text-gray-500 text-xs ml-1.5 hidden sm:inline">
+                                                        &lt;{selectedEmail.senderEmail}&gt;
+                                                    </span>
+                                                </div>
+                                                <div className="text-gray-500 text-xs truncate">
+                                                    <span className="font-medium text-gray-700">To: </span>
+                                                    {selectedEmail.recipient}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="text-gray-400 text-xs sm:text-right shrink-0">
+                                            {formatFullDate(selectedEmail.date)}
+                                        </div>
+                                    </div>
+
+                                    {/* Full Message Body */}
+                                    <div className="bg-white rounded-xl border border-gray-200/80 p-5 shadow-2xs space-y-4">
+                                        <div className="text-xs sm:text-sm text-gray-800 leading-relaxed whitespace-pre-wrap font-sans">
+                                            {selectedEmail.body}
+                                        </div>
+
+                                        {/* If Inbox with Original Volunteer Inquiry Thread */}
+                                        {selectedEmail.originalInquiry && (
+                                            <div className="pt-4 mt-4 border-t border-gray-200/90 space-y-2">
+                                                <div className="text-xs font-semibold text-gray-500 flex items-center gap-1.5">
+                                                    <CornerDownRight className="w-3.5 h-3.5 text-gray-400" />
+                                                    <span>Original inquiry sent by you</span>
+                                                </div>
+
+                                                <div className="p-3 rounded-xl bg-gray-50/80 border-l-4 border-l-red-500 border border-gray-200/70 text-xs space-y-1.5">
+                                                    <div className="text-xs text-gray-500 space-y-0.5">
+                                                        <div>
+                                                            <strong className="text-gray-700">From: </strong>
+                                                            {volunteerName} &lt;{volunteerEmail}&gt;
+                                                        </div>
+                                                        <div>
+                                                            <strong className="text-gray-700">Sent: </strong>
+                                                            {formatFullDate(selectedEmail.originalInquiry.sentAt)}
+                                                        </div>
+                                                        <div>
+                                                            <strong className="text-gray-700">To: </strong>
+                                                            {selectedEmail.originalInquiry.to}
+                                                        </div>
+                                                        <div>
+                                                            <strong className="text-gray-700">Subject: </strong>
+                                                            {selectedEmail.originalInquiry.subject}
+                                                        </div>
+                                                    </div>
+                                                    <div className="pt-1.5 border-t border-gray-200/80 whitespace-pre-wrap leading-relaxed text-gray-700">
+                                                        {selectedEmail.originalInquiry.message}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* If Sent Email has received an admin reply */}
+                                        {selectedEmail.folder === 'sent' && selectedEmail.hasReply && (
+                                            <div className="pt-4 mt-4 border-t border-gray-200/90 space-y-2">
+                                                <div className="flex items-center justify-between">
+                                                    <div className="text-xs font-semibold text-emerald-700 flex items-center gap-1.5">
+                                                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                                                        <span>Admin reply received</span>
+                                                    </div>
+                                                    <div className="text-xs text-gray-400">
+                                                        {formatFullDate(selectedEmail.repliedAt)}
+                                                    </div>
+                                                </div>
+
+                                                <div className="p-3.5 rounded-xl bg-emerald-50/60 border border-emerald-200 text-xs text-gray-800 leading-relaxed whitespace-pre-wrap">
+                                                    {selectedEmail.replyText}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Bottom Reply Bar */}
+                                    {selectedEmail.folder === 'inbox' && (
+                                        <div className="p-3.5 rounded-xl bg-gray-50/70 border border-gray-200/80 flex items-center justify-between gap-3">
+                                            <div className="text-xs text-gray-500">
+                                                Need further follow-up? Reply directly to PRC Chapter Administration.
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => handleReplyToEmail(selectedEmail)}
+                                                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-red-600 hover:bg-red-700 active:bg-red-800 text-white text-xs font-medium shadow-2xs transition cursor-pointer shrink-0"
+                                            >
+                                                <Reply className="w-3.5 h-3.5" />
+                                                <span>Reply to email</span>
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
-                                <div style={{ fontSize: '12px', color: '#9CA3AF' }}>
-                                    {new Date(selectedAnnouncement.created_at).toLocaleDateString('en-PH', { month: 'long', day: 'numeric', year: 'numeric' })}
-                                    {' · '}Posted by {selectedAnnouncement.admin?.name || 'Admin'}
+                            </div>
+                        ) : (
+                            /* ──────────────────────────────────────────
+                                2. EMAIL LIST VIEW (DEFAULT FOLDER VIEW)
+                            ────────────────────────────────────────── */
+                            <div className="flex-1 flex flex-col min-w-0">
+                                {/* Top Search and Filter Bar */}
+                                <div className="p-3 sm:p-3.5 border-b border-gray-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 bg-gray-50/40">
+                                    {/* Search Box */}
+                                    <div className="relative flex-1 max-w-sm">
+                                        <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                                        <input
+                                            type="text"
+                                            value={searchQuery}
+                                            onChange={(e) => setSearchQuery(e.target.value)}
+                                            placeholder={`Search in ${currentFolder}...`}
+                                            className="w-full pl-9 pr-8 py-2 rounded-xl border border-gray-200 text-xs text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-white transition"
+                                        />
+                                        {searchQuery && (
+                                            <button
+                                                type="button"
+                                                onClick={() => setSearchQuery('')}
+                                                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 p-0.5"
+                                            >
+                                                <X className="w-3.5 h-3.5" />
+                                            </button>
+                                        )}
+                                    </div>
+
+                                    {/* Action Chips */}
+                                    <div className="flex items-center gap-2 self-end sm:self-center">
+                                        {currentFolder !== 'sent' && (
+                                            <button
+                                                type="button"
+                                                onClick={() => setFilterUnreadOnly(!filterUnreadOnly)}
+                                                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition border cursor-pointer ${
+                                                    filterUnreadOnly
+                                                        ? 'bg-red-600 text-white font-semibold border-red-600 shadow-xs'
+                                                        : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-100'
+                                                }`}
+                                            >
+                                                <Filter className="w-3 h-3" />
+                                                <span>Unread</span>
+                                            </button>
+                                        )}
+
+                                        {currentFolder !== 'sent' && (
+                                            <button
+                                                type="button"
+                                                onClick={handleMarkAllRead}
+                                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-white text-gray-600 border border-gray-200 hover:bg-gray-100 transition cursor-pointer"
+                                                title="Mark all as read"
+                                            >
+                                                <CheckCheck className="w-3.5 h-3.5 text-gray-400" />
+                                                <span className="hidden sm:inline">Mark all read</span>
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Status Sub-Header */}
+                                <div className="px-5 py-2 bg-gray-50/70 border-b border-gray-100 flex items-center justify-between text-xs text-gray-500">
+                                    <span className="font-medium text-gray-700">
+                                        {currentFolder === 'inbox' ? 'Inbox' : currentFolder === 'sent' ? 'Sent' : 'Announcements'} ({filteredItems.length})
+                                    </span>
+                                    {currentFolder === 'inbox' && inboxUnreadCount > 0 && (
+                                        <span className="font-semibold text-red-600">
+                                            {inboxUnreadCount} unread
+                                        </span>
+                                    )}
+                                </div>
+
+                                {/* Email Rows */}
+                                <div className="flex-1 overflow-y-auto divide-y divide-gray-100">
+                                    {filteredItems.length === 0 ? (
+                                        <div className="py-20 text-center px-4">
+                                            <div className="w-12 h-12 rounded-2xl bg-gray-100 text-gray-400 flex items-center justify-center mx-auto mb-3">
+                                                {currentFolder === 'inbox' ? (
+                                                    <Inbox className="w-6 h-6" />
+                                                ) : currentFolder === 'sent' ? (
+                                                    <Send className="w-6 h-6" />
+                                                ) : (
+                                                    <Megaphone className="w-6 h-6" />
+                                                )}
+                                            </div>
+                                            <h3 className="text-xs sm:text-sm font-semibold text-gray-800">
+                                                {searchQuery
+                                                    ? 'No messages found matching search'
+                                                    : currentFolder === 'inbox'
+                                                    ? 'No received messages yet'
+                                                    : currentFolder === 'sent'
+                                                    ? 'No sent messages'
+                                                    : 'No announcements posted'}
+                                            </h3>
+                                            <p className="text-xs text-gray-400 mt-1 max-w-sm mx-auto">
+                                                {searchQuery
+                                                    ? 'Try searching with different terms.'
+                                                    : currentFolder === 'inbox'
+                                                    ? 'Responses to your submitted inquiries will appear here.'
+                                                    : currentFolder === 'sent'
+                                                    ? 'Messages you send to Philippine Red Cross staff will appear here.'
+                                                    : 'Official notices and chapter bulletins will appear here.'}
+                                            </p>
+                                        </div>
+                                    ) : (
+                                        filteredItems.map((item) => {
+                                            const isUnread = !readSet.has(item.key) && currentFolder !== 'sent';
+                                            return (
+                                                <div
+                                                    key={item.key}
+                                                    onClick={() => handleOpenEmail(item)}
+                                                    className={`group px-4 sm:px-5 py-3 flex items-center gap-3 transition-colors cursor-pointer ${
+                                                        isUnread
+                                                            ? 'bg-white hover:bg-red-50/20 font-semibold'
+                                                            : 'bg-gray-50/20 hover:bg-gray-100/50 text-gray-700'
+                                                    }`}
+                                                >
+                                                    {/* Left Read/Unread Dot Indicator */}
+                                                    <div className="shrink-0 flex items-center">
+                                                        {currentFolder !== 'sent' ? (
+                                                            <button
+                                                                type="button"
+                                                                onClick={(e) => handleToggleRead(e, item.key)}
+                                                                className="p-1 text-gray-400 hover:text-red-600 transition"
+                                                                title={isUnread ? 'Mark as read' : 'Mark as unread'}
+                                                            >
+                                                                <span
+                                                                    className={`block w-2 h-2 rounded-full transition ${
+                                                                        isUnread
+                                                                            ? 'bg-red-600 ring-2 ring-red-200'
+                                                                            : 'border border-gray-300 group-hover:border-gray-400'
+                                                                    }`}
+                                                                />
+                                                            </button>
+                                                        ) : (
+                                                            <Send className="w-3.5 h-3.5 text-gray-300" />
+                                                        )}
+                                                    </div>
+
+                                                    {/* Sender / Recipient */}
+                                                    <div className="w-36 sm:w-44 shrink-0 truncate">
+                                                        <span
+                                                            className={`text-xs truncate block ${
+                                                                isUnread ? 'font-semibold text-gray-900' : 'font-normal text-gray-700'
+                                                            }`}
+                                                        >
+                                                            {currentFolder === 'sent'
+                                                                ? `To: ${item.recipientName || item.recipient}`
+                                                                : item.senderName}
+                                                        </span>
+                                                    </div>
+
+                                                    {/* Subject & Preview */}
+                                                    <div className="flex-1 min-w-0 pr-2">
+                                                        <div className="text-xs truncate flex items-center gap-1.5">
+                                                            <span
+                                                                className={`truncate ${
+                                                                    isUnread
+                                                                        ? 'font-semibold text-gray-900'
+                                                                        : 'font-medium text-gray-800'
+                                                                }`}
+                                                            >
+                                                                {item.subject}
+                                                            </span>
+                                                            <span className="text-gray-300 font-normal">─</span>
+                                                            <span className="text-gray-500 font-normal truncate hidden sm:inline text-xs">
+                                                                {item.preview}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Status Badge */}
+                                                    <div className="shrink-0 hidden md:block">
+                                                        {currentFolder === 'sent' && (
+                                                            item.hasReply ? (
+                                                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                                                    <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                                                                    <span>Replied</span>
+                                                                </span>
+                                                            ) : (
+                                                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 border border-gray-200">
+                                                                    <Clock className="w-3 h-3 text-gray-400" />
+                                                                    <span>Pending</span>
+                                                                </span>
+                                                            )
+                                                        )}
+                                                        {currentFolder === 'inbox' && (
+                                                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-50 text-red-700 border border-red-200">
+                                                                <ShieldCheck className="w-3 h-3 text-red-600" />
+                                                                <span>Admin Reply</span>
+                                                            </span>
+                                                        )}
+                                                    </div>
+
+                                                    {/* Date */}
+                                                    <div className="shrink-0 text-right min-w-[58px]">
+                                                        <span
+                                                            className={`text-xs ${
+                                                                isUnread ? 'font-semibold text-red-600' : 'text-gray-400'
+                                                            }`}
+                                                        >
+                                                            {formatShortDate(item.date)}
+                                                        </span>
+                                                    </div>
+
+                                                    {/* Chevron */}
+                                                    <div className="shrink-0 text-gray-300 group-hover:text-gray-500 group-hover:translate-x-0.5 transition-all">
+                                                        <ChevronRight className="w-3.5 h-3.5" />
+                                                    </div>
+                                                </div>
+                                            );
+                                        })
+                                    )}
                                 </div>
                             </div>
-                            <button
-                                onClick={() => setSelectedAnnouncement(null)}
-                                style={{
-                                    background: '#F3F4F6', border: 'none', borderRadius: '9px',
-                                    width: '32px', height: '32px', cursor: 'pointer',
-                                    fontSize: '15px', color: '#6B7280', flexShrink: 0,
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    transition: 'background 0.15s',
-                                }}
-                                onMouseEnter={e => e.currentTarget.style.background = '#E5E7EB'}
-                                onMouseLeave={e => e.currentTarget.style.background = '#F3F4F6'}
-                            >✕</button>
-                        </div>
-
-                        <div style={{ padding: '20px 26px 30px' }}>
-                            <div style={{ fontSize: '14px', color: '#374151', lineHeight: '1.8', whiteSpace: 'pre-wrap' }}>
-                                {selectedAnnouncement.body}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Tabs */}
-            <div style={{ background: 'white', borderBottom: '1px solid #E5E7EB', borderTop: '1px solid #E5E7EB', margin: '-28px -28px 0', padding: '0 28px', display: 'flex', gap: '6px' }}>
-                {tabs.map(t => (
-                    <button key={t.key} style={tabStyle(t.key)} onClick={() => setActiveTab(t.key)}>
-                        <span style={{ display: 'flex', opacity: activeTab === t.key ? 1 : 0.6 }}>{t.icon}</span>
-                        {t.label}
-                        {!!t.badge && (
-                            <span style={{
-                                background: t.badgeColor, color: 'white', borderRadius: '10px',
-                                padding: '1px 7px', fontSize: '10px', fontWeight: '700',
-                                minWidth: '17px', textAlign: 'center', lineHeight: '15px',
-                            }}>{t.badge}</span>
                         )}
-                    </button>
-                ))}
+                    </main>
+                </div>
             </div>
 
-            <div style={{ paddingTop: '28px' }}>
+            {/* ════════════════════════════════════════════════════════════
+                COMPOSE EMAIL MODAL (Portaled to document.body to escape
+                the layout's z-10 stacking context)
+            ════════════════════════════════════════════════════════════ */}
+            {composeOpen && createPortal(
+                <div className="fixed inset-0 z-[100] overflow-y-auto">
+                    {/* Dark Backdrop — Strictly NO BLUR, NOT clickable outside */}
+                    <div
+                        className="fixed inset-0 bg-black/60 transition-opacity"
+                        aria-hidden="true"
+                    />
 
-                {activeTab === 'compose' && (
-                    <div style={{ maxWidth: '580px' }}>
-                        <div style={{
-                            background: 'white', borderRadius: '16px', border: '1px solid #E5E7EB',
-                            boxShadow: '0 1px 3px rgba(0,0,0,0.03)', overflow: 'hidden',
-                        }}>
-                            {/* Card header with accent */}
-                            <div style={{
-                                padding: '22px 28px', borderBottom: '1px solid #F3F4F6',
-                                display: 'flex', alignItems: 'center', gap: '13px',
-                            }}>
-                                <div style={{
-                                    width: 42, height: 42, borderRadius: '12px', flexShrink: 0,
-                                    background: 'linear-gradient(135deg, #ff0000, #cc0000)',
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    boxShadow: '0 4px 10px rgba(255,0,0,0.25)',
-                                }}>
-                                    <SendIconWhite />
+                    <div className="flex min-h-full items-center justify-center p-4 text-center">
+                        <div
+                            className="w-full max-w-xl transform overflow-hidden rounded-2xl bg-white text-left align-middle shadow-2xl transition-all border border-gray-100 relative z-10 flex flex-col"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            {/* Modal Header */}
+                            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                                <div className="flex items-center gap-2.5">
+                                    <div className="w-8 h-8 rounded-xl bg-red-50 text-red-600 flex items-center justify-center shrink-0">
+                                        <Mail className="w-4 h-4" />
+                                    </div>
+                                    <h3 className="text-base font-semibold text-gray-900">
+                                        {replyNotice ? 'Reply to inquiry' : 'New message'}
+                                    </h3>
                                 </div>
-                                <div>
-                                    <div style={{ fontSize: '15px', fontWeight: '700', color: '#111' }}>Send a Message to Admin</div>
-                                    <div style={{ fontSize: '12px', color: '#9CA3AF', marginTop: '2px' }}>We typically reply within 1–2 business days</div>
-                                </div>
+
+                                <button
+                                    type="button"
+                                    onClick={() => setComposeOpen(false)}
+                                    className="w-8 h-8 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-gray-700 flex items-center justify-center transition cursor-pointer"
+                                >
+                                    <X className="w-4 h-4" />
+                                </button>
                             </div>
 
-                            <form onSubmit={handleSend} style={{ padding: '26px 28px 28px' }}>
-                                <div style={{ marginBottom: '18px' }}>
-                                    <label style={labelStyle}>To</label>
-                                    {/* ✅ FIXED: dating readonly <input>, ngayon clickable mailto link na
-                                        magbubukas ng default mail app ng user papunta sa admin email.
-                                        Same pa rin ang itsura gamit ang inputStyle('to'). */}
-                                    <a
-                                        href={`mailto:${data.to}`}
-                                        onFocus={() => setFocusedField('to')}
-                                        onBlur={() => setFocusedField(null)}
-                                        style={{
-                                            ...inputStyle('to', { color: '#374151', textDecoration: 'none' }),
-                                            display: 'flex', alignItems: 'center',
-                                            cursor: 'pointer',
-                                        }}
-                                        onMouseEnter={e => { e.currentTarget.style.background = '#F3F4F6'; }}
-                                        onMouseLeave={e => { e.currentTarget.style.background = focusedField === 'to' ? '#FFFFFF' : '#FAFAFA'; }}
+                            {/* Reply Notice Banner */}
+                            {replyNotice && (
+                                <div className="px-6 py-2.5 bg-red-50 border-b border-red-100 flex items-center gap-2 text-xs text-red-800 font-medium">
+                                    <Reply className="w-3.5 h-3.5 text-red-600 shrink-0" />
+                                    <span>{replyNotice}</span>
+                                </div>
+                            )}
+
+                            {/* Form */}
+                            <form onSubmit={handleSendEmail} className="p-6 space-y-4">
+                                {/* 1. Recipient (To) - Clean, No Badge */}
+                                <div>
+                                    <label className="block text-xs font-semibold text-gray-700 mb-1.5">
+                                        To
+                                    </label>
+                                    <select
+                                        value={data.to}
+                                        onChange={(e) => setData('to', e.target.value)}
+                                        className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-xs text-gray-900 bg-gray-50/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition font-sans cursor-pointer"
                                     >
-                                        {data.to}
-                                    </a>
-                                    {errors.to && <div style={{ fontSize: '11px', color: RED, marginTop: '5px' }}>{errors.to}</div>}
+                                        {AUTHORIZED_CONTACTS.map((contact) => (
+                                            <option key={contact.email} value={contact.email}>
+                                                {contact.name} — ({contact.email})
+                                            </option>
+                                        ))}
+                                    </select>
+                                    {errors.to && (
+                                        <p className="text-xs text-red-600 mt-1 font-medium">{errors.to}</p>
+                                    )}
                                 </div>
-                                <div style={{ marginBottom: '18px' }}>
-                                    <label style={labelStyle}>Subject</label>
+
+                                {/* 2. Subject */}
+                                <div>
+                                    <label className="block text-xs font-semibold text-gray-700 mb-1.5">
+                                        Subject
+                                    </label>
                                     <input
-                                        type="text" value={data.subject}
-                                        onChange={e => setData('subject', e.target.value)}
-                                        onFocus={() => setFocusedField('subject')}
-                                        onBlur={() => setFocusedField(null)}
-                                        placeholder="e.g. Schedule Conflict"
-                                        style={inputStyle('subject')}
+                                        type="text"
+                                        value={data.subject}
+                                        onChange={(e) => setData('subject', e.target.value)}
+                                        placeholder="Enter subject"
+                                        className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-xs text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-gray-50/50 focus:bg-white transition"
                                     />
-                                    {errors.subject && <div style={{ fontSize: '11px', color: RED, marginTop: '5px' }}>{errors.subject}</div>}
+                                    {errors.subject && (
+                                        <p className="text-xs text-red-600 mt-1 font-medium">{errors.subject}</p>
+                                    )}
                                 </div>
-                                <div style={{ marginBottom: '24px' }}>
-                                    <label style={labelStyle}>Message</label>
+
+                                {/* 3. Message Body */}
+                                <div>
+                                    <label className="block text-xs font-semibold text-gray-700 mb-1.5">
+                                        Message
+                                    </label>
                                     <textarea
+                                        rows={8}
                                         value={data.message}
-                                        onChange={e => setData('message', e.target.value)}
-                                        onFocus={() => setFocusedField('message')}
-                                        onBlur={() => setFocusedField(null)}
-                                        placeholder="Type your message here..." rows={6}
-                                        style={inputStyle('message', { resize: 'vertical' })}
+                                        onChange={(e) => setData('message', e.target.value)}
+                                        placeholder="Write your message here..."
+                                        className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-xs text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 bg-gray-50/50 focus:bg-white transition leading-relaxed resize-y font-sans"
                                     />
-                                    {errors.message && <div style={{ fontSize: '11px', color: RED, marginTop: '5px' }}>{errors.message}</div>}
+                                    {errors.message && (
+                                        <p className="text-xs text-red-600 mt-1 font-medium">{errors.message}</p>
+                                    )}
                                 </div>
-                                <button
-                                    type="submit" disabled={processing}
-                                    style={{
-                                        display: 'inline-flex', alignItems: 'center', gap: '8px',
-                                        background: processing ? '#F87171' : RED, color: 'white',
-                                        border: 'none', borderRadius: '10px', padding: '12px 26px',
-                                        fontSize: '13.5px', fontWeight: '700',
-                                        cursor: processing ? 'not-allowed' : 'pointer',
-                                        boxShadow: processing ? 'none' : '0 4px 12px rgba(255,0,0,0.28)',
-                                        transition: 'transform 0.1s, box-shadow 0.15s',
-                                    }}
-                                    onMouseEnter={e => { if (!processing) e.currentTarget.style.transform = 'translateY(-1px)'; }}
-                                    onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; }}
-                                >
-                                    {processing ? 'Sending...' : (<><SendIconWhite small /> Send Message</>)}
-                                </button>
+
+                                {/* Footer & Action Buttons */}
+                                <div className="pt-3 border-t border-gray-100 flex items-center justify-end gap-2.5">
+                                    <button
+                                        type="button"
+                                        onClick={() => setComposeOpen(false)}
+                                        className="px-4 py-2 rounded-xl text-xs font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition cursor-pointer"
+                                    >
+                                        Discard
+                                    </button>
+
+                                    <button
+                                        type="submit"
+                                        disabled={processing}
+                                        className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 active:bg-red-800 text-white text-xs font-semibold shadow-xs shadow-red-600/20 transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        <Send className="w-3.5 h-3.5 text-white" />
+                                        <span>{processing ? 'Sending...' : 'Send message'}</span>
+                                    </button>
+                                </div>
                             </form>
                         </div>
                     </div>
-                )}
-
-                {/* INBOX — click to open modal */}
-                {activeTab === 'inbox' && (
-                    <div style={{ maxWidth: '700px' }}>
-                        <div style={{ background: 'white', borderRadius: '16px', border: '1px solid #E5E7EB', boxShadow: '0 1px 3px rgba(0,0,0,0.03)', overflow: 'hidden' }}>
-                            <div style={{ padding: '18px 24px', borderBottom: '1px solid #F3F4F6' }}>
-                                <div style={{ fontSize: '14px', fontWeight: '700', color: '#111' }}>Admin Replies</div>
-                            </div>
-                            {repliedEmails.length === 0 ? (
-                                <EmptyState icon={<InboxIcon size={26} color="#D1D5DB" />} text="No replies yet" />
-                            ) : (
-                                repliedEmails.map((email, i) => (
-                                    <div
-                                        key={i}
-                                        onClick={() => setSelectedInbox(email)}
-                                        style={{
-                                            padding: '17px 24px',
-                                            borderBottom: i < repliedEmails.length - 1 ? '1px solid #F3F4F6' : 'none',
-                                            cursor: 'pointer', display: 'flex', alignItems: 'center',
-                                            justifyContent: 'space-between', gap: '12px',
-                                            transition: 'background 0.12s',
-                                        }}
-                                        onMouseEnter={e => e.currentTarget.style.background = '#FAFAFA'}
-                                        onMouseLeave={e => e.currentTarget.style.background = 'white'}
-                                    >
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '13px', flex: 1, minWidth: 0 }}>
-                                            <div style={{
-                                                width: '38px', height: '38px', borderRadius: '50%',
-                                                background: '#FEF2F2', display: 'flex', alignItems: 'center',
-                                                justifyContent: 'center', color: RED, fontSize: '14px',
-                                                fontWeight: '700', flexShrink: 0,
-                                            }}>A</div>
-                                            <div style={{ flex: 1, minWidth: 0 }}>
-                                                <div style={{ fontSize: '13.5px', fontWeight: '600', color: '#111' }}>{email.subject}</div>
-                                                <div style={{ fontSize: '12px', color: '#9CA3AF', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                                    Admin: {email.reply}
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
-                                            <div style={{ fontSize: '11px', color: '#9CA3AF' }}>
-                                                {email.replied_at ? new Date(email.replied_at).toLocaleDateString('en-PH', { month: 'short', day: 'numeric' }) : ''}
-                                            </div>
-                                            <span style={{ color: '#D1D5DB', fontSize: '14px' }}>›</span>
-                                        </div>
-                                    </div>
-                                ))
-                            )}
-                        </div>
-                    </div>
-                )}
-
-                {/* ANNOUNCEMENTS — click to open modal */}
-                {activeTab === 'announcements' && (
-                    <div style={{ maxWidth: '700px' }}>
-                        <div style={{ background: 'white', borderRadius: '16px', border: '1px solid #E5E7EB', boxShadow: '0 1px 3px rgba(0,0,0,0.03)', overflow: 'hidden' }}>
-                            <div style={{ padding: '18px 24px', borderBottom: '1px solid #F3F4F6' }}>
-                                <div style={{ fontSize: '14px', fontWeight: '700', color: '#111' }}>Announcements from Admin</div>
-                            </div>
-                            {announces.length === 0 ? (
-                                <EmptyState icon={<MegaphoneIcon size={26} color="#D1D5DB" />} text="No announcements yet" />
-                            ) : (
-                                announces.map((a, i) => (
-                                    <div
-                                        key={i}
-                                        onClick={() => setSelectedAnnouncement(a)}
-                                        style={{
-                                            padding: '17px 24px',
-                                            borderBottom: i < announces.length - 1 ? '1px solid #F3F4F6' : 'none',
-                                            cursor: 'pointer', display: 'flex', alignItems: 'center',
-                                            justifyContent: 'space-between', gap: '12px',
-                                            transition: 'background 0.12s',
-                                        }}
-                                        onMouseEnter={e => e.currentTarget.style.background = '#FAFAFA'}
-                                        onMouseLeave={e => e.currentTarget.style.background = 'white'}
-                                    >
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '13px', flex: 1, minWidth: 0 }}>
-                                            <div style={{
-                                                width: '38px', height: '38px', borderRadius: '50%',
-                                                background: '#FEF9C3', display: 'flex', alignItems: 'center',
-                                                justifyContent: 'center', flexShrink: 0,
-                                            }}>
-                                                <MegaphoneIcon size={16} color="#B45309" />
-                                            </div>
-                                            <div style={{ flex: 1, minWidth: 0 }}>
-                                                <div style={{ fontSize: '13.5px', fontWeight: '600', color: '#111' }}>{a.title}</div>
-                                                <div style={{ fontSize: '12px', color: '#9CA3AF', marginTop: '2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                                    {a.body}
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
-                                            <div style={{ fontSize: '11px', color: '#9CA3AF' }}>
-                                                {new Date(a.created_at).toLocaleDateString('en-PH', { month: 'short', day: 'numeric' })}
-                                            </div>
-                                            <span style={{ color: '#D1D5DB', fontSize: '14px' }}>›</span>
-                                        </div>
-                                    </div>
-                                ))
-                            )}
-                        </div>
-                    </div>
-                )}
-
-                {activeTab === 'sent' && (
-                    <div style={{ maxWidth: '700px' }}>
-                        <div style={{ background: 'white', borderRadius: '16px', border: '1px solid #E5E7EB', boxShadow: '0 1px 3px rgba(0,0,0,0.03)', overflow: 'hidden' }}>
-                            <div style={{ padding: '18px 24px', borderBottom: '1px solid #F3F4F6' }}>
-                                <div style={{ fontSize: '14px', fontWeight: '700', color: '#111' }}>Sent Messages</div>
-                            </div>
-                            {emails.length === 0 ? (
-                                <EmptyState icon={<SendIcon size={26} color="#D1D5DB" />} text="No sent messages yet" />
-                            ) : (
-                                emails.map((email, i) => (
-                                    <div key={i} style={{ padding: '17px 24px', borderBottom: i < emails.length - 1 ? '1px solid #F3F4F6' : 'none' }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '12px' }}>
-                                            <div style={{ flex: 1, minWidth: 0 }}>
-                                                <div style={{ fontSize: '13.5px', fontWeight: '600', color: '#111', marginBottom: '4px' }}>{email.subject}</div>
-                                                <div style={{ fontSize: '12px', color: '#6B7280', marginBottom: '5px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{email.message}</div>
-                                                <div style={{ fontSize: '10.5px', color: '#9CA3AF' }}>
-                                                    {new Date(email.created_at).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}
-                                                </div>
-                                            </div>
-                                            {email.reply && (
-                                                <span style={{ background: '#DCFCE7', color: '#166534', fontSize: '10px', fontWeight: '700', padding: '3px 9px', borderRadius: '10px', flexShrink: 0 }}>Replied</span>
-                                            )}
-                                        </div>
-                                    </div>
-                                ))
-                            )}
-                        </div>
-                    </div>
-                )}
-
-                {/* LIVE CHAT — real-time thread with admin, naka-dock sa gilid */}
-                {activeTab === 'chat' && (
-                    <div style={{ maxWidth: '520px', height: '560px' }}>
-                        <div style={{
-                            background: 'white', borderRadius: '16px', border: '1px solid #E5E7EB',
-                            boxShadow: '0 1px 3px rgba(0,0,0,0.03)', overflow: 'hidden', height: '100%',
-                        }}>
-                            <LiveChatPanel mode="volunteer" currentUserId={currentVolunteerId} />
-                        </div>
-                    </div>
-                )}
-
-            </div>
-
-            <style>{`
-                @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-                @keyframes popIn { from { opacity: 0; transform: scale(0.94); } to { opacity: 1; transform: scale(1); } }
-                input::placeholder, textarea::placeholder { color: #B0B5BD; }
-            `}</style>
-        </div>
+                </div>,
+                document.body
+            )}
+        </>
     );
 }
 
-function EmptyState({ icon, text }) {
-    return (
-        <div style={{ padding: '52px 24px', textAlign: 'center', color: '#9CA3AF', fontSize: '13px' }}>
-            <div style={{ marginBottom: '10px', display: 'flex', justifyContent: 'center' }}>{icon}</div>
-            {text}
-        </div>
-    );
-}
-
-function PencilIcon({ size = 14 }) {
-    return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>;
-}
-function InboxIcon({ size = 14, color = 'currentColor' }) {
-    return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11Z"/></svg>;
-}
-function MegaphoneIcon({ size = 14, color = 'currentColor' }) {
-    return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 11l18-5v12L3 13v-2z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>;
-}
-function SendIcon({ size = 14, color = 'currentColor' }) {
-    return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>;
-}
-function SendIconWhite({ small = false }) {
-    const size = small ? 14 : 19;
-    return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>;
-}
-function ChatIcon({ size = 14, color = 'currentColor' }) {
-    return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>;
-}
-
-// ✅ Ito ang susi — gagamitin na ang persistent VolunteerLayout, hindi na gagawa ng sarili niyang sidebar
 VolunteerCommunication.layout = (page) => <VolunteerLayout title="Communication">{page}</VolunteerLayout>;
-
-export default VolunteerCommunication;

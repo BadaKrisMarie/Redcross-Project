@@ -12,7 +12,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            //
+            if (!Schema::hasColumn('users', 'is_available')) {
+                $table->boolean('is_available')->default(false)->after('status');
+            }
         });
     }
 
@@ -22,7 +24,9 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            //
+            if (Schema::hasColumn('users', 'is_available')) {
+                $table->dropColumn('is_available');
+            }
         });
     }
 };

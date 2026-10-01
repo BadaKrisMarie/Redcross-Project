@@ -1,89 +1,52 @@
 import React, { useState } from 'react';
 import { Head, router } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
-
-/* Small inline icons — same 1.75px stroke language used elsewhere in the
-   admin panel, so this page doesn't feel like it's borrowing a different
-   icon set from the rest of the app. */
-const Icon = {
-    chevronLeft: (p) => (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" {...p}>
-            <path d="m15 18-6-6 6-6" />
-        </svg>
-    ),
-    chevronRight: (p) => (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" {...p}>
-            <path d="m9 18 6-6-6-6" />
-        </svg>
-    ),
-    calendar: (p) => (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" {...p}>
-            <rect x="3" y="5" width="18" height="16" rx="2" />
-            <path d="M16 3v4M8 3v4M3 10h18" />
-        </svg>
-    ),
-    plus: (p) => (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" {...p}>
-            <path d="M12 5v14M5 12h14" />
-        </svg>
-    ),
-    users: (p) => (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" {...p}>
-            <path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2" />
-            <circle cx="10" cy="7" r="4" />
-            <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
-        </svg>
-    ),
-    clock: (p) => (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" {...p}>
-            <circle cx="12" cy="12" r="9" />
-            <path d="M12 7v5l3 3" />
-        </svg>
-    ),
-    pin: (p) => (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" {...p}>
-            <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
-            <circle cx="12" cy="10" r="3" />
-        </svg>
-    ),
-};
+import {
+    ChevronLeft,
+    ChevronRight,
+    Calendar as CalendarIcon,
+    Plus,
+    Clock,
+    MapPin,
+    Users,
+} from 'lucide-react';
 
 export default function AdminSchedule({ activities = [] }) {
     const [currentDate, setCurrentDate] = useState(new Date());
     const [selectedDay, setSelectedDay] = useState(null);
 
-    const year  = currentDate.getFullYear();
+    const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
 
-    const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-    const dayNames   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    const monthNames = [
+        'January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-    const firstDay  = new Date(year, month, 1).getDay();
+    const firstDay = new Date(year, month, 1).getDay();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
 
     const prevMonth = () => setCurrentDate(new Date(year, month - 1, 1));
     const nextMonth = () => setCurrentDate(new Date(year, month + 1, 1));
 
-    // ✅ Itago na sa calendar ang mga activity na lumipas na ang petsa,
-    // kahit anong status pa nila (upcoming/ongoing/completed/cancelled) —
-    // "tapos na" = nakalipas na ang date kumpara sa ngayon.
     const todayStr = (() => {
         const t = new Date();
         return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`;
     })();
-    const visibleActivities = activities.filter(a => a.date && a.date.slice(0, 10) >= todayStr);
+    const visibleActivities = activities.filter((a) => a.date && a.date.slice(0, 10) >= todayStr);
 
     const getActivitiesForDay = (day) => {
         const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-        return visibleActivities.filter(a => a.date && a.date.startsWith(dateStr));
+        return visibleActivities.filter((a) => a.date && a.date.startsWith(dateStr));
     };
 
-    const statusColor = (status) => {
-        if (status === 'upcoming')  return { bg: '#dbeafe', color: '#1e40af', dot: '#3b82f6' };
-        if (status === 'ongoing')   return { bg: '#dcfce7', color: '#166534', dot: '#22c55e' };
-        if (status === 'completed') return { bg: '#f3f4f6', color: '#374151', dot: '#9ca3af' };
-        if (status === 'cancelled') return { bg: '#fee2e2', color: '#991b1b', dot: '#ef4444' };
-        return { bg: '#fef3c7', color: '#92400e', dot: '#f59e0b' };
+    const statusBadge = (status) => {
+        if (status === 'upcoming') return { bg: 'bg-blue-50 text-blue-600', dot: 'bg-blue-600' };
+        if (status === 'ongoing') return { bg: 'bg-emerald-50 text-emerald-600', dot: 'bg-emerald-600' };
+        if (status === 'completed') return { bg: 'bg-gray-100 text-gray-700', dot: 'bg-gray-500' };
+        if (status === 'cancelled') return { bg: 'bg-red-50 text-red-600', dot: 'bg-red-600' };
+        return { bg: 'bg-amber-50 text-amber-600', dot: 'bg-amber-600' };
     };
 
     const today = new Date();
@@ -92,9 +55,6 @@ export default function AdminSchedule({ activities = [] }) {
 
     const selectedActivities = selectedDay ? getActivitiesForDay(selectedDay) : [];
 
-    // Route the "+ Add" hover affordance to the Activities page with the
-    // clicked date pre-filled. Swap 'admin.activities.create' below for
-    // whatever your actual create-activity route name is.
     const addActivityOnDay = (e, day) => {
         e.stopPropagation();
         const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
@@ -107,99 +67,111 @@ export default function AdminSchedule({ activities = [] }) {
 
     return (
         <>
-            <Head title="Schedule" />
-            <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+            <Head title="Schedule - Admin Portal" />
 
-            <style>{`
-                .sched-content { display: grid; grid-template-columns: 1fr 300px; gap: 24px; align-items: start; }
-                .cal-card { background: #FFFFFF; border: 1px solid #EDEDED; border-radius: 12px; overflow: hidden; }
-                .cal-header { display: flex; align-items: center; justify-content: space-between; padding: 18px 22px; border-bottom: 1px solid #EDEDED; }
-                .cal-month { font-family: 'Barlow Condensed', sans-serif; font-size: 19px; font-weight: 700; color: #1A1A1A; letter-spacing: 0.2px; }
-                .cal-nav { background: #FFFFFF; border: 1px solid #EDEDED; border-radius: 8px; width: 34px; height: 34px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #1A1A1A; transition: background 0.15s, border-color 0.15s; }
-                .cal-nav:hover { background: #F7F7F5; border-color: #DCDCDC; }
-                .day-names { display: grid; grid-template-columns: repeat(7, 1fr); background: #F7F7F5; border-bottom: 1px solid #EDEDED; }
-                .day-name { text-align: center; padding: 9px 4px; font-size: 11px; font-weight: 600; color: #6B6B6B; text-transform: uppercase; letter-spacing: .5px; }
-                .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); }
-                .cal-cell { min-height: 84px; border-right: 1px solid #EDEDED; border-bottom: 1px solid #EDEDED; padding: 7px; cursor: pointer; transition: background 0.12s; position: relative; }
-                .cal-cell:nth-child(7n) { border-right: none; }
-                .cal-cell:hover { background: #FAFAFA; }
-                .cal-cell:hover .add-hint { opacity: 1; }
-                .cal-cell.selected { background: #FFF0F0; }
-                .cal-cell.today { background: #FFF3F3; }
-                .cal-cell.today.selected { background: #FFE6E6; }
-                .cal-cell.empty { background: #FBFBFA; cursor: default; }
-                .day-num { font-size: 12px; font-weight: 600; color: #1A1A1A; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; border-radius: 50%; margin-bottom: 5px; }
-                .day-num.today { background: #C8102E; color: #fff; }
-                .event-pill { display: flex; align-items: center; gap: 5px; font-size: 10px; padding: 3px 6px; border-radius: 5px; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 500; }
-                .event-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
-                .event-label { overflow: hidden; text-overflow: ellipsis; }
-                .more-tag { font-size: 10px; color: #6B6B6B; padding: 1px 4px; font-weight: 500; }
-                .add-hint { position: absolute; bottom: 6px; right: 7px; display: flex; align-items: center; gap: 2px; font-size: 10px; color: #C8102E; font-weight: 600; opacity: 0; transition: opacity 0.12s; background: #fff; border-radius: 4px; padding: 1px 4px 1px 2px; }
-                .detail-card { background: #FFFFFF; border: 1px solid #EDEDED; border-radius: 12px; padding: 22px; }
-                .detail-title { font-family: 'Barlow Condensed', sans-serif; font-size: 16px; font-weight: 700; color: #1A1A1A; text-transform: uppercase; margin-bottom: 16px; }
-                .activity-item { padding: 13px; border: 1px solid #EDEDED; border-radius: 8px; margin-bottom: 10px; }
-                .activity-item:last-child { margin-bottom: 0; }
-                .activity-name { font-weight: 600; font-size: 13px; color: #1A1A1A; margin-bottom: 6px; }
-                .activity-meta { font-size: 11.5px; color: #6B6B6B; display: flex; flex-direction: column; gap: 5px; }
-                .activity-meta-row { display: flex; align-items: flex-start; gap: 6px; }
-                .status-badge { display: inline-block; font-size: 10px; padding: 2px 8px; border-radius: 10px; font-weight: 600; margin-top: 8px; }
-                .no-events { display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; padding: 40px 12px; color: #6B6B6B; font-size: 13px; }
-                .no-events-icon { width: 44px; height: 44px; border-radius: 50%; background: #FDECEE; display: flex; align-items: center; justify-content: center; color: #C8102E; }
-                @media (max-width: 900px) { .sched-content { grid-template-columns: 1fr; } }
-            `}</style>
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 max-w-7xl mx-auto items-start">
+                {/* Calendar Grid Card */}
+                <div className="lg:col-span-8 bg-white rounded-2xl overflow-hidden">
+                    {/* Calendar Header */}
+                    <div className="p-4 sm:p-5 border-b border-gray-50 flex items-center justify-between">
+                        <h2 className="text-base sm:text-lg font-bold text-gray-900">
+                            {monthNames[month]} {year}
+                        </h2>
+                        <div className="flex items-center gap-1.5">
+                            <button
+                                onClick={prevMonth}
+                                className="p-2 rounded-xl bg-gray-50 hover:bg-gray-100 text-gray-600 hover:text-gray-900 transition"
+                                aria-label="Previous month"
+                            >
+                                <ChevronLeft className="w-4 h-4" />
+                            </button>
+                            <button
+                                onClick={nextMonth}
+                                className="p-2 rounded-xl bg-gray-50 hover:bg-gray-100 text-gray-600 hover:text-gray-900 transition"
+                                aria-label="Next month"
+                            >
+                                <ChevronRight className="w-4 h-4" />
+                            </button>
+                        </div>
+                    </div>
 
-            <div className="sched-content">
-                {/* CALENDAR */}
-                <div className="cal-card">
-                    <div className="cal-header">
-                        <button className="cal-nav" onClick={prevMonth} aria-label="Previous month">
-                            <Icon.chevronLeft width={16} height={16} />
-                        </button>
-                        <div className="cal-month">{monthNames[month]} {year}</div>
-                        <button className="cal-nav" onClick={nextMonth} aria-label="Next month">
-                            <Icon.chevronRight width={16} height={16} />
-                        </button>
+                    {/* Day Names */}
+                    <div className="grid grid-cols-7 bg-gray-50/50 border-b border-gray-50 text-center py-2.5">
+                        {dayNames.map((d) => (
+                            <div key={d} className="text-xs font-semibold text-gray-400">
+                                {d}
+                            </div>
+                        ))}
                     </div>
-                    <div className="day-names">
-                        {dayNames.map(d => <div key={d} className="day-name">{d}</div>)}
-                    </div>
-                    <div className="cal-grid">
+
+                    {/* Day Cells */}
+                    <div className="grid grid-cols-7 divide-x divide-y divide-gray-50">
                         {cells.map((day, i) => {
-                            if (!day) return <div key={`empty-${i}`} className="cal-cell empty" />;
+                            if (!day) {
+                                return <div key={`empty-${i}`} className="min-h-[90px] bg-gray-50/30 p-2" />;
+                            }
+
                             const dayActivities = getActivitiesForDay(day);
                             const isSelected = selectedDay === day;
-                            const cellClasses = [
-                                'cal-cell',
-                                isSelected ? 'selected' : '',
-                                isToday(day) ? 'today' : '',
-                            ].filter(Boolean).join(' ');
+                            const todayDay = isToday(day);
+
                             return (
                                 <div
                                     key={day}
-                                    className={cellClasses}
                                     onClick={() => setSelectedDay(day === selectedDay ? null : day)}
+                                    className={`min-h-[90px] p-2 transition cursor-pointer relative group ${
+                                        isSelected
+                                            ? 'bg-red-50/60 ring-2 ring-red-500/20 ring-inset'
+                                            : todayDay
+                                            ? 'bg-red-50/20 hover:bg-red-50/40'
+                                            : 'hover:bg-gray-50'
+                                    }`}
                                 >
-                                    <div className={`day-num ${isToday(day) ? 'today' : ''}`}>{day}</div>
-                                    {dayActivities.slice(0, 2).map((a, idx) => {
-                                        const { bg, color, dot } = statusColor(a.status);
-                                        return (
-                                            <div key={idx} className="event-pill" style={{ background: bg, color }}>
-                                                <span className="event-dot" style={{ background: dot }} />
-                                                <span className="event-label">{a.name}</span>
+                                    {/* Day Number */}
+                                    <div className="flex items-center justify-between mb-1.5">
+                                        <span
+                                            className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                                                todayDay
+                                                    ? 'bg-red-600 text-white'
+                                                    : isSelected
+                                                    ? 'text-red-600 font-extrabold'
+                                                    : 'text-gray-700'
+                                            }`}
+                                        >
+                                            {day}
+                                        </span>
+                                    </div>
+
+                                    {/* Activity Pills */}
+                                    <div className="space-y-1">
+                                        {dayActivities.slice(0, 2).map((a, idx) => {
+                                            const badge = statusBadge(a.status);
+                                            return (
+                                                <div
+                                                    key={idx}
+                                                    className={`px-1.5 py-0.5 rounded-md text-[10px] font-semibold flex items-center gap-1 truncate ${badge.bg}`}
+                                                >
+                                                    <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${badge.dot}`} />
+                                                    <span className="truncate">{a.name}</span>
+                                                </div>
+                                            );
+                                        })}
+                                        {dayActivities.length > 2 && (
+                                            <div className="text-[10px] font-bold text-gray-500 pl-1">
+                                                +{dayActivities.length - 2} more
                                             </div>
-                                        );
-                                    })}
-                                    {dayActivities.length > 2 && (
-                                        <div className="more-tag">+{dayActivities.length - 2} more</div>
-                                    )}
+                                        )}
+                                    </div>
+
+                                    {/* Hover Add Shortcut */}
                                     {dayActivities.length === 0 && (
                                         <button
                                             type="button"
-                                            className="add-hint"
                                             onClick={(e) => addActivityOnDay(e, day)}
-                                            style={{ border: 'none', cursor: 'pointer' }}
+                                            className="absolute bottom-1.5 right-1.5 opacity-0 group-hover:opacity-100 transition px-1.5 py-0.5 rounded bg-red-50 hover:bg-red-100 text-red-600 text-[10px] font-bold flex items-center gap-0.5"
                                         >
-                                            <Icon.plus width={11} height={11} /> Add
+                                            <Plus className="w-2.5 h-2.5" />
+                                            <span>Add</span>
                                         </button>
                                     )}
                                 </div>
@@ -208,57 +180,88 @@ export default function AdminSchedule({ activities = [] }) {
                     </div>
                 </div>
 
-                {/* DETAIL PANEL */}
-                <div className="detail-card">
-                    <div className="detail-title">
-                        {selectedDay
-                            ? `${monthNames[month]} ${selectedDay}, ${year}`
-                            : 'Select a day'}
+                {/* Day Detail Sidebar Panel */}
+                <div className="lg:col-span-4 bg-white rounded-2xl p-5 space-y-4">
+                    <div className="flex items-center gap-2">
+                        <CalendarIcon className="w-4 h-4 text-red-600" />
+                        <h3 className="text-sm font-bold text-gray-900">
+                            {selectedDay
+                                ? `${monthNames[month]} ${selectedDay}, ${year}`
+                                : 'Select a Day'}
+                        </h3>
                     </div>
+
                     {!selectedDay && (
-                        <div className="no-events">
-                            <div className="no-events-icon"><Icon.calendar width={20} height={20} /></div>
-                            Click a date to see activities scheduled for that day.
+                        <div className="py-12 text-center text-xs text-gray-400 space-y-2">
+                            <CalendarIcon className="w-8 h-8 mx-auto text-gray-300" />
+                            <p>Click on any date in the calendar to view scheduled activities.</p>
                         </div>
                     )}
+
                     {selectedDay && selectedActivities.length === 0 && (
-                        <div className="no-events">
-                            <div className="no-events-icon"><Icon.calendar width={20} height={20} /></div>
-                            No activities on this day.
+                        <div className="py-12 text-center text-xs text-gray-400 space-y-2">
+                            <CalendarIcon className="w-8 h-8 mx-auto text-gray-300" />
+                            <p>No activities scheduled for this day.</p>
+                            <button
+                                onClick={(e) => addActivityOnDay(e, selectedDay)}
+                                className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold transition"
+                            >
+                                <Plus className="w-3.5 h-3.5" />
+                                <span>Create Activity</span>
+                            </button>
                         </div>
                     )}
-                    {selectedActivities.map((a, i) => {
-                        const { bg, color } = statusColor(a.status);
-                        return (
-                            <div key={i} className="activity-item">
-                                <div className="activity-name">{a.name}</div>
-                                <div className="activity-meta">
-                                    <div className="activity-meta-row">
-                                        <Icon.clock width={13} height={13} style={{ flexShrink: 0, marginTop: 1 }} />
-                                        <span>{a.start_time} – {a.end_time}</span>
-                                    </div>
-                                    <div className="activity-meta-row">
-                                        <Icon.pin width={13} height={13} style={{ flexShrink: 0, marginTop: 1 }} />
-                                        <span>{a.location_name}</span>
-                                    </div>
-                                    {a.volunteers?.length > 0 && (
-                                        <div className="activity-meta-row">
-                                            <Icon.users width={13} height={13} style={{ flexShrink: 0, marginTop: 1 }} />
-                                            <span>{a.volunteers.map(v => v.name).join(', ')}</span>
+
+                    {selectedDay && selectedActivities.length > 0 && (
+                        <div className="space-y-3">
+                            {selectedActivities.map((a, i) => {
+                                const badge = statusBadge(a.status);
+                                return (
+                                    <div
+                                        key={i}
+                                        className="p-4 rounded-xl bg-gray-50/70 space-y-2.5"
+                                    >
+                                        <div className="flex items-start justify-between gap-2">
+                                            <h4 className="text-xs font-bold text-gray-900 leading-snug">{a.name}</h4>
+                                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold shrink-0 ${badge.bg}`}>
+                                                {a.status}
+                                            </span>
                                         </div>
-                                    )}
-                                    {a.description && <span style={{ marginTop: 2 }}>{a.description}</span>}
-                                </div>
-                                <span className="status-badge" style={{ background: bg, color }}>{a.status}</span>
-                            </div>
-                        );
-                    })}
+
+                                        <div className="space-y-1.5 text-xs text-gray-600">
+                                            {(a.start_time || a.end_time) && (
+                                                <div className="flex items-center gap-2">
+                                                    <Clock className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                                                    <span>{a.start_time} – {a.end_time}</span>
+                                                </div>
+                                            )}
+                                            {a.location_name && (
+                                                <div className="flex items-center gap-2">
+                                                    <MapPin className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                                                    <span className="truncate">{a.location_name}</span>
+                                                </div>
+                                            )}
+                                            {a.volunteers?.length > 0 && (
+                                                <div className="flex items-center gap-2">
+                                                    <Users className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                                                    <span className="truncate">{a.volunteers.map((v) => v.name).join(', ')}</span>
+                                                </div>
+                                            )}
+                                            {a.description && (
+                                                <p className="text-[11px] text-gray-500 pt-1 border-t border-gray-100">
+                                                    {a.description}
+                                                </p>
+                                            )}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
                 </div>
             </div>
         </>
     );
 }
 
-// ✅ Gamit na rin ang AdminLayout dito — kaya kasama na ang notification bell
-// (katabi ng profile sa topbar), at persistent na siya sa lahat ng admin pages.
 AdminSchedule.layout = (page) => <AdminLayout title="Schedule">{page}</AdminLayout>;

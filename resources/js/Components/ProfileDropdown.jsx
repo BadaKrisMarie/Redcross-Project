@@ -8,6 +8,7 @@ import { useNotifications } from '../hooks/useNotifications';
 import AvatarUploadModal from './AvatarUploadModal';
 import ChangePasswordModal from './ChangePasswordModal';
 import NotificationsModal from './NotificationsModal';
+import { Camera, Bell, Lock, LogOut } from 'lucide-react';
 
 export default function ProfileDropdown() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -166,40 +167,43 @@ export default function ProfileDropdown() {
 
             {/* Menu Items */}
             {[
-              { label: 'Change photo',     icon: '📷', action: () => openModal('avatar') },
+              { label: 'Change photo',     icon: Camera, action: () => openModal('avatar') },
               {
                 label: 'Notifications',
-                icon: '🔔',
+                icon: Bell,
                 action: () => openModal('notif'),
                 badge: unreadCount > 0 ? (unreadCount > 9 ? '9+' : unreadCount) : null,
               },
-              { label: 'Change password',  icon: '🔒', action: () => openModal('password') },
-            ].map((item) => (
-              <button
-                key={item.label}
-                onClick={item.action}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 10,
-                  padding: '10px 14px', width: '100%',
-                  background: 'none', border: 'none', borderTop: '1px solid #F9FAFB',
-                  fontSize: 13, color: '#374151', cursor: 'pointer', textAlign: 'left',
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.background = '#F9FAFB'}
-                onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
-              >
-                <span style={{ fontSize: 15 }}>{item.icon}</span>
-                <span style={{ flex: 1 }}>{item.label}</span>
-                {item.badge && (
-                  <span style={{
-                    background: '#ef4444', color: '#fff',
-                    fontSize: 10, fontWeight: 700,
-                    padding: '1px 6px', borderRadius: 10,
-                  }}>
-                    {item.badge}
-                  </span>
-                )}
-              </button>
-            ))}
+              { label: 'Change password',  icon: Lock, action: () => openModal('password') },
+            ].map((item) => {
+              const ItemIcon = item.icon;
+              return (
+                <button
+                  key={item.label}
+                  onClick={item.action}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 10,
+                    padding: '10px 14px', width: '100%',
+                    background: 'none', border: 'none', borderTop: '1px solid #F9FAFB',
+                    fontSize: 13, color: '#374151', cursor: 'pointer', textAlign: 'left',
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = '#F9FAFB'}
+                  onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
+                >
+                  <ItemIcon style={{ width: 16, height: 16, color: '#6B7280', flexShrink: 0 }} />
+                  <span style={{ flex: 1 }}>{item.label}</span>
+                  {item.badge && (
+                    <span style={{
+                      background: '#ef4444', color: '#fff',
+                      fontSize: 10, fontWeight: 700,
+                      padding: '1px 6px', borderRadius: 10,
+                    }}>
+                      {item.badge}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
 
             <div style={{ borderTop: '1px solid #F3F4F6' }} />
 
@@ -210,13 +214,13 @@ export default function ProfileDropdown() {
                 display: 'flex', alignItems: 'center', gap: 10,
                 padding: '10px 14px', width: '100%',
                 background: 'none', border: 'none',
-                fontSize: 13, color: '#ff0000', cursor: 'pointer', textAlign: 'left',
+                fontSize: 13, color: '#dc2626', cursor: 'pointer', textAlign: 'left',
               }}
-              onMouseEnter={(e) => e.currentTarget.style.background = '#FFF5F5'}
+              onMouseEnter={(e) => e.currentTarget.style.background = '#FEF2F2'}
               onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
             >
-              <span style={{ fontSize: 15 }}>🚪</span>
-              Log out
+              <LogOut style={{ width: 16, height: 16, color: '#dc2626', flexShrink: 0 }} />
+              <span>Log out</span>
             </button>
           </div>
         )}

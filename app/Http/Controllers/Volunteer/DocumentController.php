@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Volunteer;
 
 use App\Http\Controllers\Controller;
+use App\Models\Activity;
+use App\Models\Attendance;
 use App\Models\Document;
 use App\Models\DocumentCategory;
 use App\Models\Notification;
@@ -12,6 +14,15 @@ use Inertia\Inertia;
 
 class DocumentController extends Controller
 {
+    private function resolvedPath(?string $filePath): string
+    {
+        if (!$filePath) {
+            return '';
+        }
+        $normalized = str_replace('\\', '/', $filePath);
+        return storage_path('app/public/' . $normalized);
+    }
+
     public function index()
     {
         // ✅ FIXED: fresh() + avatar_url/photo_url para consistent sa middleware
@@ -19,12 +30,46 @@ class DocumentController extends Controller
 
         $documents = Document::where('user_id', $user->id)
             ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($doc) {
+                $path = $this->resolvedPath($doc->file_path);
+                $fileSize = (file_exists($path) && !is_dir($path)) ? filesize($path) : null;
+                $mimeType = (file_exists($path) && !is_dir($path)) ? mime_content_type($path) : null;
+                return [
+                    'id'               => $doc->id,
+                    'user_id'          => $doc->user_id,
+                    'type'             => $doc->type,
+                    'original_name'    => $doc->original_name,
+                    'status'           => $doc->status,
+                    'created_at'       => $doc->created_at,
+                    'file_size'        => $fileSize,
+                    'mime_type'        => $mimeType,
+                    'file_url'         => route('volunteer.documents.file', $doc->id),
+                    'download_url'     => route('volunteer.documents.download', $doc->id),
+                ];
+            });
+
+        // ✅ Dynamic folders/categories (admin-created custom folders show up automatically)
+        $categories = DocumentCategory::orderBy('id')->get();
+
+        // ── Activity / Assignment History ──
+        // Fetch all activities this volunteer was assigned to via the pivot table
+        $activities = $user->activities()
+            ->orderBy('date', 'desc')
+            ->get(['activities.id', 'activities.name', 'activities.date',
+                   'activities.start_time', 'activities.end_time',
+                   'activities.location_name', 'activities.status',
+                   'activities.description', 'activities.assigned_by']);
+
+        // ── Attendance / Volunteer Hours History ──
+        $attendances = Attendance::where('user_id', $user->id)
+            ->with('activity:id,name,date,start_time,end_time,location_name')
+            ->orderBy('date', 'desc')
             ->get();
 
-        // ✅ NEW — dynamic folders/categories (no longer hardcoded to
-        // nbi/medical/training/barangay). Admin-created custom folders show
-        // up here automatically as soon as they're created.
-        $categories = DocumentCategory::orderBy('id')->get();
+        // ── Attendance Summary Stats ──
+        $totalHours = Attendance::where('user_id', $user->id)->sum('hours_rendered');
+        $totalDays  = Attendance::where('user_id', $user->id)->count();
 
         return Inertia::render('Volunteer/Documents', [
             'auth' => [
@@ -32,12 +77,18 @@ class DocumentController extends Controller
                     $user->toArray(),
                     [
                         'avatar_url' => $user->avatar_url,
-                        'photo_url'  => $user->avatar_url, // ✅ same as HandleInertiaRequests
+                        'photo_url'  => $user->avatar_url,
                     ]
                 ),
             ],
             'documents'  => $documents,
             'categories' => $categories,
+            'activities' => $activities,
+            'attendances' => $attendances,
+            'attendanceSummary' => [
+                'totalHours' => round($totalHours, 1),
+                'totalDays'  => $totalDays,
+            ],
         ]);
     }
 
@@ -122,5 +173,44 @@ class DocumentController extends Controller
         $count = $documents->count();
 
         return back()->with('success', "{$count} document" . ($count > 1 ? 's' : '') . ' deleted successfully.');
+    }
+
+    public function serveFile($id)
+    {
+        $document = Document::findOrFail($id);
+
+        if ((int) $document->user_id !== (int) auth()->id()) {
+            abort(403);
+        }
+
+        $path = $this->resolvedPath($document->file_path);
+
+        if (!file_exists($path) || is_dir($path)) {
+            abort(404, 'File not found on disk.');
+        }
+
+        $mime = mime_content_type($path) ?: 'application/octet-stream';
+
+        return response()->file($path, [
+            'Content-Type'        => $mime,
+            'Content-Disposition' => 'inline; filename="' . ($document->original_name ?: basename($path)) . '"',
+        ]);
+    }
+
+    public function download($id)
+    {
+        $document = Document::findOrFail($id);
+
+        if ((int) $document->user_id !== (int) auth()->id()) {
+            abort(403);
+        }
+
+        $path = $this->resolvedPath($document->file_path);
+
+        if (!file_exists($path) || is_dir($path)) {
+            abort(404, 'File not found on disk.');
+        }
+
+        return response()->download($path, $document->original_name ?: basename($path));
     }
 }

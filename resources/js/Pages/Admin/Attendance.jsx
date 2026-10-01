@@ -1,21 +1,31 @@
-import React from 'react';
-import { Head, Link, router } from '@inertiajs/react';
-import { useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
+import { Head, router } from '@inertiajs/react';
 import LiveLocationMap from './LiveLocationMap';
 import AttendanceLocationModal from './AttendanceLocationModal';
 import AdminLayout from '../../Layouts/AdminLayout';
+import {
+    Download,
+    Filter,
+    RotateCcw,
+    ChevronUp,
+    ChevronDown,
+    ChevronsUpDown,
+    ChevronLeft,
+    ChevronRight,
+    MapPin,
+} from 'lucide-react';
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50];
 
-/* ── Coordinated avatar palette ──────────────────────────────────
-   Same hashing approach used on the Volunteers page, so a person's
-   avatar color is consistent everywhere they show up in the admin
-   panel instead of being picked at random. */
 const AVATAR_PALETTE = [
-    ['#FDECEE', '#A00D25'], ['#EAF0FE', '#1D4ED8'], ['#E9F7EF', '#1A8245'],
-    ['#FDF3E0', '#B4700A'], ['#F1EEFB', '#5B3FBF'], ['#E6F6F6', '#0E7C86'],
-    ['#FBEAF3', '#B02E7A'],
+    ['bg-red-100 text-red-700', 'border-red-200'],
+    ['bg-blue-100 text-blue-700', 'border-blue-200'],
+    ['bg-emerald-100 text-emerald-700', 'border-emerald-200'],
+    ['bg-amber-100 text-amber-700', 'border-amber-200'],
+    ['bg-purple-100 text-purple-700', 'border-purple-200'],
+    ['bg-teal-100 text-teal-700', 'border-teal-200'],
 ];
+
 const hashString = (str) => {
     let hash = 0;
     for (let i = 0; i < str.length; i++) {
@@ -23,56 +33,54 @@ const hashString = (str) => {
     }
     return hash;
 };
+
 const getAvatarColor = (name) => AVATAR_PALETTE[hashString(name || '') % AVATAR_PALETTE.length];
 
-// ✅ NEW: normalize inconsistent name casing coming from the DB
-// ("kris marie", "KRIS BADA") to a single consistent display format.
 const toTitleCase = (name) =>
     (name || '')
         .toLowerCase()
         .split(' ')
         .filter(Boolean)
-        .map(w => w[0].toUpperCase() + w.slice(1))
+        .map((w) => w[0].toUpperCase() + w.slice(1))
         .join(' ');
 
 const getInitials = (name) =>
-    (name || '').split(' ').filter(Boolean).map(w => w[0]).join('').slice(0, 2).toUpperCase();
+    (name || '').split(' ').filter(Boolean).map((w) => w[0]).join('').slice(0, 2).toUpperCase();
 
-const VolunteerAvatar = ({ name, size = 30 }) => {
-    const [bg, fg] = getAvatarColor(name);
+const VolunteerAvatar = ({ name, size = 32 }) => {
+    const [colorClass] = getAvatarColor(name);
     return (
-        <div style={{
-            width: size, height: size, borderRadius: '50%', flexShrink: 0,
-            background: bg, color: fg,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: size * 0.36, fontWeight: 700,
-        }}>
+        <div
+            style={{ width: size, height: size }}
+            className={`rounded-full flex items-center justify-center font-bold text-xs shrink-0 ${colorClass}`}
+        >
             {getInitials(name) || '-'}
         </div>
     );
 };
 
-export default function AdminAttendance({ attendances, volunteers, activities, filters }) {
+export default function AdminAttendance({ attendances = [], volunteers = [], activities = [], filters = {} }) {
     const [volunteerFilter, setVolunteerFilter] = useState(filters?.volunteer_id || '');
     const [activityFilter, setActivityFilter] = useState(filters?.activity_id || '');
     const [dateFilter, setDateFilter] = useState(filters?.date || '');
     const [selectedRecord, setSelectedRecord] = useState(null);
-
-    // ✅ NEW: clickable status legend filter
     const [statusFilter, setStatusFilter] = useState(null);
 
-    // ✅ NEW: datatable state — sorting + pagination
-   const [sortField, setSortField] = useState('date');
-const [sortDirection, setSortDirection] = useState('desc');
+    const [sortField, setSortField] = useState('date');
+    const [sortDirection, setSortDirection] = useState('desc');
     const [pageSize, setPageSize] = useState(PAGE_SIZE_OPTIONS[0]);
     const [currentPage, setCurrentPage] = useState(1);
 
     const applyFilters = () => {
-        router.get(route('admin.attendance.index'), {
-            volunteer_id: volunteerFilter,
-            activity_id: activityFilter,
-            date: dateFilter,
-        }, { preserveState: true });
+        router.get(
+            route('admin.attendance.index'),
+            {
+                volunteer_id: volunteerFilter,
+                activity_id: activityFilter,
+                date: dateFilter,
+            },
+            { preserveState: true }
+        );
     };
 
     const clearFilters = () => {
@@ -82,7 +90,6 @@ const [sortDirection, setSortDirection] = useState('desc');
         router.get(route('admin.attendance.index'));
     };
 
-    // ✅ FIXED: window.open para ma-download ang PDF nang tama
     const exportPdf = () => {
         const params = new URLSearchParams({
             volunteer_id: volunteerFilter,
@@ -96,101 +103,75 @@ const [sortDirection, setSortDirection] = useState('desc');
     const formatTime = (datetime) => {
         if (!datetime) return '-';
         return new Date(datetime).toLocaleTimeString('en-PH', {
-            hour: '2-digit', minute: '2-digit', hour12: true
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: true,
         });
     };
 
     const formatDate = (date) => {
         if (!date) return '-';
         return new Date(date).toLocaleDateString('en-PH', {
-            year: 'numeric', month: 'short', day: 'numeric'
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
         });
     };
 
-    // ✅ NEW: badge color styles matching Attendance History design
     const statusStyles = {
-        'Early In': { bg: '#eff6ff', color: '#2563eb' },
-        'On Time': { bg: '#f0fdf4', color: '#15803d' },
-        'Late': { bg: '#fef2f2', color: '#dc2626' },
-        'Early Out': { bg: '#fff7ed', color: '#c2410c' },
-        'Absent': { bg: '#f3f4f6', color: '#6b7280' },
-        '-': { bg: '#f3f4f6', color: '#9ca3af' },
-    };
-
-    // ✅ NEW: badge styles for attendance method (office biometric vs field face recognition)
-    const methodStyles = {
-        fingerprint: { bg: '#eef2ff', color: '#4338ca', label: 'Biometric (Office)' },
-        face: { bg: '#faf5ff', color: '#7e22ce', label: 'Face Recognition (Field)' },
+        'Early In': 'bg-blue-50 text-blue-600',
+        'On Time': 'bg-emerald-50 text-emerald-600',
+        'Late': 'bg-red-50 text-red-600',
+        'Early Out': 'bg-orange-50 text-orange-600',
+        'Absent': 'bg-gray-100 text-gray-600',
+        '-': 'bg-gray-100 text-gray-500',
     };
 
     const MethodBadge = ({ method }) => {
-        const style = methodStyles[method] || { bg: '#f3f4f6', color: '#9ca3af', label: '-' };
+        const isFace = method === 'face';
         return (
-            <span style={{
-                display: 'inline-block',
-                padding: '4px 12px',
-                borderRadius: '999px',
-                fontSize: '12px',
-                fontWeight: '600',
-                whiteSpace: 'nowrap',
-                background: style.bg,
-                color: style.color,
-            }}>
-                {style.label}
+            <span
+                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                    isFace
+                        ? 'bg-purple-50 text-purple-600'
+                        : 'bg-indigo-50 text-indigo-600'
+                }`}
+            >
+                {isFace ? 'Face Recognition' : 'Biometric'}
             </span>
         );
     };
 
-    // ✅ NEW: activities.start_time / end_time are TIME-only columns (e.g. "18:00:00"),
-    // so `new Date("18:00:00")` alone becomes Invalid Date. Combine with the activity's
-    // date to build a real, comparable datetime.
     const buildScheduleDateTime = (dateStr, timeStr) => {
         if (!dateStr || !timeStr) return null;
-
-        // dateStr can come as "2026-07-21" or a full ISO datetime — normalize to Y-M-D
         const datePart = dateStr.split('T')[0];
-        // timeStr can be "18:00:00" or "18:00" — normalize to HH:mm:ss
         const timePart = timeStr.length === 5 ? `${timeStr}:00` : timeStr;
-
         const dt = new Date(`${datePart}T${timePart}`);
         return isNaN(dt.getTime()) ? null : dt;
     };
 
-    // ✅ NEW: compares by minute-of-day so "exact match" doesn't get missed over stray seconds
     const minutesOfDay = (date) => date.getHours() * 60 + date.getMinutes();
 
-    // ✅ UPDATED: Time-In status is computed on its own — Late / On Time / Early In
     const getTimeInStatus = (record, start) => {
         if (!record.time_in || !start) return null;
-
         const timeIn = new Date(record.time_in);
         const diff = minutesOfDay(timeIn) - minutesOfDay(start);
-
         if (diff === 0) return 'On Time';
         if (diff > 0) return 'Late';
         return 'Early In';
     };
 
-    // ✅ UPDATED: Time-Out status is computed independently — Early Out / On Time only
-    // (walang special badge kung nag-time-out pa lampas sa schedule; normal lang iyon)
     const getTimeOutStatus = (record, end) => {
         if (!record.time_out || !end) return null;
-
         const timeOut = new Date(record.time_out);
         const diff = minutesOfDay(timeOut) - minutesOfDay(end);
-
         if (diff === 0) return 'On Time';
         if (diff < 0) return 'Early Out';
         return null;
     };
 
-    // ✅ UPDATED: compute attendance status(es) — isang record pwede MAHIGIT SA ISANG badge,
-    // pero hiwalay talaga ang basehan ng Time-In status at Time-Out status.
     const getAttendanceStatuses = (record) => {
-        if (!record.time_in) {
-            return ['Absent'];
-        }
-
+        if (!record.time_in) return ['Absent'];
         const scheduleDate = record.activity?.date ?? record.date;
         const start = buildScheduleDateTime(scheduleDate, record.activity?.start_time);
         const end = buildScheduleDateTime(scheduleDate, record.activity?.end_time);
@@ -205,65 +186,32 @@ const [sortDirection, setSortDirection] = useState('desc');
         return statuses.length ? statuses : ['-'];
     };
 
-    // ✅ NEW: renders one or more status pills side by side for a single record
-    const StatusBadges = ({ statuses }) => (
-        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-            {statuses.map(status => {
-                const style = statusStyles[status] || statusStyles['-'];
-                return (
-                    <span key={status} style={{
-                        display: 'inline-block',
-                        padding: '4px 12px',
-                        borderRadius: '999px',
-                        fontSize: '12px',
-                        fontWeight: '600',
-                        whiteSpace: 'nowrap',
-                        background: style.bg,
-                        color: style.color,
-                    }}>
-                        {status}
-                    </span>
-                );
-            })}
-        </div>
-    );
-
-    // ✅ NEW: apply the clickable status legend filter BEFORE computing totals/sorting
     const filteredAttendances = useMemo(() => {
         if (!statusFilter) return attendances;
-        return attendances.filter(r => getAttendanceStatuses(r).includes(statusFilter));
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+        return attendances.filter((r) => getAttendanceStatuses(r).includes(statusFilter));
     }, [attendances, statusFilter]);
 
-    // ✅ NEW: tally how many records carry each status label, computed off the
-    // full (unfiltered) record set so the counts on the legend pills stay
-    // stable no matter which pill is currently active.
     const statusCounts = useMemo(() => {
         const counts = { 'Early In': 0, 'On Time': 0, 'Late': 0, 'Early Out': 0, 'Absent': 0 };
-        attendances.forEach(r => {
-            getAttendanceStatuses(r).forEach(status => {
+        attendances.forEach((r) => {
+            getAttendanceStatuses(r).forEach((status) => {
                 if (status in counts) counts[status] += 1;
             });
         });
         return counts;
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [attendances]);
 
-    const totalHours = filteredAttendances.reduce((sum, a) => sum + parseFloat(a.hours_rendered || 0), 0);
-
-    // ✅ NEW: datatable column definitions — accessor pulls a comparable value out of each record
     const columns = [
         { key: 'volunteer', label: 'Volunteer', sortable: true, accessor: (r) => r.user?.name ?? '' },
-        { key: 'activity',  label: 'Activity',  sortable: true, accessor: (r) => r.activity?.name ?? '' },
-        { key: 'date',      label: 'Date',      sortable: true, accessor: (r) => r.date ?? '' },
-        { key: 'time_in',   label: 'Time In',   sortable: true, accessor: (r) => r.time_in ?? '' },
-        { key: 'time_out',  label: 'Time Out',  sortable: true, accessor: (r) => r.time_out ?? '' },
-        { key: 'hours',     label: 'Hours',     sortable: true, accessor: (r) => parseFloat(r.hours_rendered || 0) },
-        { key: 'method',    label: 'Method',    sortable: true, accessor: (r) => r.method ?? '' },
-        { key: 'status',    label: 'Status',    sortable: true, accessor: (r) => getAttendanceStatuses(r)[0] ?? '' },
+        { key: 'activity', label: 'Activity', sortable: true, accessor: (r) => r.activity?.name ?? '' },
+        { key: 'date', label: 'Date', sortable: true, accessor: (r) => r.date ?? '' },
+        { key: 'time_in', label: 'Time In', sortable: true, accessor: (r) => r.time_in ?? '' },
+        { key: 'time_out', label: 'Time Out', sortable: true, accessor: (r) => r.time_out ?? '' },
+        { key: 'hours', label: 'Hours', sortable: true, accessor: (r) => parseFloat(r.hours_rendered || 0) },
+        { key: 'method', label: 'Method', sortable: true, accessor: (r) => r.method ?? '' },
+        { key: 'status', label: 'Status', sortable: true, accessor: (r) => getAttendanceStatuses(r)[0] ?? '' },
     ];
 
-    // ✅ NEW: sort the filtered record set before paginating
     const sortedAttendances = useMemo(() => {
         const col = columns.find((c) => c.key === sortField);
         if (!col) return filteredAttendances;
@@ -281,7 +229,6 @@ const [sortDirection, setSortDirection] = useState('desc');
             return 0;
         });
         return copy;
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [filteredAttendances, sortField, sortDirection]);
 
     const totalPages = Math.max(1, Math.ceil(sortedAttendances.length / pageSize));
@@ -298,265 +245,287 @@ const [sortDirection, setSortDirection] = useState('desc');
         setCurrentPage(1);
     };
 
-    const sortIndicator = (key) => {
-        if (sortField !== key) return '↕';
-        return sortDirection === 'asc' ? '↑' : '↓';
-    };
-
-    // ✅ NEW: toggle a status filter on click; clicking the active one again clears it
     const handleStatusClick = (label) => {
-        setStatusFilter(prev => (prev === label ? null : label));
+        setStatusFilter((prev) => (prev === label ? null : label));
         setCurrentPage(1);
     };
 
-    // ✅ NEW: pagination + page size footer, extracted so it can sit below the
-    // table instead of being duplicated above and below it.
-    const TableFooter = () => (
-        sortedAttendances.length > 0 && (
-            <div className="at-table-footer">
-                <div className="at-page-size">
-                    <span>Rows per page:</span>
-                    <select
-                        value={pageSize}
-                        onChange={(e) => { setPageSize(Number(e.target.value)); setCurrentPage(1); }}
-                    >
-                        {PAGE_SIZE_OPTIONS.map((n) => (
-                            <option key={n} value={n}>{n}</option>
-                        ))}
-                    </select>
-                    <span className="at-page-info">
-                        {(safePage - 1) * pageSize + 1}–{Math.min(safePage * pageSize, sortedAttendances.length)} of {sortedAttendances.length}
-                    </span>
-                </div>
-                <div className="at-pagination">
-                    <button
-                        className="at-page-btn"
-                        onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                        disabled={safePage === 1}
-                    >
-                        ‹ Prev
-                    </button>
-                    <span className="at-page-info">Page {safePage} of {totalPages}</span>
-                    <button
-                        className="at-page-btn"
-                        onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                        disabled={safePage === totalPages}
-                    >
-                        Next ›
-                    </button>
-                </div>
-            </div>
-        )
-    );
-
     return (
-        <div>
-            <Head title="Attendance Records" />
+        <>
+            <Head title="Attendance - Admin Portal" />
 
-            <style>{`
-                * { box-sizing: border-box; }
-                html, body { margin: 0; padding: 0; }
+            <div className="space-y-6 max-w-7xl mx-auto">
+                {/* Live Location Map */}
+                <div className="bg-white rounded-2xl overflow-hidden">
+                    <LiveLocationMap />
+                </div>
 
-                /* ✅ System font stack — walang external request, di na aasa sa fonts.googleapis.com */
-                .at-montserrat { font-family: 'Segoe UI', Roboto, -apple-system, BlinkMacSystemFont, sans-serif; }
+                {/* Filter Controls Card */}
+                <div className="bg-white rounded-2xl p-5 space-y-4">
+                    <h3 className="text-sm font-bold text-gray-900">Filter Records</h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 items-end">
+                        <div>
+                            <label className="text-xs font-bold text-gray-500 block mb-1.5">
+                                Volunteer
+                            </label>
+                            <select
+                                value={volunteerFilter}
+                                onChange={(e) => setVolunteerFilter(e.target.value)}
+                                className="w-full px-3 py-2 bg-white border border-gray-200 rounded-xl text-xs text-gray-900 focus:border-red-500 focus:ring-2 focus:ring-red-500/10 outline-none transition"
+                            >
+                                <option value="">All Volunteers</option>
+                                {volunteers.map((v) => (
+                                    <option key={v.id} value={v.id}>
+                                        {toTitleCase(v.name)}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
 
-                /* ✅ NEW: datatable-specific styles */
-                .at-table-scroll { overflow-x: auto; }
-                .at-th-sortable { cursor: pointer; user-select: none; white-space: nowrap; }
-                .at-th-sortable:hover { color: #374151 !important; }
-                .at-sort-icon { margin-left: 4px; font-size: 10px; opacity: .6; }
-                .at-sort-icon.active { opacity: 1; color: #ff0000; }
-                .at-table-footer { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; padding: 16px 24px; border-top: 1px solid #f0f0f0; border-bottom: 1px solid #f0f0f0; }
-                .at-page-size { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #6b7280; }
-                .at-page-size select { border: 1px solid #e5e7eb; border-radius: 6px; padding: 4px 8px; font-size: 12px; background: #fff; cursor: pointer; }
-                .at-pagination { display: flex; align-items: center; gap: 8px; }
-                .at-page-btn { border: 1px solid #e5e7eb; background: #fff; color: #374151; font-size: 12px; font-weight: 600; padding: 6px 12px; border-radius: 6px; cursor: pointer; }
-                .at-page-btn:hover:not(:disabled) { border-color: #ccc; }
-                .at-page-btn:disabled { opacity: .4; cursor: not-allowed; }
-                .at-page-info { font-size: 12px; color: #6b7280; }
+                        <div>
+                            <label className="text-xs font-bold text-gray-500 block mb-1.5">
+                                Activity
+                            </label>
+                            <select
+                                value={activityFilter}
+                                onChange={(e) => setActivityFilter(e.target.value)}
+                                className="w-full px-3 py-2 bg-white border border-gray-200 rounded-xl text-xs text-gray-900 focus:border-red-500 focus:ring-2 focus:ring-red-500/10 outline-none transition"
+                            >
+                                <option value="">All Activities</option>
+                                {activities.map((a) => (
+                                    <option key={a.id} value={a.id}>
+                                        {a.name} ({a.date})
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
 
-                /* ✅ NEW: clickable legend pill states */
-                .at-legend-pill { border: none; cursor: pointer; transition: transform .1s ease, box-shadow .15s ease; }
-                .at-legend-pill:hover { transform: translateY(-1px); }
-                .at-legend-pill.active { box-shadow: 0 0 0 2px currentColor inset; }
-                .at-legend-count { opacity: .75; font-weight: 700; margin-left: 3px; }
-                .at-clear-status { background: transparent; border: none; color: #9ca3af; font-size: 12px; font-weight: 600; cursor: pointer; padding: 5px 10px; text-decoration: underline; }
+                        <div>
+                            <label className="text-xs font-bold text-gray-500 block mb-1.5">
+                                Date
+                            </label>
+                            <input
+                                type="date"
+                                value={dateFilter}
+                                onChange={(e) => setDateFilter(e.target.value)}
+                                className="w-full px-3 py-2 bg-white border border-gray-200 rounded-xl text-xs text-gray-900 focus:border-red-500 focus:ring-2 focus:ring-red-500/10 outline-none transition"
+                            />
+                        </div>
 
-                /* ✅ NEW: Export PDF is now a quiet outline button — red is reserved
-                   for the primary "Filter" action so the two don't compete. */
-                .at-export-btn { background: #fff; color: #374151; border: 1px solid #e5e7eb; padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: background .12s, border-color .12s; }
-                .at-export-btn:hover { background: #f9fafb; border-color: #d1d5db; }
-            `}</style>
-
-            <div className="at-montserrat" style={{ minHeight: '100vh', background: '#f5f5f5' }}>
-
-                <div style={{ padding: 0 }}>
-
-                    <div style={{ marginBottom: '24px' }}>
-                        <div style={{ fontSize: '11px', fontWeight: '600', letterSpacing: '2px', textTransform: 'uppercase', color: '#ff0000', marginBottom: '6px' }}>Admin Panel</div>
-                        <h1 style={{ fontSize: '32px', color: '#111', fontWeight: '600', textTransform: 'uppercase', margin: 0 }}>Attendance Records</h1>
-                    </div>
-
-                    <div style={{ marginBottom: '24px' }}>
-                        <LiveLocationMap />
-                    </div>
-
-                    <div style={{ background: 'white', borderRadius: '8px', border: '1px solid #e8e8e8', padding: '20px 24px', marginBottom: '24px' }}>
-                        <div style={{ fontSize: '14px', fontWeight: '600', textTransform: 'uppercase', marginBottom: '16px', color: '#111' }}>Filter Records</div>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr auto auto', gap: '12px', alignItems: 'end' }}>
-                            <div>
-                                <label style={{ fontSize: '12px', fontWeight: '600', color: '#6b7280', display: 'block', marginBottom: '6px' }}>VOLUNTEER</label>
-                                <select value={volunteerFilter} onChange={e => setVolunteerFilter(e.target.value)} style={{ width: '100%', padding: '9px 12px', border: '1px solid #e5e7eb', borderRadius: '6px', fontSize: '14px' }}>
-                                    <option value="">All Volunteers</option>
-                                    {volunteers.map(v => (
-                                        <option key={v.id} value={v.id}>{toTitleCase(v.name)}</option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div>
-                                <label style={{ fontSize: '12px', fontWeight: '600', color: '#6b7280', display: 'block', marginBottom: '6px' }}>ACTIVITY</label>
-                                <select value={activityFilter} onChange={e => setActivityFilter(e.target.value)} style={{ width: '100%', padding: '9px 12px', border: '1px solid #e5e7eb', borderRadius: '6px', fontSize: '14px' }}>
-                                    <option value="">All Activities</option>
-                                    {activities.map(a => (
-                                        <option key={a.id} value={a.id}>{a.name} ({a.date})</option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div>
-                                <label style={{ fontSize: '12px', fontWeight: '600', color: '#6b7280', display: 'block', marginBottom: '6px' }}>DATE</label>
-                                <input type="date" value={dateFilter} onChange={e => setDateFilter(e.target.value)} style={{ width: '100%', padding: '9px 12px', border: '1px solid #e5e7eb', borderRadius: '6px', fontSize: '14px' }} />
-                            </div>
-                            <button onClick={applyFilters} style={{ padding: '9px 20px', background: '#ff0000', color: 'white', border: 'none', borderRadius: '6px', fontWeight: '600', fontSize: '13px', cursor: 'pointer' }}>Filter</button>
-                            <button onClick={clearFilters} style={{ padding: '9px 20px', background: '#f3f4f6', color: '#374151', border: 'none', borderRadius: '6px', fontWeight: '600', fontSize: '13px', cursor: 'pointer' }}>Clear</button>
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={applyFilters}
+                                className="flex-1 px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold transition flex items-center justify-center gap-1.5"
+                            >
+                                <Filter className="w-3.5 h-3.5" />
+                                <span>Filter</span>
+                            </button>
+                            <button
+                                onClick={clearFilters}
+                                className="px-3 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold transition flex items-center gap-1"
+                                title="Reset filters"
+                            >
+                                <RotateCcw className="w-3.5 h-3.5" />
+                            </button>
                         </div>
                     </div>
+                </div>
 
-                    <div style={{ background: 'white', borderRadius: '8px', border: '1px solid #e8e8e8', overflow: 'hidden' }}>
-                        <div style={{ padding: '20px 24px', borderBottom: '1px solid #e8e8e8' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-                                <div style={{ fontSize: '16px', color: '#111', fontWeight: '600', textTransform: 'uppercase' }}>
-                                    All Attendance Records
-                                </div>
-                                <button onClick={exportPdf} className="at-export-btn">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-                                        <path d="M12 3v12m0 0-4-4m4 4 4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" />
-                                    </svg>
-                                    Export PDF
-                                </button>
-                            </div>
-
-                            {/* ✅ UPDATED: legend pills are now clickable filters, with a live
-                                count of matching records so admins know volume before clicking. */}
-                            <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
-                                {['Early In', 'On Time', 'Late', 'Early Out', 'Absent'].map(label => {
-                                    const style = statusStyles[label];
+                {/* Table Card */}
+                <div className="bg-white rounded-2xl overflow-hidden">
+                    {/* Header + Legend Pills */}
+                    <div className="p-5 border-b border-gray-50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div className="space-y-2">
+                            <h3 className="text-sm font-bold text-gray-900">Attendance Records</h3>
+                            <div className="flex items-center gap-2 flex-wrap">
+                                {['Early In', 'On Time', 'Late', 'Early Out', 'Absent'].map((label) => {
+                                    const styleClass = statusStyles[label];
                                     const isActive = statusFilter === label;
                                     return (
                                         <button
                                             key={label}
                                             onClick={() => handleStatusClick(label)}
-                                            className={`at-legend-pill ${isActive ? 'active' : ''}`}
-                                            style={{
-                                                padding: '5px 14px',
-                                                borderRadius: '999px',
-                                                fontSize: '12px',
-                                                fontWeight: '600',
-                                                background: style.bg,
-                                                color: style.color,
-                                                opacity: statusFilter && !isActive ? 0.55 : 1,
-                                            }}
+                                            className={`px-3 py-1 rounded-full text-xs font-semibold transition ${styleClass} ${
+                                                isActive ? 'ring-2 ring-red-500/20' : 'opacity-80 hover:opacity-100'
+                                            }`}
                                         >
-                                            {label}<span className="at-legend-count">· {statusCounts[label]}</span>
+                                            {label} <span className="font-bold">({statusCounts[label]})</span>
                                         </button>
                                     );
                                 })}
                                 {statusFilter && (
-                                    <button className="at-clear-status" onClick={() => setStatusFilter(null)}>
-                                        Clear status filter
+                                    <button
+                                        onClick={() => setStatusFilter(null)}
+                                        className="text-xs font-bold text-red-600 hover:text-red-700 ml-1"
+                                    >
+                                        Clear filter
                                     </button>
                                 )}
                             </div>
                         </div>
 
-                        {/* ✅ MOVED: pagination + page size controls back above the table */}
-                        <TableFooter />
+                        <button
+                            onClick={exportPdf}
+                            className="px-4 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold transition flex items-center gap-2 shrink-0 self-start sm:self-auto"
+                        >
+                            <Download className="w-4 h-4" />
+                            <span>Export PDF</span>
+                        </button>
+                    </div>
 
-                        {/* ✅ NEW: sortable datatable */}
-                        <div className="at-table-scroll">
-                            <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '900px' }}>
-                                <thead>
-                                    <tr style={{ background: '#f9fafb' }}>
-                                        {columns.map((col) => (
-                                            <th
-                                                key={col.key}
-                                                className={col.sortable ? 'at-th-sortable' : ''}
-                                                onClick={() => col.sortable && handleSort(col.key)}
-                                                style={{ padding: '12px 24px', textAlign: 'left', fontSize: '11px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px', color: '#888' }}
-                                            >
-                                                {col.label}
-                                                {col.sortable && (
-                                                    <span className={`at-sort-icon ${sortField === col.key ? 'active' : ''}`}>
-                                                        {sortIndicator(col.key)}
-                                                    </span>
-                                                )}
-                                            </th>
-                                        ))}
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {pagedAttendances.length === 0 ? (
-                                        <tr>
-                                            <td colSpan="8" style={{ padding: '40px', textAlign: 'center', color: '#aaa', fontSize: '14px' }}>No attendance records found.</td>
-                                        </tr>
-                                    ) : pagedAttendances.map((record) => {
-                                        const displayName = toTitleCase(record.user?.name);
-                                        return (
-                                        <tr key={record.id} style={{ borderTop: '1px solid #f0f0f0' }}>
-                                            <td style={{ padding: '14px 24px' }}>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                                    <VolunteerAvatar name={record.user?.name} />
-                                                    <div>
-                                                        <div
-                                                            onClick={() => setSelectedRecord(record)}
-                                                            style={{ fontSize: '14px', fontWeight: '600', color: '#111', cursor: 'pointer', textDecoration: 'underline', textDecorationColor: 'transparent' }}
-                                                            onMouseEnter={(e) => e.currentTarget.style.textDecorationColor = '#ff0000'}
-                                                            onMouseLeave={(e) => e.currentTarget.style.textDecorationColor = 'transparent'}
-                                                        >
-                                                            {displayName || '-'}
-                                                        </div>
-                                                        <div style={{ fontSize: '12px', color: '#9ca3af' }}>{record.user?.email ?? ''}</div>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td style={{ padding: '14px 24px', fontSize: '14px', color: '#374151' }}>{record.activity?.name ?? '-'}</td>
-                                            <td style={{ padding: '14px 24px', fontSize: '14px', color: '#374151' }}>{formatDate(record.date)}</td>
-                                            <td style={{ padding: '14px 24px', fontSize: '14px', color: '#16a34a', fontWeight: '600' }}>{formatTime(record.time_in)}</td>
-                                            <td style={{ padding: '14px 24px', fontSize: '14px', color: '#ff0000', fontWeight: '600' }}>{formatTime(record.time_out)}</td>
-                                            <td style={{ padding: '14px 24px', fontSize: '14px', color: '#111' }}>
-                                                {record.hours_rendered ? record.hours_rendered + ' hrs' : '-'}
-                                            </td>
-                                            <td style={{ padding: '14px 24px' }}>
-                                                <MethodBadge method={record.method} />
-                                            </td>
-                                            <td style={{ padding: '14px 24px' }}>
-                                                <StatusBadges statuses={getAttendanceStatuses(record)} />
-                                            </td>
-                                        </tr>
-                                        );
-                                    })}
-                                </tbody>
-                            </table>
+                    {/* Pagination Top Bar */}
+                    <div className="px-5 py-3 border-b border-gray-100 bg-gray-50/50 flex flex-wrap items-center justify-between gap-3 text-xs text-gray-500">
+                        <div className="flex items-center gap-2">
+                            <span>Rows per page:</span>
+                            <select
+                                value={pageSize}
+                                onChange={(e) => {
+                                    setPageSize(Number(e.target.value));
+                                    setCurrentPage(1);
+                                }}
+                                className="px-2 py-1 bg-white border border-gray-200 rounded-lg text-xs outline-none"
+                            >
+                                {PAGE_SIZE_OPTIONS.map((n) => (
+                                    <option key={n} value={n}>
+                                        {n}
+                                    </option>
+                                ))}
+                            </select>
+                            <span className="text-gray-400">
+                                Showing {(safePage - 1) * pageSize + 1}–{Math.min(safePage * pageSize, sortedAttendances.length)} of {sortedAttendances.length}
+                            </span>
                         </div>
 
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                                disabled={safePage === 1}
+                                className="px-2.5 py-1 rounded-lg bg-gray-50 text-gray-700 hover:bg-gray-100 disabled:opacity-40 transition"
+                            >
+                                <ChevronLeft className="w-3.5 h-3.5" />
+                            </button>
+                            <span className="font-semibold text-gray-700">
+                                Page {safePage} of {totalPages}
+                            </span>
+                            <button
+                                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                                disabled={safePage === totalPages}
+                                className="px-2.5 py-1 rounded-lg bg-gray-50 text-gray-700 hover:bg-gray-100 disabled:opacity-40 transition"
+                            >
+                                <ChevronRight className="w-3.5 h-3.5" />
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Table */}
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse min-w-[800px]">
+                            <thead>
+                                <tr className="border-b border-gray-50 bg-gray-50/50 text-xs font-medium text-gray-400">
+                                    {columns.map((col) => (
+                                        <th
+                                            key={col.key}
+                                            onClick={() => col.sortable && handleSort(col.key)}
+                                            className={`p-3.5 sm:px-5 ${col.sortable ? 'cursor-pointer select-none hover:text-gray-900' : ''}`}
+                                        >
+                                            <div className="flex items-center gap-1.5">
+                                                <span>{col.label}</span>
+                                                {col.sortable && (
+                                                    sortField === col.key ? (
+                                                        sortDirection === 'asc' ? (
+                                                            <ChevronUp className="w-3.5 h-3.5 text-red-600" />
+                                                        ) : (
+                                                            <ChevronDown className="w-3.5 h-3.5 text-red-600" />
+                                                        )
+                                                    ) : (
+                                                        <ChevronsUpDown className="w-3.5 h-3.5 text-gray-400" />
+                                                    )
+                                                )}
+                                            </div>
+                                        </th>
+                                    ))}
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-50 text-xs">
+                                {pagedAttendances.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={8} className="p-12 text-center text-gray-400">
+                                            No attendance records found.
+                                        </td>
+                                    </tr>
+                                ) : (
+                                    pagedAttendances.map((record) => {
+                                        const displayName = toTitleCase(record.user?.name);
+                                        const statuses = getAttendanceStatuses(record);
+
+                                        return (
+                                            <tr key={record.id} className="hover:bg-gray-50/60 transition">
+                                                <td className="p-3.5 sm:px-5">
+                                                    <div className="flex items-center gap-3">
+                                                        <VolunteerAvatar name={record.user?.name} />
+                                                        <div className="min-w-0">
+                                                            <button
+                                                                onClick={() => setSelectedRecord(record)}
+                                                                className="font-bold text-gray-900 hover:text-red-600 text-left truncate flex items-center gap-1 transition"
+                                                            >
+                                                                <span>{displayName || '-'}</span>
+                                                                <MapPin className="w-3 h-3 text-gray-400 hover:text-red-600" />
+                                                            </button>
+                                                            <div className="text-[11px] text-gray-400 truncate">
+                                                                {record.user?.email ?? ''}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td className="p-3.5 sm:px-5 font-medium text-gray-800">
+                                                    {record.activity?.name ?? '-'}
+                                                </td>
+                                                <td className="p-3.5 sm:px-5 text-gray-600 whitespace-nowrap">
+                                                    {formatDate(record.date)}
+                                                </td>
+                                                <td className="p-3.5 sm:px-5 font-bold text-emerald-600 whitespace-nowrap">
+                                                    {formatTime(record.time_in)}
+                                                </td>
+                                                <td className="p-3.5 sm:px-5 font-bold text-red-600 whitespace-nowrap">
+                                                    {formatTime(record.time_out)}
+                                                </td>
+                                                <td className="p-3.5 sm:px-5 font-semibold text-gray-800 whitespace-nowrap">
+                                                    {record.hours_rendered ? `${record.hours_rendered} hrs` : '-'}
+                                                </td>
+                                                <td className="p-3.5 sm:px-5">
+                                                    <MethodBadge method={record.method} />
+                                                </td>
+                                                <td className="p-3.5 sm:px-5">
+                                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                                        {statuses.map((status) => (
+                                                            <span
+                                                                key={status}
+                                                                className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+                                                                    statusStyles[status] || statusStyles['-']
+                                                                }`}
+                                                            >
+                                                                {status}
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })
+                                )}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
 
-            <AttendanceLocationModal record={selectedRecord} onClose={() => setSelectedRecord(null)} />
-        </div>
+            {/* Attendance Location Modal */}
+            <AttendanceLocationModal
+                record={selectedRecord}
+                onClose={() => setSelectedRecord(null)}
+            />
+        </>
     );
 }
 
-// ✅ Persistent layout — dito lalabas ang sidebar (Dashboard, Volunteers, Schedule,
-// Attendance, Reports, Activities, 201 Files, Communication) pag pumunta ka dito.
 AdminAttendance.layout = (page) => <AdminLayout title="Attendance">{page}</AdminLayout>;

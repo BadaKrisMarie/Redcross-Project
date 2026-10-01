@@ -2,17 +2,24 @@ import React, { useRef, useState } from 'react';
 import { Head, useForm } from '@inertiajs/react';
 import axios from 'axios';
 import VolunteerLayout from '@/Layouts/VolunteerLayout';
-
-// ✅ Accent color matched to the sidebar (sampled: #5765F2, active-state #3249F4)
-const ACCENT = '#5765F2';
-const ACCENT_DARK = '#3249F4';
+import {
+    User,
+    Lock,
+    Camera,
+    CheckCircle2,
+    AlertCircle,
+    Eye,
+    EyeOff,
+    Save,
+    ChevronRight,
+} from 'lucide-react';
 
 export default function Profile({ user }) {
-    const fileRef = useRef();
+    const fileRef = useRef(null);
     const [preview, setPreview] = useState(
         user.photo ? `/storage/${user.photo}` : null
     );
-    const [activeTab, setActiveTab] = useState('personal'); // 'personal' | 'password'
+    const [activeTab, setActiveTab] = useState('info'); // 'info' | 'password'
 
     const { data, setData, post, processing, errors, recentlySuccessful } = useForm({
         _method:                  'PATCH',
@@ -36,214 +43,261 @@ export default function Profile({ user }) {
         e.preventDefault();
         post(route('volunteer.profile.update'), {
             forceFormData: true,
+            preserveScroll: true,
         });
     }
 
     const initials = user.name
-        ? user.name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
-        : '?';
+        ? user.name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase()
+        : 'VO';
 
     return (
-        <>
-            <Head title="My Profile" />
+        <div className="font-sans text-gray-900">
+            <Head title="My Profile — Volunteer Portal" />
 
-            <div style={{ maxWidth: 600, margin: '0 auto', fontFamily: "'monserrat, monserrat" }}>
+            <div className="max-w-3xl mx-auto space-y-6 pb-16 px-2 sm:px-4">
 
-                {recentlySuccessful && activeTab === 'personal' && (
-                    <div style={{
-                        position: 'fixed', top: 20, left: '50%', transform: 'translateX(-50%)',
-                        background: '#16a34a', color: '#fff', padding: '8px 20px',
-                        borderRadius: 8, fontSize: 13, zIndex: 9999, pointerEvents: 'none',
-                        boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-                    }}>
-                        ✓ Profile updated successfully!
-                    </div>
-                )}
+                {/* ── BREADCRUMB & HEADER ── */}
+                <div className="pt-2">
+                    <h1 className="text-xl sm:text-2xl font-bold text-gray-900 tracking-tight mt-1">
+                        Profile
+                    </h1>
+                </div>
 
-                <div style={{ background: 'white', borderRadius: 14, border: '1px solid #E5E7EB', overflow: 'hidden' }}>
-
-                    {/* Header — compact, no big colored banner. Just avatar + name/email on a plain surface with a hairline divider. */}
-                    <div style={{ padding: '24px', display: 'flex', alignItems: 'center', gap: 16, borderBottom: '1px solid #E5E7EB' }}>
-                        <div
-                            onClick={() => fileRef.current.click()}
-                            title="Click to change photo"
-                            style={{
-                                width: 64, height: 64, borderRadius: '50%',
-                                flexShrink: 0, position: 'relative',
-                                cursor: 'pointer', border: '1px solid #E5E7EB',
-                                overflow: 'hidden',
-                            }}
-                        >
-                            {preview ? (
-                                <img
-                                    src={preview}
-                                    alt="avatar"
-                                    style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-                                />
-                            ) : (
-                                <div style={{
-                                    width: '100%', height: '100%',
-                                    background: '#EEF0FE',
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    color: ACCENT, fontSize: 20, fontWeight: 700,
-                                }}>
-                                    {initials}
-                                </div>
-                            )}
-                            <div style={{
-                                position: 'absolute', bottom: 0, right: 0,
-                                width: 20, height: 20, borderRadius: '50%',
-                                background: 'white', border: '1px solid #E5E7EB',
-                                display: 'flex', alignItems: 'center',
-                                justifyContent: 'center', fontSize: 10,
-                            }}>📷</div>
+                {/* ── PROFILE OVERVIEW HEADER CARD ── */}
+                <div className="bg-white rounded-2xl shadow-xs p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="flex items-center gap-4">
+                        {/* Avatar */}
+                        <div className="relative shrink-0">
+                            <div
+                                onClick={() => fileRef.current?.click()}
+                                title="Click to change photo"
+                                className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-red-50 text-red-600 flex items-center justify-center font-bold text-lg sm:text-xl shrink-0 overflow-hidden cursor-pointer shadow-inner group"
+                            >
+                                {preview ? (
+                                    <img
+                                        src={preview}
+                                        alt={user.name}
+                                        className="w-full h-full object-cover group-hover:scale-105 transition"
+                                    />
+                                ) : (
+                                    <span>{initials}</span>
+                                )}
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => fileRef.current?.click()}
+                                className="absolute bottom-0 right-0 w-6 h-6 rounded-full bg-red-600 text-white shadow-xs flex items-center justify-center hover:bg-red-700 transition cursor-pointer"
+                                title="Change photo"
+                            >
+                                <Camera className="w-3 h-3" />
+                            </button>
+                            <input
+                                ref={fileRef}
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={handlePhotoChange}
+                            />
                         </div>
+
+                        {/* User Details */}
                         <div>
-                            <div style={{ fontSize: 17, fontWeight: 700, color: '#111' }}>{user.name}</div>
-                            <div style={{ fontSize: 13, color: '#6B7280', marginTop: 2 }}>{user.email}</div>
-                            <div style={{ fontSize: 12, color: '#9CA3AF', marginTop: 2 }}>Volunteer</div>
+                            <h2 className="text-base sm:text-lg font-bold text-gray-900">
+                                {user.name}
+                            </h2>
+                            <p className="text-xs text-gray-500 mt-0.5">{user.email}</p>
+                            <div className="mt-2">
+                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-red-50 text-red-700">
+                                    Volunteer
+                                </span>
+                            </div>
                         </div>
                     </div>
 
-                    <input
-                        ref={fileRef}
-                        type="file"
-                        accept="image/*"
-                        style={{ display: 'none' }}
-                        onChange={handlePhotoChange}
-                    />
+                    {recentlySuccessful && (
+                        <div className="px-3.5 py-2 rounded-xl bg-emerald-50 text-emerald-700 text-xs font-semibold flex items-center gap-2 self-start sm:self-auto">
+                            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                            <span>Saved successfully</span>
+                        </div>
+                    )}
+                </div>
 
-                    {/* Tabs */}
-                    <div style={{ display: 'flex', gap: 28, padding: '0 24px', borderBottom: '1px solid #E5E7EB' }}>
+                {/* ── MAIN CONTENT CARD WITH TABS ── */}
+                <div className="bg-white rounded-2xl shadow-xs overflow-hidden">
+                    {/* Tabs Header */}
+                    <div className="flex border-b border-gray-100 px-5 sm:px-6 gap-6">
                         <button
                             type="button"
-                            onClick={() => setActiveTab('personal')}
-                            style={tabStyle(activeTab === 'personal')}
+                            onClick={() => setActiveTab('info')}
+                            className={`py-3.5 text-xs font-bold border-b-2 transition flex items-center gap-2 cursor-pointer ${
+                                activeTab === 'info'
+                                    ? 'border-red-600 text-red-600'
+                                    : 'border-transparent text-gray-500 hover:text-gray-900'
+                            }`}
                         >
-                            Personal Info
+                            <User className="w-4 h-4" />
+                            <span>Profile Information</span>
                         </button>
                         <button
                             type="button"
                             onClick={() => setActiveTab('password')}
-                            style={tabStyle(activeTab === 'password')}
+                            className={`py-3.5 text-xs font-bold border-b-2 transition flex items-center gap-2 cursor-pointer ${
+                                activeTab === 'password'
+                                    ? 'border-red-600 text-red-600'
+                                    : 'border-transparent text-gray-500 hover:text-gray-900'
+                            }`}
                         >
-                            Change Password
+                            <Lock className="w-4 h-4" />
+                            <span>Change Password</span>
                         </button>
                     </div>
 
-                    {/* Personal Info tab */}
-                    {activeTab === 'personal' && (
-                        <form onSubmit={handleSubmit} style={{ padding: 24 }}>
-                            <div style={{ fontSize: 13, fontWeight: 600, color: '#111', marginBottom: 16 }}>
-                                Profile Information
-                            </div>
-
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
-                                <div>
-                                    <label style={labelStyle}>Full Name</label>
-                                    <input value={user.name} disabled style={{ ...inputStyle, background: '#F9FAFB', color: '#9CA3AF' }} />
+                    {/* ── TAB 1: PROFILE INFORMATION ── */}
+                    {activeTab === 'info' && (
+                        <form onSubmit={handleSubmit} className="p-5 sm:p-6 space-y-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                {/* Name */}
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-bold text-gray-700 block">
+                                        Full Name
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={user.name || ''}
+                                        disabled
+                                        className="w-full px-3.5 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-500 cursor-not-allowed outline-none"
+                                    />
                                 </div>
-                                <div>
-                                    <label style={labelStyle}>Email</label>
-                                    <input value={user.email} disabled style={{ ...inputStyle, background: '#F9FAFB', color: '#9CA3AF' }} />
-                                </div>
-                            </div>
 
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
-                                <div>
-                                    <label style={labelStyle}>Phone</label>
+                                {/* Email */}
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-bold text-gray-700 block">
+                                        Email
+                                    </label>
+                                    <input
+                                        type="email"
+                                        value={user.email || ''}
+                                        disabled
+                                        className="w-full px-3.5 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs text-gray-500 cursor-not-allowed outline-none"
+                                    />
+                                </div>
+
+                                {/* Phone */}
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-bold text-gray-700 block">
+                                        Phone Number
+                                    </label>
                                     <input
                                         type="tel"
                                         value={data.phone}
-                                        onChange={e => setData('phone', e.target.value)}
-                                        style={inputStyle}
-                                        placeholder="e.g. 09171234567"
+                                        onChange={(e) => setData('phone', e.target.value)}
+                                        placeholder="09171234567"
+                                        className="w-full px-3.5 py-2 bg-white border border-gray-200 rounded-xl text-xs text-gray-900 focus:border-red-500 focus:ring-2 focus:ring-red-500/10 outline-none transition"
                                     />
-                                    {errors.phone && <span style={errStyle}>{errors.phone}</span>}
+                                    {errors.phone && <p className="text-[11px] text-red-600 font-semibold">{errors.phone}</p>}
                                 </div>
-                                <div>
-                                    <label style={labelStyle}>Birthdate</label>
+
+                                {/* Birthdate */}
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-bold text-gray-700 block">
+                                        Birthdate
+                                    </label>
                                     <input
                                         type="date"
                                         value={data.birthdate}
-                                        onChange={e => setData('birthdate', e.target.value)}
-                                        style={inputStyle}
+                                        onChange={(e) => setData('birthdate', e.target.value)}
+                                        className="w-full px-3.5 py-2 bg-white border border-gray-200 rounded-xl text-xs text-gray-900 focus:border-red-500 focus:ring-2 focus:ring-red-500/10 outline-none transition"
                                     />
-                                    {errors.birthdate && <span style={errStyle}>{errors.birthdate}</span>}
+                                    {errors.birthdate && <p className="text-[11px] text-red-600 font-semibold">{errors.birthdate}</p>}
                                 </div>
-                            </div>
 
-                            <div style={{ marginBottom: 14 }}>
-                                <label style={labelStyle}>Gender</label>
-                                <select
-                                    value={data.gender}
-                                    onChange={e => setData('gender', e.target.value)}
-                                    style={inputStyle}
-                                >
-                                    <option value="">Select gender</option>
-                                    <option value="Male">Male</option>
-                                    <option value="Female">Female</option>
-                                    <option value="Other">Other</option>
-                                </select>
-                                {errors.gender && <span style={errStyle}>{errors.gender}</span>}
-                            </div>
+                                {/* Gender */}
+                                <div className="space-y-1.5 sm:col-span-2">
+                                    <label className="text-xs font-bold text-gray-700 block">
+                                        Gender
+                                    </label>
+                                    <select
+                                        value={data.gender}
+                                        onChange={(e) => setData('gender', e.target.value)}
+                                        className="w-full px-3.5 py-2 bg-white border border-gray-200 rounded-xl text-xs text-gray-900 focus:border-red-500 focus:ring-2 focus:ring-red-500/10 outline-none transition cursor-pointer"
+                                    >
+                                        <option value="">Select gender</option>
+                                        <option value="Male">Male</option>
+                                        <option value="Female">Female</option>
+                                        <option value="Other">Other</option>
+                                    </select>
+                                    {errors.gender && <p className="text-[11px] text-red-600 font-semibold">{errors.gender}</p>}
+                                </div>
 
-                            <div style={{ marginBottom: 14 }}>
-                                <label style={labelStyle}>Address</label>
-                                <input
-                                    type="text"
-                                    value={data.address}
-                                    onChange={e => setData('address', e.target.value)}
-                                    style={inputStyle}
-                                    placeholder="e.g. Brgy. Alabang, Muntinlupa City"
-                                />
-                                {errors.address && <span style={errStyle}>{errors.address}</span>}
-                            </div>
+                                {/* Address */}
+                                <div className="space-y-1.5 sm:col-span-2">
+                                    <label className="text-xs font-bold text-gray-700 block">
+                                        Address
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={data.address}
+                                        onChange={(e) => setData('address', e.target.value)}
+                                        placeholder="House No., Street, Barangay, City"
+                                        className="w-full px-3.5 py-2 bg-white border border-gray-200 rounded-xl text-xs text-gray-900 focus:border-red-500 focus:ring-2 focus:ring-red-500/10 outline-none transition"
+                                    />
+                                    {errors.address && <p className="text-[11px] text-red-600 font-semibold">{errors.address}</p>}
+                                </div>
 
-                            <div style={{ fontSize: 13, fontWeight: 600, color: '#111', margin: '20px 0 14px' }}>
-                                Emergency Contact
-                            </div>
-
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 24 }}>
-                                <div>
-                                    <label style={labelStyle}>Contact Name</label>
+                                {/* Emergency Contact Person */}
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-bold text-gray-700 block">
+                                        Emergency Contact Name
+                                    </label>
                                     <input
                                         type="text"
                                         value={data.emergency_contact_name}
-                                        onChange={e => setData('emergency_contact_name', e.target.value)}
-                                        style={inputStyle}
+                                        onChange={(e) => setData('emergency_contact_name', e.target.value)}
                                         placeholder="Full name"
+                                        className="w-full px-3.5 py-2 bg-white border border-gray-200 rounded-xl text-xs text-gray-900 focus:border-red-500 focus:ring-2 focus:ring-red-500/10 outline-none transition"
                                     />
-                                    {errors.emergency_contact_name && <span style={errStyle}>{errors.emergency_contact_name}</span>}
+                                    {errors.emergency_contact_name && (
+                                        <p className="text-[11px] text-red-600 font-semibold">{errors.emergency_contact_name}</p>
+                                    )}
                                 </div>
-                                <div>
-                                    <label style={labelStyle}>Contact Phone</label>
+
+                                {/* Emergency Contact Phone */}
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-bold text-gray-700 block">
+                                        Emergency Contact Phone
+                                    </label>
                                     <input
                                         type="tel"
                                         value={data.emergency_contact_phone}
-                                        onChange={e => setData('emergency_contact_phone', e.target.value)}
-                                        style={inputStyle}
-                                        placeholder="e.g. 09181234567"
+                                        onChange={(e) => setData('emergency_contact_phone', e.target.value)}
+                                        placeholder="09181234567"
+                                        className="w-full px-3.5 py-2 bg-white border border-gray-200 rounded-xl text-xs text-gray-900 focus:border-red-500 focus:ring-2 focus:ring-red-500/10 outline-none transition"
                                     />
-                                    {errors.emergency_contact_phone && <span style={errStyle}>{errors.emergency_contact_phone}</span>}
+                                    {errors.emergency_contact_phone && (
+                                        <p className="text-[11px] text-red-600 font-semibold">{errors.emergency_contact_phone}</p>
+                                    )}
                                 </div>
                             </div>
 
-                            <button
-                                type="submit"
-                                disabled={processing}
-                                style={primaryBtnStyle}
-                            >
-                                {processing ? 'Saving…' : 'Save Changes'}
-                            </button>
+                            <div className="pt-3 border-t border-gray-100 flex items-center justify-end">
+                                <button
+                                    type="submit"
+                                    disabled={processing}
+                                    className="inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-red-600 hover:bg-red-700 active:bg-red-800 text-white text-xs font-bold shadow-sm transition cursor-pointer disabled:opacity-50"
+                                >
+                                    <Save className="w-3.5 h-3.5" />
+                                    <span>{processing ? 'Saving…' : 'Save Changes'}</span>
+                                </button>
+                            </div>
                         </form>
                     )}
 
-                    {/* Change Password tab */}
+                    {/* ── TAB 2: CHANGE PASSWORD ── */}
                     {activeTab === 'password' && <ChangePasswordTab />}
                 </div>
             </div>
-        </>
+        </div>
     );
 }
 
@@ -261,8 +315,8 @@ function ChangePasswordTab() {
     const [showConfirm, setShowConfirm] = useState(false);
 
     const handleChange = (e) => {
-        setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
-        setErrors(prev => ({ ...prev, [e.target.name]: null }));
+        setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+        setErrors((prev) => ({ ...prev, [e.target.name]: null }));
         setSuccess(false);
     };
 
@@ -288,7 +342,7 @@ function ChangePasswordTab() {
             if (err.response?.status === 422) {
                 setErrors(err.response.data.errors || {});
             } else {
-                setErrors({ general: 'Something went wrong. Please try again.' });
+                setErrors({ general: 'Failed to update password. Please check your current password.' });
             }
         } finally {
             setLoading(false);
@@ -296,131 +350,113 @@ function ChangePasswordTab() {
     };
 
     return (
-        <div style={{ padding: 24 }}>
-            {/* ✅ Hide native browser password-reveal icon (Edge/Chromium)
-                para hindi mag-duplicate sa custom eye icon natin */}
-            <style>{`
-                input[type="password"]::-ms-reveal,
-                input[type="password"]::-ms-clear {
-                    display: none;
-                }
-            `}</style>
-
-            <div style={{ fontSize: 13, fontWeight: 600, color: '#111', marginBottom: 4 }}>
-                Update Your Password
-            </div>
-            <p style={{ fontSize: 12, color: '#6B7280', margin: '0 0 16px' }}>
-                Make sure it's at least 8 characters and hard to guess.
-            </p>
-
+        <form onSubmit={handleSubmit} className="p-5 sm:p-6 space-y-4">
             {success && (
-                <div style={{ background: '#F0FDF4', border: '1px solid #BBF7D0', borderRadius: 8, padding: '10px 14px', marginBottom: 16, fontSize: 13, color: '#15803D', display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <CheckCircleIcon /> Password updated successfully!
+                <div className="flex items-center gap-2 bg-emerald-50 text-emerald-800 text-xs font-semibold px-4 py-2.5 rounded-xl">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span>Password updated successfully.</span>
                 </div>
             )}
 
             {errors.general && (
-                <div style={{ background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 8, padding: '10px 14px', marginBottom: 16, fontSize: 13, color: '#DC2626' }}>
-                    {errors.general}
+                <div className="flex items-center gap-2 bg-rose-50 text-rose-700 text-xs font-semibold px-4 py-2.5 rounded-xl">
+                    <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                    <span>{errors.general}</span>
                 </div>
             )}
 
-            <form onSubmit={handleSubmit}>
-                <PasswordField
-                    label="Current Password"
-                    name="current_password"
-                    value={form.current_password}
-                    show={showCurrent}
-                    onToggle={() => setShowCurrent(v => !v)}
-                    onChange={handleChange}
-                    errors={errors}
-                />
-                <PasswordField
-                    label="New Password"
-                    name="password"
-                    value={form.password}
-                    show={showNew}
-                    onToggle={() => setShowNew(v => !v)}
-                    onChange={handleChange}
-                    errors={errors}
-                />
-                <PasswordField
-                    label="Confirm New Password"
-                    name="password_confirmation"
-                    value={form.password_confirmation}
-                    show={showConfirm}
-                    onToggle={() => setShowConfirm(v => !v)}
-                    onChange={handleChange}
-                    errors={errors}
-                />
+            <div className="space-y-3.5 max-w-md">
+                {/* Current Password */}
+                <div className="space-y-1">
+                    <label className="text-xs font-bold text-gray-700 block">
+                        Current Password
+                    </label>
+                    <div className="relative">
+                        <input
+                            type={showCurrent ? 'text' : 'password'}
+                            name="current_password"
+                            value={form.current_password}
+                            onChange={handleChange}
+                            placeholder="Enter current password"
+                            className="w-full pl-3.5 pr-9 py-2 bg-white border border-gray-200 rounded-xl text-xs text-gray-900 focus:border-red-500 focus:ring-2 focus:ring-red-500/10 outline-none transition"
+                        />
+                        <button
+                            type="button"
+                            onClick={() => setShowCurrent((v) => !v)}
+                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 cursor-pointer p-0.5"
+                        >
+                            {showCurrent ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                    </div>
+                    {errors.current_password && (
+                        <p className="text-[11px] text-red-600 font-semibold">{errors.current_password[0] || errors.current_password}</p>
+                    )}
+                </div>
 
+                {/* New Password */}
+                <div className="space-y-1">
+                    <label className="text-xs font-bold text-gray-700 block">
+                        New Password
+                    </label>
+                    <div className="relative">
+                        <input
+                            type={showNew ? 'text' : 'password'}
+                            name="password"
+                            value={form.password}
+                            onChange={handleChange}
+                            placeholder="At least 8 characters"
+                            className="w-full pl-3.5 pr-9 py-2 bg-white border border-gray-200 rounded-xl text-xs text-gray-900 focus:border-red-500 focus:ring-2 focus:ring-red-500/10 outline-none transition"
+                        />
+                        <button
+                            type="button"
+                            onClick={() => setShowNew((v) => !v)}
+                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 cursor-pointer p-0.5"
+                        >
+                            {showNew ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                    </div>
+                    {errors.password && (
+                        <p className="text-[11px] text-red-600 font-semibold">{errors.password[0] || errors.password}</p>
+                    )}
+                </div>
+
+                {/* Confirm New Password */}
+                <div className="space-y-1">
+                    <label className="text-xs font-bold text-gray-700 block">
+                        Confirm New Password
+                    </label>
+                    <div className="relative">
+                        <input
+                            type={showConfirm ? 'text' : 'password'}
+                            name="password_confirmation"
+                            value={form.password_confirmation}
+                            onChange={handleChange}
+                            placeholder="Re-type new password"
+                            className="w-full pl-3.5 pr-9 py-2 bg-white border border-gray-200 rounded-xl text-xs text-gray-900 focus:border-red-500 focus:ring-2 focus:ring-red-500/10 outline-none transition"
+                        />
+                        <button
+                            type="button"
+                            onClick={() => setShowConfirm((v) => !v)}
+                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 cursor-pointer p-0.5"
+                        >
+                            {showConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div className="pt-3 border-t border-gray-100 flex items-center justify-end">
                 <button
                     type="submit"
                     disabled={loading}
-                    style={{ ...primaryBtnStyle, background: loading ? '#E5E7EB' : ACCENT, color: loading ? '#9CA3AF' : 'white', cursor: loading ? 'not-allowed' : 'pointer' }}
+                    className="inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-red-600 hover:bg-red-700 active:bg-red-800 text-white text-xs font-bold shadow-sm transition cursor-pointer disabled:opacity-50"
                 >
-                    {loading ? 'Updating…' : 'Update Password'}
-                </button>
-            </form>
-        </div>
-    );
-}
-
-function PasswordField({ label, name, value, show, onToggle, onChange, errors }) {
-    return (
-        <div style={{ marginBottom: 18 }}>
-            <label style={labelStyle}>{label}</label>
-            <div style={{ position: 'relative' }}>
-                <input
-                    type={show ? 'text' : 'password'}
-                    name={name}
-                    value={value}
-                    onChange={onChange}
-                    style={{ ...inputStyle, paddingRight: 40, borderColor: errors?.[name] ? '#EF4444' : '#E5E7EB' }}
-                    autoComplete="off"
-                />
-                <button
-                    type="button"
-                    onClick={onToggle}
-                    style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: '#9CA3AF', display: 'flex', alignItems: 'center' }}
-                >
-                    {show ? <EyeOffIcon /> : <EyeIcon />}
+                    <Lock className="w-3.5 h-3.5" />
+                    <span>{loading ? 'Updating…' : 'Update Password'}</span>
                 </button>
             </div>
-            {errors?.[name] && (
-                <span style={errStyle}>
-                    {Array.isArray(errors[name]) ? errors[name][0] : errors[name]}
-                </span>
-            )}
-        </div>
+        </form>
     );
 }
-
-function tabStyle(active) {
-    return {
-        background: 'none', border: 'none', cursor: 'pointer',
-        padding: '14px 0', fontSize: 13, fontWeight: 600,
-        color: active ? ACCENT : '#6B7280',
-        borderBottom: active ? `2px solid ${ACCENT}` : '2px solid transparent',
-        marginBottom: -1,
-    };
-}
-
-function EyeIcon() { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>; }
-function EyeOffIcon() { return <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>; }
-function CheckCircleIcon() { return <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>; }
-
-const labelStyle = { display: 'block', fontSize: 12, color: '#6B7280', marginBottom: 5, fontWeight: 500 };
-const inputStyle = {
-    width: '100%', boxSizing: 'border-box', border: '1px solid #E5E7EB',
-    borderRadius: 8, padding: '9px 12px', fontSize: 13, outline: 'none',
-    fontFamily: 'monserrat', color: '#111', background: 'white',
-};
-const primaryBtnStyle = {
-    background: ACCENT, color: '#fff', border: 'none', borderRadius: 8,
-    padding: '10px 24px', fontSize: 13, fontWeight: 600, cursor: 'pointer',
-    width: '100%',
-};
-const errStyle = { fontSize: 11, color: '#DC2626', marginTop: 4, display: 'block' };
 
 Profile.layout = (page) => <VolunteerLayout title="My Profile">{page}</VolunteerLayout>;

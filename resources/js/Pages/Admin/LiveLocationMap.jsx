@@ -1,18 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { MapPin, Users, Activity, Clock } from 'lucide-react';
 
 const POLL_INTERVAL_MS = 10000;
-const DEFAULT_CENTER = [14.4081, 121.0415]; // Muntinlupa City, PH - used before any markers exist
+const DEFAULT_CENTER = [14.4081, 121.0415]; // Muntinlupa City, PH
 const LEAFLET_CSS_URL = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
 const LEAFLET_JS_URL = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-
-// Volunteer is considered "at location" once they're within this many meters
-// of the activity's registered coordinates. GPS on phones can easily drift
-// 20-50m indoors/under trees, so 100m is a forgiving-but-still-useful radius.
 const GEOFENCE_RADIUS_METERS = 100;
 
-// Loads Leaflet's CSS + JS from a CDN once and reuses it across mounts, instead of
-// injecting duplicate tags if this component re-mounts. No API key needed - unlike
-// Google Maps, Leaflet + OpenStreetMap tiles are free with no signup required.
 let leafletLoadingPromise = null;
 
 function loadLeaflet() {
@@ -38,11 +32,8 @@ function loadLeaflet() {
     return leafletLoadingPromise;
 }
 
-// Straight-line distance in meters between two lat/lng points (Haversine).
-// This isn't a routed/road distance - just how far apart the two pins are -
-// which is exactly what a geofence check needs.
 function distanceInMeters(lat1, lon1, lat2, lon2) {
-    const R = 6371000; // Earth radius in meters
+    const R = 6371000;
     const toRad = (deg) => (deg * Math.PI) / 180;
     const dLat = toRad(lat2 - lat1);
     const dLon = toRad(lon2 - lon1);
@@ -53,38 +44,31 @@ function distanceInMeters(lat1, lon1, lat2, lon2) {
     return R * c;
 }
 
-// Small colored dot marker (no external icon images needed) so we can recolor
-// per-status without depending on another CDN for marker-color variants.
 function makeDotIcon(color) {
     const L = window.L;
     return L.divIcon({
         className: '',
-        html: `<div style="width:16px;height:16px;border-radius:50%;background:${color};border:2px solid white;box-shadow:0 0 4px rgba(0,0,0,0.4);"></div>`,
+        html: `<div style="width:16px;height:16px;border-radius:50%;background:${color};border:2px solid white;box-shadow:0 0 6px rgba(0,0,0,0.35);"></div>`,
         iconSize: [16, 16],
         iconAnchor: [8, 8],
         popupAnchor: [0, -8],
     });
 }
 
-// Flag-style marker for the activity's fixed destination point.
 function makeFlagIcon() {
     const L = window.L;
     return L.divIcon({
         className: '',
-        html: `<div style="font-size:22px;line-height:22px;filter:drop-shadow(0 1px 2px rgba(0,0,0,0.5));">📍</div>`,
-        iconSize: [22, 22],
-        iconAnchor: [11, 22],
-        popupAnchor: [0, -20],
+        html: `<svg width="24" height="24" viewBox="0 0 24 24" fill="#dc2626" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="filter:drop-shadow(0 2px 4px rgba(0,0,0,0.35));"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3" fill="#ffffff"/></svg>`,
+        iconSize: [24, 24],
+        iconAnchor: [12, 24],
+        popupAnchor: [0, -22],
     });
 }
 
-// ✅ UPDATED: "on the way" (blue) status removed. A volunteer is treated as
-// being AT the location the moment their location starts being tracked
-// (i.e. right after they log in / check in for the activity). They only
-// flip to "left" if a later ping shows them outside the geofence radius.
 const STATUS_COLORS = {
-    inside: '#0000ff',    // blue - at location
-    left: '#dc2626',      // red - left the location (moved outside the radius)
+    inside: '#2563eb', // blue - at location
+    left: '#dc2626',   // red - left location
 };
 
 const STATUS_LABELS = {
@@ -95,10 +79,10 @@ const STATUS_LABELS = {
 export default function LiveLocationMap() {
     const mapDivRef = useRef(null);
     const mapRef = useRef(null);
-    const markersRef = useRef({});     // user_id -> { marker, polyline, prevStatus }
-    const destMarkersRef = useRef({}); // activity_id -> Leaflet marker (destination pin)
+    const markersRef = useRef({});
+    const destMarkersRef = useRef({});
     const pollTimeoutRef = useRef(null);
-    const hasAutoFitRef = useRef(false); // only auto-zoom to markers once, so we don't yank the admin's view every poll
+    const hasAutoFitRef = useRef(false);
 
     const [mapReady, setMapReady] = useState(false);
     const [mapError, setMapError] = useState(false);
@@ -106,7 +90,6 @@ export default function LiveLocationMap() {
     const [statusCounts, setStatusCounts] = useState({ inside: 0, left: 0 });
     const [lastUpdated, setLastUpdated] = useState(null);
 
-    // Load Leaflet, then initialize the map once.
     useEffect(() => {
         loadLeaflet()
             .then(() => {
@@ -118,11 +101,6 @@ export default function LiveLocationMap() {
                     maxZoom: 19,
                 }).addTo(mapRef.current);
 
-                // Leaflet measures the container's pixel size the instant it's created.
-                // If that happens before the surrounding layout (flex/tabs/etc.) has
-                // settled, it locks in the wrong size and the map renders zoomed out
-                // to whatever it thinks the world looks like. Re-measuring shortly
-                // after mount fixes that without needing to touch surrounding layout.
                 setTimeout(() => {
                     if (mapRef.current) {
                         mapRef.current.invalidateSize();
@@ -142,7 +120,6 @@ export default function LiveLocationMap() {
         };
     }, []);
 
-    // Poll the live-locations endpoint and update markers, once the map is ready.
     useEffect(() => {
         if (!mapReady) return;
 
@@ -182,9 +159,6 @@ export default function LiveLocationMap() {
 
             const existing = markersRef.current[loc.user_id];
 
-            // ✅ UPDATED: no more "outside/on the way" state. Volunteers are
-            // assumed to be at location the moment they're tracked; they only
-            // become "left" once a ping shows them past the geofence radius.
             let status = 'inside';
             let distanceLabel = '';
             if (hasDestination) {
@@ -195,17 +169,16 @@ export default function LiveLocationMap() {
             counts[status] += 1;
 
             const popupContent = `
-                <div style="font-family: sans-serif; font-size: 13px; line-height: 1.5;">
-                    <strong>${loc.user_name}</strong><br/>
-                    ${loc.activity_name} — ${loc.location_name}<br/>
-                    <span style="color:${STATUS_COLORS[status]}; font-weight:600;">${STATUS_LABELS[status]}</span>
+                <div style="font-family: sans-serif; font-size: 12px; line-height: 1.5; padding: 2px;">
+                    <strong style="font-size: 13px; color: #111;">${loc.user_name}</strong><br/>
+                    <span style="color:#555;">${loc.activity_name} — ${loc.location_name}</span><br/>
+                    <span style="color:${STATUS_COLORS[status]}; font-weight:700;">${STATUS_LABELS[status]}</span>
                     ${hasDestination ? ` · ${distanceLabel} from location` : ''}<br/>
-                    <span style="color:#888;">Last update: ${loc.last_ping_at}</span>
+                    <span style="color:#888; font-size: 11px;">Last update: ${loc.last_ping_at}</span>
                 </div>
             `;
 
             if (existing) {
-                // Existing marker - just move it, don't recreate (avoids flicker).
                 existing.marker.setLatLng(latlng);
                 existing.marker.setIcon(makeDotIcon(STATUS_COLORS[status]));
                 existing.marker.setPopupContent(popupContent);
@@ -246,46 +219,41 @@ export default function LiveLocationMap() {
                 markersRef.current[loc.user_id] = { marker, polyline, prevStatus: status };
             }
 
-            // One destination pin per activity (not per volunteer) so multiple
-            // volunteers on the same activity don't stack duplicate flags.
             if (hasDestination && !seenActivityIds.has(loc.activity_id)) {
                 seenActivityIds.add(loc.activity_id);
-                if (destMarkersRef.current[loc.activity_id]) {
-                    destMarkersRef.current[loc.activity_id].setLatLng(destLatLng);
-                } else {
-                    destMarkersRef.current[loc.activity_id] = L.marker(destLatLng, { icon: makeFlagIcon() })
+                if (!destMarkersRef.current[loc.activity_id]) {
+                    const destMarker = L.marker(destLatLng, { icon: makeFlagIcon() })
                         .addTo(mapRef.current)
                         .bindPopup(`
-                            <div style="font-family: sans-serif; font-size: 13px;">
+                            <div style="font-family: sans-serif; font-size: 12px; line-height: 1.4;">
                                 <strong>${loc.activity_name}</strong><br/>
-                                ${loc.location_name}
+                                ${loc.location_name}<br/>
+                                <span style="color:#666; font-size:11px;">Geofence perimeter: ${GEOFENCE_RADIUS_METERS}m</span>
                             </div>
                         `);
+                    destMarkersRef.current[loc.activity_id] = destMarker;
                 }
             }
         });
 
-        // Remove markers + polylines for volunteers who are no longer active
-        // (timed out, or their pings went stale).
         Object.keys(markersRef.current).forEach((userId) => {
-            if (!seenUserIds.has(Number(userId))) {
-                const entry = markersRef.current[userId];
-                mapRef.current.removeLayer(entry.marker);
-                if (entry.polyline) mapRef.current.removeLayer(entry.polyline);
+            const numId = Number(userId);
+            if (!seenUserIds.has(numId)) {
+                const { marker, polyline } = markersRef.current[userId];
+                mapRef.current.removeLayer(marker);
+                if (polyline) mapRef.current.removeLayer(polyline);
                 delete markersRef.current[userId];
             }
         });
 
-        // Remove destination pins for activities no one is currently pinging for.
-        Object.keys(destMarkersRef.current).forEach((activityId) => {
-            if (!seenActivityIds.has(Number(activityId))) {
-                mapRef.current.removeLayer(destMarkersRef.current[activityId]);
-                delete destMarkersRef.current[activityId];
+        Object.keys(destMarkersRef.current).forEach((actId) => {
+            const numId = Number(actId);
+            if (!seenActivityIds.has(numId)) {
+                mapRef.current.removeLayer(destMarkersRef.current[actId]);
+                delete destMarkersRef.current[actId];
             }
         });
 
-        // First time we see any active locations, zoom the map to actually show
-        // them instead of leaving the admin staring at the default city-wide view.
         if (!hasAutoFitRef.current && locations.length > 0) {
             const L = window.L;
             const points = [];
@@ -307,42 +275,62 @@ export default function LiveLocationMap() {
     };
 
     return (
-        <div style={{ background: 'white', borderRadius: '8px', border: '1px solid #e8e8e8', overflow: 'hidden', marginBottom: '24px' }}>
-            <div style={{ padding: '20px 24px', borderBottom: '1px solid #e8e8e8', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
-                <div style={{ fontFamily: 'Oswald, sans-serif', fontSize: '16px', color: '#111', fontWeight: '600', textTransform: 'uppercase' }}>
-                    Live Volunteer Locations
+        <div className="bg-white rounded-2xl overflow-hidden">
+            {/* Header */}
+            <div className="p-4 sm:p-5 border-b border-gray-100 flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                    <MapPin className="w-4 h-4 text-red-600" />
+                    <div>
+                        <h3 className="text-sm font-bold text-gray-900 leading-tight">
+                            Live Volunteer Locations
+                        </h3>
+                        <p className="text-[11px] text-gray-400">
+                            Real-time geofenced GPS tracking during active sessions
+                        </p>
+                    </div>
                 </div>
-                <div style={{ fontSize: '12px', color: '#888' }}>
-                    {lastUpdated && `updated ${lastUpdated.toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit', hour12: true })}`}
+
+                <div className="flex items-center gap-3 text-xs text-gray-500">
+                    {lastUpdated && (
+                        <span className="flex items-center gap-1 text-[11px] text-gray-400">
+                            <Clock className="w-3 h-3" />
+                            <span>
+                                Updated {lastUpdated.toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit', hour12: true })}
+                            </span>
+                        </span>
+                    )}
                 </div>
             </div>
 
-            {/* ✅ UPDATED: legend now shows only 2 statuses (At Location / Left Location) in English,
-                "On the Way" removed entirely per requirement. */}
+            {/* Status Legend Pills */}
             {mapReady && activeCount > 0 && (
-                <div style={{ padding: '10px 24px', borderBottom: '1px solid #f0f0f0', display: 'flex', gap: '16px', fontSize: '12px', flexWrap: 'wrap' }}>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: STATUS_COLORS.inside, display: 'inline-block' }} />
-                        At Location: <strong>{statusCounts.inside}</strong>
+                <div className="px-5 py-2.5 bg-gray-50/60 border-b border-gray-100 flex items-center gap-4 text-xs font-semibold">
+                    <span className="flex items-center gap-1.5 text-blue-700">
+                        <span className="w-2.5 h-2.5 rounded-full bg-blue-600 inline-block" />
+                        <span>At Location:</span>
+                        <strong className="font-bold">{statusCounts.inside}</strong>
                     </span>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: STATUS_COLORS.left, display: 'inline-block' }} />
-                        Left Location: <strong>{statusCounts.left}</strong>
+                    <span className="flex items-center gap-1.5 text-red-700">
+                        <span className="w-2.5 h-2.5 rounded-full bg-red-600 inline-block" />
+                        <span>Left Location:</span>
+                        <strong className="font-bold">{statusCounts.left}</strong>
                     </span>
                 </div>
             )}
 
+            {/* Map Canvas */}
             {mapError ? (
-                <div style={{ padding: '40px', textAlign: 'center', color: '#ff0000', fontSize: '14px' }}>
-                   The map could not be loaded. Make sure this device has access to the internet.
+                <div className="p-12 text-center text-xs text-red-600">
+                    The interactive map could not be loaded. Please ensure an active internet connection.
                 </div>
             ) : (
-                <div ref={mapDivRef} style={{ width: '100%', height: '420px' }} />
+                <div ref={mapDivRef} className="w-full h-[400px] z-0" />
             )}
 
             {mapReady && activeCount === 0 && (
-                <div style={{ padding: '12px 24px', fontSize: '12px', color: '#9ca3af', borderTop: '1px solid #f0f0f0' }}>
-                    There are no volunteers currently checked in.
+                <div className="px-5 py-3 text-xs text-gray-400 bg-gray-50/40 border-t border-gray-100 flex items-center gap-2">
+                    <Users className="w-3.5 h-3.5" />
+                    <span>There are currently no active checked-in volunteers being tracked.</span>
                 </div>
             )}
         </div>

@@ -1,6 +1,17 @@
 import React from 'react';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import * as faceapi from 'face-api.js';
+import {
+    ScanFace,
+    Camera,
+    Clock,
+    CheckCircle2,
+    AlertTriangle,
+    ShieldCheck,
+    ChevronDown,
+    UserPlus,
+    X,
+} from 'lucide-react';
 
 // ---- Detection tuning ----
 // Ramanujan's approximation for ellipse circumference — accurate enough for
@@ -49,7 +60,7 @@ function getYawRatio(landmarks) {
 const YAW_LEFT_MAX = 0.72;   // must clearly exceed this ratio to count as turned left (on-screen) — recalibrated for the eye-span-based metric
 const YAW_RIGHT_MIN = 0.28;  // must clearly fall below this ratio to count as turned right (on-screen) — recalibrated for the eye-span-based metric
 
-// ✅ anti-spoofing — blink-based liveness (Eye Aspect Ratio).
+// Anti-spoofing — blink-based liveness (Eye Aspect Ratio).
 // Uses the standard Soukupová & Čech EAR formula on the 6-point eye
 // landmarks face-api.js already gives us (no extra model needed). A printed
 // photo, an ID card, or a photo shown on a phone/screen physically cannot
@@ -164,7 +175,6 @@ export default function FaceAttendance({ todayRecords, activities, hasFaceDescri
 
     const videoRef = useRef(null);
     const streamRef = useRef(null);
-    const preWarmedStreamRef = useRef(null);
     const rafRef = useRef(null);
 
     const holdCounterRef = useRef(0);
@@ -210,27 +220,9 @@ export default function FaceAttendance({ todayRecords, activities, hasFaceDescri
 
     useEffect(() => {
         loadModels();
-        (async () => {
-            try {
-                // Capping the requested resolution matters a lot here: face
-                // detection doesn't need 720p/1080p to work, but every extra
-                // pixel is extra decode + canvas-draw + model-inference cost on
-                // EVERY frame. Most webcams default to a much higher resolution
-                // than this if unconstrained, which is a major, easy-to-miss
-                // source of lag on lower-spec laptops.
-                const stream = await navigator.mediaDevices.getUserMedia({
-                    video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' },
-                });
-                preWarmedStreamRef.current = stream;
-            } catch {}
-        })();
         return () => {
             stopEverything();
             stopLocationPing();
-            if (preWarmedStreamRef.current) {
-                preWarmedStreamRef.current.getTracks().forEach(t => t.stop());
-                preWarmedStreamRef.current = null;
-            }
         };
     }, []);
 
@@ -243,8 +235,11 @@ export default function FaceAttendance({ todayRecords, activities, hasFaceDescri
     }, [todayRecords]);
 
     useEffect(() => {
-        if (cameraOn) startCamera();
-        else stopCamera();
+        if (cameraOn) {
+            startCamera();
+        } else {
+            stopCamera();
+        }
         return () => stopCamera();
     }, [cameraOn]);
 
@@ -277,30 +272,33 @@ export default function FaceAttendance({ todayRecords, activities, hasFaceDescri
 
     const startCamera = async () => {
         try {
-            if (preWarmedStreamRef.current && preWarmedStreamRef.current.active) {
-                streamRef.current = preWarmedStreamRef.current;
-                preWarmedStreamRef.current = null;
-                if (videoRef.current) videoRef.current.srcObject = streamRef.current;
-                return;
-            }
             const stream = await navigator.mediaDevices.getUserMedia({
                 video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' },
             });
             streamRef.current = stream;
-            if (videoRef.current) videoRef.current.srcObject = stream;
-        } catch {
-            setErrorStatus('Camera access denied.');
+            if (videoRef.current) {
+                videoRef.current.srcObject = stream;
+            }
+        } catch (err) {
+            console.error('Camera error:', err);
+            setErrorStatus('Camera access denied. Please allow camera permissions.');
             setCameraOn(false);
+            setMode(null);
         }
     };
 
     const stopCamera = () => {
-        if (rafRef.current) cancelAnimationFrame(rafRef.current);
+        if (rafRef.current) {
+            cancelAnimationFrame(rafRef.current);
+            rafRef.current = null;
+        }
         if (streamRef.current) {
             streamRef.current.getTracks().forEach(t => t.stop());
             streamRef.current = null;
         }
-        if (videoRef.current) videoRef.current.srcObject = null;
+        if (videoRef.current) {
+            videoRef.current.srcObject = null;
+        }
     };
 
     const stopEverything = () => stopCamera();
@@ -783,7 +781,7 @@ export default function FaceAttendance({ todayRecords, activities, hasFaceDescri
     const showArrow = currentArrow && liveStep !== 'done';
     const ringStroke = livePositive ? '#16a34a' : '#9ca3af';
 
-    // ✅ NEW: buttons are locked (grayed out + unclickable) until an activity
+    // Note: buttons are locked (grayed out + unclickable) until an activity
     // is selected. This is on top of the existing startMode() guard/toast —
     // that guard still fires as a fallback (e.g. keyboard activation), but
     // now the button itself visibly communicates "not ready yet" instead of
@@ -791,292 +789,397 @@ export default function FaceAttendance({ todayRecords, activities, hasFaceDescri
     const noActivitySelected = !selectedActivity;
 
     return (
-        <div style={{ background: 'white', borderRadius: '8px', border: '1px solid #e8e8e8', padding: '28px', marginBottom: '24px' }}>
-            <div style={{ fontFamily: 'Oswald, sans-serif', fontSize: '16px', color: '#111', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '20px' }}>
-                Today's Attendance
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px', marginBottom: '24px' }}>
-                {[
-                    { label: 'Time In', value: todayRecordForSelectedActivity?.time_in ? new Date(todayRecordForSelectedActivity.time_in).toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit', hour12: true }) : '—', color: '#16a34a' },
-                    { label: 'Time Out', value: todayRecordForSelectedActivity?.time_out ? new Date(todayRecordForSelectedActivity.time_out).toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit', hour12: true }) : '—', color: '#ff0000' },
-                    { label: 'Hours Today', value: todayRecordForSelectedActivity?.hours_rendered ?? '0.00', color: '#111' },
-                ].map(({ label, value, color }) => (
-                    <div key={label} style={{ textAlign: 'center', padding: '16px', background: '#f9fafb', borderRadius: '6px' }}>
-                        <div style={{ fontSize: '11px', color: '#888', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '6px' }}>{label}</div>
-                        <div style={{ fontFamily: 'Oswald, sans-serif', fontSize: '22px', color }}>{value}</div>
+        <>
+            <div className="bg-white rounded-2xl border border-gray-200 shadow-xs p-5 sm:p-6 space-y-5">
+                {/* Header */}
+                <div className="flex items-center justify-between pb-3.5 border-b border-gray-100">
+                    <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-xl bg-red-50 text-red-600 flex items-center justify-center shrink-0">
+                            <ScanFace className="w-4 h-4" />
+                        </div>
+                        <div>
+                            <h2 className="text-base font-bold text-gray-900 leading-snug">
+                                Today's check-in
+                            </h2>
+                            <p className="text-xs text-gray-500">
+                                Verify duty attendance for your assignment
+                            </p>
+                        </div>
                     </div>
-                ))}
-            </div>
+                </div>
 
-            {!alreadyTimedOut && (
-                <div style={{ marginBottom: '16px' }}>
-                    <label style={{ fontSize: '13px', fontWeight: '600', color: '#374151', display: 'block', marginBottom: '6px' }}>
-                        Select Activity
+                {/* Activity Selector */}
+                <div>
+                    <label className="block text-xs font-semibold text-gray-700 mb-1.5">
+                        Assigned deployment activity
                     </label>
-                    <select
-                        value={selectedActivity}
-                        onChange={e => setSelectedActivity(e.target.value)}
-                        disabled={!!mode}
-                        autoComplete="off"
-                        style={{
-                            width: '100%', padding: '10px 12px', borderRadius: '8px', fontSize: '14px',
-                            border: noActivitySelected ? '1px solid #fca5a5' : '1px solid #e5e7eb',
-                        }}
-                    >
-                        <option value="">-- Select your assigned activity --</option>
-                        {selectableActivities?.map(a => (
-                            <option key={a.id} value={a.id}>{a.name} — {a.location_name} ({a.date})</option>
-                        ))}
-                    </select>
-                    {/* ✅ NEW: explicit hint so the disabled buttons below make sense at a glance */}
-                    {noActivitySelected && !mode && (
-                        <div style={{ fontSize: '12px', color: '#b91c1c', marginTop: '6px' }}>
-                            Select an activity above before you can time in or out.
-                        </div>
-                    )}
-                </div>
-            )}
-
-            {!modelsLoaded && (
-                <div style={{ fontSize: '13px', color: '#6b7280', marginBottom: '12px' }}>
-                    Loading face recognition models...
-                </div>
-            )}
-
-            {cameraOn && verified && mode !== 'register' ? (
-                <div style={{
-                    marginBottom: '16px', textAlign: 'center', background: '#f0fdf4',
-                    borderRadius: '14px', padding: '40px 24px', border: '1px solid #bbf7d0',
-                }}>
-                    <div style={{
-                        width: '64px', height: '64px', borderRadius: '50%', background: '#16a34a',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px',
-                        animation: 'checkFadeIn 0.25s ease-out',
-                    }}>
-                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
-                            <path d="M7 12.5L10.5 16L17 8.5" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                    </div>
-                    <div style={{ fontFamily: 'Oswald, sans-serif', fontSize: '16px', fontWeight: '600', color: '#166534' }}>
-                        {status || 'Verified!'}
-                    </div>
-                </div>
-            ) : cameraOn && (
-                <div style={{
-                    marginBottom: '16px', textAlign: 'center', background: '#fafafa',
-                    borderRadius: '14px', padding: '32px 24px', border: '1px solid #ececec',
-                    boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
-                }}>
-                    <div style={{ fontFamily: 'Oswald, sans-serif', fontSize: '16px', fontWeight: '600', color: '#111', marginBottom: '4px', letterSpacing: '0.3px' }}>
-                        {mode === 'register' ? 'Scan Your Face' : mode === 'timein' ? 'Face Verification — Time In' : 'Face Verification — Time Out'}
-                    </div>
-                    <div style={{ fontSize: '12px', color: '#888', marginBottom: '22px' }}>
-                        {mode === 'register'
-                            ? 'Follow the instructions below to verify it\u2019s really you.'
-                            : 'Your face will be scanned automatically — hold still and blink naturally.'}
-                    </div>
-
-                    <div style={{ position: 'relative', width: '260px', height: '268px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        {showArrow && currentArrow === 'left' && (
-                            <div key={`arrow-${liveStep}`} style={{ position: 'absolute', left: '-6px', zIndex: 2 }}>
-                                <svg width="52" height="52" viewBox="0 0 24 24" fill="none" style={{ animation: 'arrowAppear 0.4s ease-out' }}>
-                                    <path d="M15 18L9 12L15 6" stroke="#2563eb" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                                </svg>
-                            </div>
-                        )}
-
-                        <div style={{ position: 'relative', width: '208px', height: '268px' }}>
-                            {!showCheckmark && (
-                                <svg width="208" height="268" style={{ position: 'absolute', top: 0, left: 0 }}>
-                                    <defs>
-                                        <clipPath id="faceOvalClip">
-                                            <ellipse cx="104" cy="134" rx="100" ry="130" />
-                                        </clipPath>
-                                    </defs>
-                                    <foreignObject x="4" y="4" width="200" height="260" clipPath="url(#faceOvalClip)">
-                                        <video
-                                            xmlns="http://www.w3.org/1999/xhtml"
-                                            ref={videoRef}
-                                            autoPlay
-                                            muted
-                                            playsInline
-                                            style={{ width: '100%', height: '100%', objectFit: 'cover', transform: 'scaleX(-1)', display: 'block' }}
-                                        />
-                                    </foreignObject>
-                                    {activeProgress > 0 && (
-                                        <ellipse
-                                            cx="104" cy="134" rx="100" ry="130" fill="none"
-                                            stroke={ringStroke}
-                                            strokeWidth="4"
-                                            style={{ transition: 'stroke 0.15s linear' }}
-                                        />
-                                    )}
-                                    {activeProgress === 0 && (
-                                        <ellipse cx="104" cy="134" rx="100" ry="130" fill="none" stroke="#e5e7eb" strokeWidth="3" />
-                                    )}
-                                </svg>
-                            )}
-
-                            {showCheckmark && (
-                                <>
-                                    <svg width="208" height="268" style={{ position: 'absolute', top: 0, left: 0, pointerEvents: 'none' }}>
-                                        <ellipse cx="104" cy="134" rx="100" ry="130" fill="none" stroke="#16a34a" strokeWidth="4" />
-                                    </svg>
-                                    <div style={{
-                                        position: 'absolute', top: '4px', left: '4px', width: '200px', height: '260px', borderRadius: '50%',
-                                        background: 'rgba(22,163,74,0.12)',
-                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                        animation: 'checkFadeIn 0.25s ease-out',
-                                    }}>
-                                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none">
-                                            <circle cx="12" cy="12" r="11" fill="#16a34a" />
-                                            <path d="M7 12.5L10.5 16L17 8.5" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-                                        </svg>
-                                    </div>
-                                </>
-                            )}
-                        </div>
-
-                        {showArrow && currentArrow === 'right' && (
-                            <div key={`arrow-${liveStep}`} style={{ position: 'absolute', right: '-6px', zIndex: 2 }}>
-                                <svg width="52" height="52" viewBox="0 0 24 24" fill="none" style={{ animation: 'arrowAppear 0.4s ease-out' }}>
-                                    <path d="M9 6L15 12L9 18" stroke="#2563eb" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                                </svg>
-                            </div>
-                        )}
-                    </div>
-
-                    <style>{`
-                        @keyframes scanPulse {
-                            0% { transform: scale(1); opacity: 0.5; }
-                            100% { transform: scale(1.18); opacity: 0; }
-                        }
-                        @keyframes arrowAppear {
-                            0% { opacity: 0; transform: scale(0.7); }
-                            60% { opacity: 1; transform: scale(1.1); }
-                            100% { opacity: 1; transform: scale(1); }
-                        }
-                        @keyframes checkFadeIn {
-                            0% { opacity: 0; transform: scale(0.85); }
-                            100% { opacity: 1; transform: scale(1); }
-                        }
-                    `}</style>
-
-                    {mode === 'register' && (
-                        <div style={{ display: 'flex', justifyContent: 'center', gap: '6px', marginTop: '18px' }}>
-                            {REGISTER_STEPS.slice(0, 4).map((step, idx) => {
-                                const currentIdx = REGISTER_STEPS.indexOf(liveStep);
-                                return (
-                                    <div key={step} style={{
-                                        width: '36px', height: '6px', borderRadius: '999px',
-                                        background: idx < currentIdx ? '#16a34a' : idx === currentIdx ? '#ff0000' : '#e5e7eb',
-                                        transition: 'background 0.2s',
-                                    }} />
-                                );
-                            })}
-                        </div>
-                    )}
-
-                    <div style={{ marginTop: '14px', fontSize: '14px', fontWeight: '600', color: '#111', minHeight: '20px' }}>
-                        {mode === 'register' ? (status || STEP_LABELS[liveStep]) : (status || 'Position your face within the frame')}
-                    </div>
-
-                    <div style={{
-                        marginTop: '18px', paddingTop: '16px', borderTop: '1px solid #eee',
-                        textAlign: 'left', maxWidth: '320px', marginLeft: 'auto', marginRight: 'auto',
-                    }}>
-                        {[
-                            'Remove glasses, mask, or anything covering your face.',
-                            'Keep your whole face inside the circle.',
-                            'Hold still until the ring turns green.',
-                            'Make sure the area is well lit.',
-                        ].map((tip, i) => (
-                            <div key={i} style={{ display: 'flex', gap: '8px', fontSize: '12px', color: '#666', marginBottom: '6px' }}>
-                                <span style={{ color: '#ff0000' }}>•</span>
-                                <span>{tip}</span>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            )}
-
-            {!cameraOn && status && (
-                <div style={{
-                    padding: '10px 14px', borderRadius: '6px', marginBottom: '16px', fontSize: '13px',
-                    background: statusType === 'success' ? '#f0fdf4' : statusType === 'error' ? '#fef2f2' : '#f9fafb',
-                    color: statusType === 'success' ? '#166534' : statusType === 'error' ? '#991b1b' : '#374151',
-                }}>
-                    {status}
-                </div>
-            )}
-
-            {!mode && selectedActivity && alreadyTimedOut ? (
-                <div style={{ padding: '12px 14px', borderRadius: '6px', fontSize: '13px', background: '#f0fdf4', color: '#166534' }}>
-                    You have already completed attendance for this activity today.
-                </div>
-            ) : !mode ? (
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                    <button
-                        onClick={() => startMode('timein')}
-                        disabled={alreadyTimedIn || !modelsLoaded || noActivitySelected}
-                        title={noActivitySelected ? 'Select an activity first' : undefined}
-                        style={{
-                            padding: '12px', borderRadius: '6px', border: 'none',
-                            cursor: alreadyTimedIn || !modelsLoaded || noActivitySelected ? 'not-allowed' : 'pointer',
-                            background: alreadyTimedIn || noActivitySelected ? '#e5e7eb' : '#16a34a',
-                            color: alreadyTimedIn || noActivitySelected ? '#9ca3af' : 'white',
-                            fontWeight: '600', fontSize: '14px',
-                        }}
-                    >
-                        {alreadyTimedIn ? 'Timed In' : 'Face Time In'}
-                    </button>
-                    <button
-                        onClick={() => startMode('timeout')}
-                        disabled={!modelsLoaded || noActivitySelected}
-                        title={noActivitySelected ? 'Select an activity first' : undefined}
-                        style={{
-                            padding: '12px', borderRadius: '6px', border: 'none',
-                            cursor: !modelsLoaded || noActivitySelected ? 'not-allowed' : 'pointer',
-                            background: noActivitySelected ? '#e5e7eb' : '#ff0000',
-                            color: noActivitySelected ? '#9ca3af' : 'white',
-                            fontWeight: '600', fontSize: '14px',
-                        }}
-                    >
-                        Face Time Out
-                    </button>
-                </div>
-            ) : mode !== 'register' ? (
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '12px' }}>
-                    <button
-                        onClick={cancelMode}
-                        style={{ padding: '12px', borderRadius: '6px', border: 'none', cursor: 'pointer', background: '#f3f4f6', color: '#374151', fontWeight: '600' }}
-                    >
-                        Cancel
-                    </button>
-                </div>
-            ) : null}
-
-            {!faceIsRegistered && (
-                <div style={{ marginTop: '20px', paddingTop: '20px', borderTop: '1px solid #e8e8e8' }}>
-                    <div style={{ fontSize: '11px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '1px', color: '#888', marginBottom: '8px' }}>
-                        First time? Register your face:
-                    </div>
-                    {mode === 'register' ? (
-                        <button onClick={cancelMode} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: 'none', cursor: 'pointer', background: '#f3f4f6', color: '#374151', fontWeight: '600' }}>
-                            Cancel
-                        </button>
-                    ) : (
-                        <button
-                            onClick={() => startMode('register')}
-                            disabled={!modelsLoaded || !!mode}
-                            style={{ width: '100%', padding: '10px', borderRadius: '6px', border: 'none', cursor: modelsLoaded ? 'pointer' : 'not-allowed', background: '#111', color: 'white', fontWeight: '600' }}
+                    <div className="relative">
+                        <select
+                            value={selectedActivity}
+                            onChange={e => setSelectedActivity(e.target.value)}
+                            disabled={!!mode}
+                            autoComplete="off"
+                            className={`w-full px-3.5 py-2.5 rounded-xl text-xs border bg-white focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors appearance-none ${
+                                noActivitySelected ? 'border-red-300 text-gray-700' : 'border-gray-200 text-gray-900'
+                            }`}
                         >
-                            Register Face
-                        </button>
+                            <option value="">-- Choose your assigned deployment activity --</option>
+                            {selectableActivities?.map(a => (
+                                <option key={a.id} value={a.id}>{a.name} — {a.location_name} ({a.date})</option>
+                            ))}
+                        </select>
+                        <ChevronDown className="w-4 h-4 text-gray-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    </div>
+                    {noActivitySelected && (
+                        <p className="text-[11px] text-red-600 mt-1.5">
+                            Please select an assigned activity above before timing in or timing out.
+                        </p>
                     )}
                 </div>
+
+                {/* Quick Shift Metrics */}
+                <div className="grid grid-cols-3 gap-2">
+                    <div className="p-3 rounded-xl bg-gray-50/80 border border-gray-100 text-center">
+                        <div className="text-[11px] font-medium text-gray-500 mb-0.5">Time in</div>
+                        <div className="text-sm sm:text-base font-bold text-emerald-600 truncate">
+                            {todayRecordForSelectedActivity?.time_in
+                                ? new Date(todayRecordForSelectedActivity.time_in).toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit', hour12: true })
+                                : '—'}
+                        </div>
+                    </div>
+                    <div className="p-3 rounded-xl bg-gray-50/80 border border-gray-100 text-center">
+                        <div className="text-[11px] font-medium text-gray-500 mb-0.5">Time out</div>
+                        <div className="text-sm sm:text-base font-bold text-red-600 truncate">
+                            {todayRecordForSelectedActivity?.time_out
+                                ? new Date(todayRecordForSelectedActivity.time_out).toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit', hour12: true })
+                                : '—'}
+                        </div>
+                    </div>
+                    <div className="p-3 rounded-xl bg-gray-50/80 border border-gray-100 text-center">
+                        <div className="text-[11px] font-medium text-gray-500 mb-0.5">Hours today</div>
+                        <div className="text-sm sm:text-base font-bold text-gray-900 truncate">
+                            {todayRecordForSelectedActivity?.hours_rendered ? `${todayRecordForSelectedActivity.hours_rendered} hrs` : '0.0 hrs'}
+                        </div>
+                    </div>
+                </div>
+
+                {/* Models Loading Notice */}
+                {!modelsLoaded && (
+                    <div className="flex items-center gap-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-xl p-3">
+                        <Clock className="w-4 h-4 text-amber-600 animate-spin shrink-0" />
+                        <span>Loading biometric face recognition models...</span>
+                    </div>
+                )}
+
+                {/* Status Alert (when not in modal) */}
+                {!cameraOn && status && (
+                    <div className={`p-3 rounded-xl text-xs font-medium border flex items-center gap-2 ${
+                        statusType === 'success'
+                            ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                            : statusType === 'error'
+                            ? 'bg-red-50 text-red-800 border-red-200'
+                            : 'bg-gray-50 text-gray-700 border-gray-200'
+                    }`}>
+                        {statusType === 'success' ? (
+                            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                        ) : statusType === 'error' ? (
+                            <AlertTriangle className="w-4 h-4 text-red-600 shrink-0" />
+                        ) : null}
+                        <span>{status}</span>
+                    </div>
+                )}
+
+                {/* Action Buttons: Time In & Time Out */}
+                {selectedActivity && alreadyTimedOut ? (
+                    <div className="p-3.5 rounded-xl text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-2">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                        <span>You have already completed attendance for this activity today.</span>
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        <button
+                            type="button"
+                            onClick={() => startMode('timein')}
+                            disabled={alreadyTimedIn || !modelsLoaded || noActivitySelected}
+                            className={`w-full py-2.5 px-3.5 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition shadow-xs ${
+                                alreadyTimedIn || noActivitySelected || !modelsLoaded
+                                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200'
+                                    : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/10'
+                            }`}
+                        >
+                            <Clock className="w-4 h-4" />
+                            <span>{alreadyTimedIn ? 'Already timed in' : 'Face time in'}</span>
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => startMode('timeout')}
+                            disabled={!modelsLoaded || noActivitySelected}
+                            className={`w-full py-2.5 px-3.5 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition shadow-xs ${
+                                noActivitySelected || !modelsLoaded
+                                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200'
+                                    : 'bg-red-600 hover:bg-red-700 text-white shadow-red-600/10'
+                            }`}
+                        >
+                            <Clock className="w-4 h-4" />
+                            <span>Face time out</span>
+                        </button>
+                    </div>
+                )}
+
+                {/* Face Biometric Status & Registration CTA */}
+                <div className="pt-2 border-t border-gray-100">
+                    {faceIsRegistered ? (
+                        <div className="flex items-center justify-between p-3 rounded-xl bg-emerald-50/60 border border-emerald-100 text-xs">
+                            <div className="flex items-center gap-2 text-emerald-800">
+                                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                                <span className="font-semibold">Face profile registered</span>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => startMode('register')}
+                                disabled={!modelsLoaded}
+                                className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-red-600 hover:bg-red-700 text-white transition flex items-center gap-1.5 shadow-2xs cursor-pointer"
+                            >
+                                <ScanFace className="w-3.5 h-3.5" />
+                                <span>Recalibrate</span>
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="p-4 rounded-2xl bg-red-50/50 border border-red-100 space-y-3">
+                            <div className="flex items-start gap-2.5">
+                                <div className="w-8 h-8 rounded-xl bg-red-100 text-red-600 flex items-center justify-center shrink-0 mt-0.5">
+                                    <ShieldCheck className="w-4 h-4" />
+                                </div>
+                                <div>
+                                    <div className="text-xs font-bold text-gray-900">
+                                        Face profile registration
+                                    </div>
+                                    <div className="text-[11px] text-gray-500 mt-0.5 leading-relaxed">
+                                        Register your face profile to enable biometric field attendance.
+                                    </div>
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => startMode('register')}
+                                disabled={!modelsLoaded}
+                                className="w-full py-2.5 px-4 rounded-xl text-xs font-semibold bg-red-600 hover:bg-red-700 active:bg-red-800 text-white transition flex items-center justify-center gap-2 shadow-xs shadow-red-600/20 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                            >
+                                <ScanFace className="w-4 h-4 text-white" />
+                                <span>Register face profile</span>
+                            </button>
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* Themed Face Modal (Register Face / Time In / Time Out) - strictly NO BLUR */}
+            {mode && (
+                <div className="fixed inset-0 z-50 overflow-y-auto">
+                    {/* Dark overlay backdrop — NO BLUR */}
+                    <div
+                        className="fixed inset-0 bg-black/60 transition-opacity"
+                        onClick={cancelMode}
+                    />
+
+                    <div className="flex min-h-full items-center justify-center p-4 text-center">
+                        <div
+                            className="w-full max-w-lg transform overflow-hidden rounded-2xl bg-white text-left align-middle shadow-2xl transition-all border border-gray-100 p-6 sm:p-7 relative z-10"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            {/* Modal Header */}
+                            <div className="flex items-start justify-between pb-4 border-b border-gray-100">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-xl bg-red-50 text-red-600 flex items-center justify-center shrink-0">
+                                        <ScanFace className="w-5 h-5" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-base sm:text-lg font-bold text-gray-900 leading-snug">
+                                            {mode === 'register'
+                                                ? 'Register face profile'
+                                                : mode === 'timein'
+                                                ? 'Face verification — Time in'
+                                                : 'Face verification — Time out'}
+                                        </h3>
+                                        <p className="text-xs text-gray-500 mt-0.5">
+                                            {mode === 'register'
+                                                ? 'Follow camera instructions to calibrate your volunteer face ID'
+                                                : 'Hold still and blink naturally to verify your deployment attendance'}
+                                        </p>
+                                    </div>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={cancelMode}
+                                    className="w-8 h-8 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-gray-700 flex items-center justify-center transition"
+                                >
+                                    <X className="w-4 h-4" />
+                                </button>
+                            </div>
+
+                            {/* Modal Camera Content */}
+                            <div className="py-4">
+                                {verified && mode !== 'register' ? (
+                                    <div className="text-center bg-emerald-50 rounded-2xl p-8 border border-emerald-200">
+                                        <div className="w-14 h-14 rounded-full bg-emerald-600 text-white flex items-center justify-center mx-auto mb-3 shadow-sm">
+                                            <CheckCircle2 className="w-8 h-8" />
+                                        </div>
+                                        <div className="text-base font-bold text-emerald-800">
+                                            {status || 'Verified!'}
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="text-center">
+                                        {/* Register Step Dots */}
+                                        {mode === 'register' && (
+                                            <div className="flex justify-center gap-1.5 mb-3">
+                                                {REGISTER_STEPS.slice(0, 4).map((step, idx) => {
+                                                    const currentIdx = REGISTER_STEPS.indexOf(liveStep);
+                                                    return (
+                                                        <div
+                                                            key={step}
+                                                            className={`w-10 h-1.5 rounded-full transition-all duration-200 ${
+                                                                idx < currentIdx
+                                                                    ? 'bg-emerald-600'
+                                                                    : idx === currentIdx
+                                                                    ? 'bg-red-600'
+                                                                    : 'bg-gray-200'
+                                                            }`}
+                                                        />
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
+
+                                        {/* Centered Camera Oval Viewport */}
+                                        <div style={{ position: 'relative', width: '260px', height: '268px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                            {showArrow && currentArrow === 'left' && (
+                                                <div key={`arrow-${liveStep}`} style={{ position: 'absolute', left: '-6px', zIndex: 2 }}>
+                                                    <svg width="52" height="52" viewBox="0 0 24 24" fill="none" style={{ animation: 'arrowAppear 0.4s ease-out' }}>
+                                                        <path d="M15 18L9 12L15 6" stroke="#dc2626" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                                                    </svg>
+                                                </div>
+                                            )}
+
+                                            <div style={{ position: 'relative', width: '208px', height: '268px' }}>
+                                                {!showCheckmark && (
+                                                    <svg width="208" height="268" style={{ position: 'absolute', top: 0, left: 0 }}>
+                                                        <defs>
+                                                            <clipPath id="faceOvalClip">
+                                                                <ellipse cx="104" cy="134" rx="100" ry="130" />
+                                                            </clipPath>
+                                                        </defs>
+                                                        <foreignObject x="4" y="4" width="200" height="260" clipPath="url(#faceOvalClip)">
+                                                            <video
+                                                                xmlns="http://www.w3.org/1999/xhtml"
+                                                                ref={(el) => {
+                                                                    videoRef.current = el;
+                                                                    if (el && streamRef.current && el.srcObject !== streamRef.current) {
+                                                                        el.srcObject = streamRef.current;
+                                                                    }
+                                                                }}
+                                                                autoPlay
+                                                                muted
+                                                                playsInline
+                                                                style={{ width: '100%', height: '100%', objectFit: 'cover', transform: 'scaleX(-1)', display: 'block' }}
+                                                            />
+                                                        </foreignObject>
+                                                        {activeProgress > 0 && (
+                                                            <ellipse
+                                                                cx="104" cy="134" rx="100" ry="130" fill="none"
+                                                                stroke={ringStroke}
+                                                                strokeWidth="4"
+                                                                style={{ transition: 'stroke 0.15s linear' }}
+                                                            />
+                                                        )}
+                                                        {activeProgress === 0 && (
+                                                            <ellipse cx="104" cy="134" rx="100" ry="130" fill="none" stroke="#e5e7eb" strokeWidth="3" />
+                                                        )}
+                                                    </svg>
+                                                )}
+
+                                                {showCheckmark && (
+                                                    <>
+                                                        <svg width="208" height="268" style={{ position: 'absolute', top: 0, left: 0, pointerEvents: 'none' }}>
+                                                            <ellipse cx="104" cy="134" rx="100" ry="130" fill="none" stroke="#16a34a" strokeWidth="4" />
+                                                        </svg>
+                                                        <div style={{
+                                                            position: 'absolute', top: '4px', left: '4px', width: '200px', height: '260px', borderRadius: '50%',
+                                                            background: 'rgba(22,163,74,0.12)',
+                                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                            animation: 'checkFadeIn 0.25s ease-out',
+                                                        }}>
+                                                            <svg width="64" height="64" viewBox="0 0 24 24" fill="none">
+                                                                <circle cx="12" cy="12" r="11" fill="#16a34a" />
+                                                                <path d="M7 12.5L10.5 16L17 8.5" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+                                                            </svg>
+                                                        </div>
+                                                    </>
+                                                )}
+                                            </div>
+
+                                            {showArrow && currentArrow === 'right' && (
+                                                <div key={`arrow-${liveStep}`} style={{ position: 'absolute', right: '-6px', zIndex: 2 }}>
+                                                    <svg width="52" height="52" viewBox="0 0 24 24" fill="none" style={{ animation: 'arrowAppear 0.4s ease-out' }}>
+                                                        <path d="M9 6L15 12L9 18" stroke="#dc2626" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                                                    </svg>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <style>{`
+                                            @keyframes scanPulse {
+                                                0% { transform: scale(1); opacity: 0.5; }
+                                                100% { transform: scale(1.18); opacity: 0; }
+                                            }
+                                            @keyframes arrowAppear {
+                                                0% { opacity: 0; transform: scale(0.7); }
+                                                60% { opacity: 1; transform: scale(1.1); }
+                                                100% { opacity: 1; transform: scale(1); }
+                                            }
+                                            @keyframes checkFadeIn {
+                                                0% { opacity: 0; transform: scale(0.85); }
+                                                100% { opacity: 1; transform: scale(1); }
+                                            }
+                                        `}</style>
+
+                                        {/* Status / Instructions */}
+                                        <div className="mt-3.5 text-sm font-semibold text-gray-900 min-h-[20px]">
+                                            {mode === 'register' ? (status || STEP_LABELS[liveStep]) : (status || 'Position your face within the frame')}
+                                        </div>
+
+                                        {/* Tips */}
+                                        <div className="mt-4 pt-3.5 border-t border-gray-100 text-left max-w-xs mx-auto">
+                                            {[
+                                                'Keep your whole face inside the oval frame.',
+                                                'Remove glasses, mask, or face coverings.',
+                                                'Hold steady until the ring turns green.',
+                                                'Make sure your surroundings are well lit.',
+                                            ].map((tip, i) => (
+                                                <div key={i} className="flex items-start gap-2 text-xs text-gray-500 mb-1.5">
+                                                    <span className="w-1.5 h-1.5 rounded-full bg-red-600 mt-1.5 shrink-0" />
+                                                    <span>{tip}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Modal Footer */}
+                            <div className="pt-3 border-t border-gray-100">
+                                <button
+                                    type="button"
+                                    onClick={cancelMode}
+                                    className="w-full py-2.5 px-4 rounded-xl text-xs font-semibold bg-gray-100 hover:bg-gray-200 text-gray-700 transition cursor-pointer"
+                                >
+                                    Cancel
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             )}
-        </div>
+        </>
     );
 }

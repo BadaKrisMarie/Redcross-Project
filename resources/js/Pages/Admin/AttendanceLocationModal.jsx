@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { X, MapPin } from 'lucide-react';
 
 const LEAFLET_CSS_URL = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
 const LEAFLET_JS_URL = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
@@ -27,9 +28,6 @@ function loadLeaflet() {
     return leafletLoadingPromise;
 }
 
-// Shows one attendance record's check-in location on a small map inside a modal.
-// Pass `record` (an attendance row with latitude/longitude, user, activity, date,
-// time_in) and `onClose`. Renders nothing if record is null.
 export default function AttendanceLocationModal({ record, onClose }) {
     const mapDivRef = useRef(null);
     const mapRef = useRef(null);
@@ -75,69 +73,58 @@ export default function AttendanceLocationModal({ record, onClose }) {
                 mapRef.current = null;
             }
         };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [record]);
+    }, [record, hasCoords]);
 
     if (!record) return null;
 
     const formatTime = (datetime) => {
-        if (!datetime) return '—';
+        if (!datetime) return '-';
         return new Date(datetime).toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit', hour12: true });
     };
 
     const formatDate = (date) => {
-        if (!date) return '—';
+        if (!date) return '-';
         return new Date(date).toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' });
     };
 
     return (
         <div
             onClick={onClose}
-            style={{
-                position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                zIndex: 1000, padding: '20px',
-            }}
+            className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4"
         >
             <div
                 onClick={(e) => e.stopPropagation()}
-                style={{
-                    background: 'white', borderRadius: '10px', width: '100%', maxWidth: '560px',
-                    overflow: 'hidden', boxShadow: '0 20px 50px rgba(0,0,0,0.3)',
-                }}
+                className="bg-white rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl"
             >
-                <div style={{
-                    padding: '18px 22px', borderBottom: '1px solid #e8e8e8',
-                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                }}>
+                <div className="p-4 sm:p-5 border-b border-gray-100 flex justify-between items-center">
                     <div>
-                        <div style={{ fontSize: '15px', fontWeight: '700', color: '#111' }}>
-                            {record.user?.name ?? '—'}
+                        <div className="text-sm font-bold text-gray-900">
+                            {record.user?.name ?? '-'}
                         </div>
-                        <div style={{ fontSize: '12px', color: '#888', marginTop: '2px' }}>
+                        <div className="text-xs text-gray-500 mt-0.5">
                             {record.activity?.name ?? 'No activity'} · {formatDate(record.date)} · {formatTime(record.time_in)}
                         </div>
                     </div>
                     <button
                         onClick={onClose}
-                        style={{
-                            background: 'transparent', border: 'none', cursor: 'pointer',
-                            fontSize: '20px', color: '#9ca3af', lineHeight: 1, padding: '4px',
-                        }}
-                    >×</button>
+                        className="p-1 rounded-lg text-gray-400 hover:text-gray-700"
+                    >
+                        <X className="w-5 h-5" />
+                    </button>
                 </div>
 
                 {hasCoords ? (
-                    <div ref={mapDivRef} style={{ width: '100%', height: '320px' }} />
+                    <div ref={mapDivRef} className="w-full h-80" />
                 ) : (
-                    <div style={{ padding: '40px', textAlign: 'center', color: '#9ca3af', fontSize: '13px' }}>
-                        No Location record for attendance.
+                    <div className="py-16 text-center text-xs text-gray-400 flex flex-col items-center gap-2">
+                        <MapPin className="w-8 h-8 text-gray-300" />
+                        <span>No location coordinates recorded for this check-in.</span>
                     </div>
                 )}
 
                 {mapError && (
-                    <div style={{ padding: '12px 22px', color: '#ff0000', fontSize: '12px', borderTop: '1px solid #f0f0f0' }}>
-                        Hindi na-load ang map. Siguraduhing may access sa internet.
+                    <div className="p-3 bg-red-50 text-red-700 text-xs border-t border-red-100">
+                        Failed to load the map. Please ensure internet connectivity.
                     </div>
                 )}
             </div>

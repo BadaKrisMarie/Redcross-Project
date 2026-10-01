@@ -1,10 +1,14 @@
+import { X } from 'lucide-react';
+
 export default function NotificationsModal({ notifications, loading, onClose, onMarkAllRead, onMarkOneRead }) {
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-head">
           <h3>Notifications</h3>
-          <button className="modal-close" onClick={onClose} aria-label="Close">✕</button>
+          <button className="modal-close" onClick={onClose} aria-label="Close">
+            <X style={{ width: 16, height: 16 }} />
+          </button>
         </div>
 
         <div className="modal-body" style={{ gap: 0 }}>

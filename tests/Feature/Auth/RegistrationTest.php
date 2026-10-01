@@ -2,7 +2,10 @@
 
 namespace Tests\Feature\Auth;
 
+use App\Models\User;
+use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
 class RegistrationTest extends TestCase
@@ -18,14 +21,28 @@ class RegistrationTest extends TestCase
 
     public function test_new_users_can_register(): void
     {
+        Mail::fake();
+        $this->seed(RoleSeeder::class);
+
         $response = $this->post('/register', [
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-            'password' => 'password',
-            'password_confirmation' => 'password',
+            'first_name'            => 'Juan',
+            'last_name'             => 'Dela Cruz',
+            'email'                 => 'juan@example.com',
+            'phone'                 => '09171234567',
+            'address'               => 'Poblacion, Muntinlupa',
+            'password'              => 'password123',
+            'password_confirmation' => 'password123',
         ]);
 
-        $this->assertAuthenticated();
-        $response->assertRedirect(route('dashboard', absolute: false));
+        $response->assertRedirect(route('login'));
+        $this->assertDatabaseHas('users', [
+            'name'      => 'Juan Dela Cruz',
+            'email'     => 'juan@example.com',
+            'phone'     => '09171234567',
+            'address'   => 'Poblacion, Muntinlupa',
+            'status'    => 'pending',
+            'birthdate' => null,
+            'gender'    => null,
+        ]);
     }
 }

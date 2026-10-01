@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\ProfileController;
@@ -54,6 +54,15 @@ Route::get('/about', function () {
 Route::get('/contact', function () {
     return Inertia::render('Contact');
 })->name('contact');
+
+Route::post('/contact', function (Request $request) {
+    $request->validate([
+        'name' => 'required|string|max:255',
+        'email' => 'required|email|max:255',
+        'message' => 'required|string|max:2000',
+    ]);
+    return back()->with('success', 'Thank you for your message! Our team will get back to you shortly.');
+})->name('contact.send');
 
 Route::get('/donate', function () {
     return Inertia::render('Donate');
@@ -387,21 +396,81 @@ Route::middleware(['auth', 'role:volunteer'])->prefix('volunteer')->name('volunt
             ->orderBy('date', 'asc')
             ->get(['activities.id', 'activities.name', 'activities.date',
                    'activities.location_name', 'activities.start_time',
-                   'activities.end_time', 'activities.description']);
+                   'activities.end_time', 'activities.description', 'activities.status']);
+
+        $todaysActivities = $user->activities()
+            ->whereDate('date', today())
+            ->orderBy('start_time')
+            ->get(['activities.id', 'activities.name', 'activities.date',
+                   'activities.location_name', 'activities.start_time',
+                   'activities.end_time', 'activities.description', 'activities.status']);
 
         $recentAttendance = \App\Models\Attendance::where('user_id', $user->id)
             ->orderBy('date', 'desc')
             ->limit(5)
             ->get(['date', 'time_in', 'time_out', 'hours_rendered']);
+
         $announcements = \App\Models\Announcement::with('admin')->orderBy('created_at','desc')->get();
 
+        // Attendance stats by year for chart
+        $availableYears = \App\Models\Attendance::where('user_id', $user->id)
+            ->selectRaw('DISTINCT YEAR(date) as year')
+            ->orderByDesc('year')
+            ->pluck('year')
+            ->toArray();
+
+        if (empty($availableYears)) {
+            $availableYears = [now()->year];
+        }
+
+        $currentYear  = now()->year;
+        $currentMonth = now()->month;
+        $activityStatsByYear = [];
+
+        foreach ($availableYears as $year) {
+            $hoursPerMonth = \App\Models\Attendance::where('user_id', $user->id)
+                ->whereYear('date', $year)
+                ->selectRaw('MONTH(date) as month, SUM(hours_rendered) as total_hours, COUNT(id) as total_attendances')
+                ->groupBy('month')
+                ->get()
+                ->keyBy('month');
+
+            $monthLimit = ($year == $currentYear) ? $currentMonth : 12;
+            $monthly = [];
+            for ($m = 1; $m <= $monthLimit; $m++) {
+                $record = $hoursPerMonth->get($m);
+                $monthly[] = [
+                    'month'    => \Carbon\Carbon::create()->month($m)->format('M'),
+                    'hours'    => $record ? round((float) $record->total_hours, 1) : 0,
+                    'attended' => $record ? (int) $record->total_attendances : 0,
+                ];
+            }
+            $activityStatsByYear[$year] = $monthly;
+        }
+
+        $quickStats = [
+            'totalHours' => round((float) $totalHours, 1),
+            'totalDays'  => $totalDays,
+            'monthDays'  => $monthDays,
+            'avgHours'   => $totalDays > 0 ? round($totalHours / $totalDays, 1) : 0,
+        ];
+
+        $todayAttendance = \App\Models\Attendance::where('user_id', $user->id)
+            ->whereDate('date', today())
+            ->orderBy('id', 'desc')
+            ->first(['id', 'date', 'time_in', 'time_out', 'hours_rendered']);
+
         return Inertia::render('Volunteer/Dashboard', [
-            'totalHours'         => $totalHours,
-            'totalDays'          => $totalDays,
-            'monthDays'          => $monthDays,
-            'assignedActivities' => $assignedActivities,
-            'recentAttendance'   => $recentAttendance,
-            'announcements'      => $announcements,
+            'totalHours'          => round((float) $totalHours, 1),
+            'totalDays'           => $totalDays,
+            'monthDays'           => $monthDays,
+            'assignedActivities'  => $assignedActivities,
+            'todaysActivities'    => $todaysActivities,
+            'recentAttendance'    => $recentAttendance,
+            'todayAttendance'     => $todayAttendance,
+            'announcements'       => $announcements,
+            'activityStatsByYear' => $activityStatsByYear,
+            'quickStats'          => $quickStats,
         ]);
     })->name('dashboard');
 
@@ -420,6 +489,11 @@ Route::middleware(['auth', 'role:volunteer'])->prefix('volunteer')->name('volunt
         ]);
     })->name('schedule');
 
+    // Route alias for activities -> schedule
+    Route::get('/activities', function () {
+        return redirect()->route('volunteer.schedule');
+    })->name('activities');
+
     Route::get('/communication', [CommunicationController::class, 'index'])->name('communication');
     Route::post('/communication/send', [CommunicationController::class, 'send'])->name('communication.send');
 
@@ -429,10 +503,10 @@ Route::middleware(['auth', 'role:volunteer'])->prefix('volunteer')->name('volunt
 
     Route::get('/documents', [DocumentController::class, 'index'])->name('documents');
     Route::post('/documents', [DocumentController::class, 'store'])->name('documents.store');
-    // ✅ NEW — Gmail-style bulk delete. Must be registered BEFORE the
-    // '/documents/{id}' route below so 'bulk' is never swallowed as an {id}.
     Route::delete('/documents/bulk', [DocumentController::class, 'bulkDestroy'])->name('documents.bulkDestroy');
     Route::delete('/documents/{id}', [DocumentController::class, 'destroy'])->name('documents.destroy');
+    Route::get('/documents/{id}/file', [DocumentController::class, 'serveFile'])->name('documents.file');
+    Route::get('/documents/{id}/download', [DocumentController::class, 'download'])->name('documents.download');
 
     Route::get('/profile', [VolunteerProfileController::class, 'edit'])->name('profile');
     Route::patch('/profile', [VolunteerProfileController::class, 'update'])->name('profile.update');

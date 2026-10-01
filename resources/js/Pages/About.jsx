@@ -1,512 +1,376 @@
-import React, { useState } from "react";
-import { Link, Head } from "@inertiajs/react";
+import React from 'react';
+import { Link, usePage } from '@inertiajs/react';
+import PublicLayout from '@/Layouts/PublicLayout';
+import FadeIn from '@/Components/Public/FadeIn';
+import {
+    ShieldAlert,
+    Droplet,
+    GraduationCap,
+    CalendarCheck,
+    Bell,
+    ClipboardCheck,
+    Laptop,
+    Layers,
+    HeartHandshake,
+    Award,
+    Target,
+    Compass,
+} from 'lucide-react';
 
-const RED = "#ff0000";
-const NAVY = "#1A1464";
-const WHITE = "#FFFFFF";
-const LIGHT = "#FAF9F7";
-const BORDER = "#EEEBE6";
-const MUTED = "#888880";
-const DARK = "#111111";
+/* ──────────────────────────── DATA DEFINITIONS ──────────────────────────── */
 
-const DOT_BG = `url("data:image/svg+xml,%3Csvg width='24' height='24' viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='1' cy='1' r='1' fill='%23C8102E' fill-opacity='0.07'/%3E%3C/svg%3E")`;
-
-function Nav() {
-  const [openTooltip, setOpenTooltip] = useState(null);
-
-  return (
-    <nav style={{
-      display: "flex", alignItems: "center", justifyContent: "space-between",
-      padding: "14px 48px",
-      background: "#ffffff",
-      borderBottom: "1px solid rgba(200,16,46,0.12)",
-      position: "sticky", top: 0, zIndex: 100,
-      fontFamily: "Montserrat, sans-serif",
-    }}>
-      <Link href="/" style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none" }}>
-        <div style={{
-          width: 34, height: 34, borderRadius: 4,
-          background: "#ff0000",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          color: "white", fontSize: 20, fontWeight: 900,
-        }}>+</div>
-        <div>
-          <div style={{ fontSize: 12, fontWeight: 600, color: "#111111", lineHeight: 1.2 }}>Rizal Chapter</div>
-          <div style={{ fontSize: 10, color: "#888880" }}>Muntinlupa City Branch</div>
-        </div>
-      </Link>
-
-      <div style={{ display: "flex", gap: 28, alignItems: "center" }}>
-        <Link href="/" style={{
-          textDecoration: "none", fontSize: 13, color: "#444444",
-          fontWeight: 500, padding: "4px 10px", borderRadius: 6,
-        }}>Home</Link>
-
-        {/* ABOUT with tooltip */}
-        <div
-          style={{ position: "relative" }}
-          onMouseEnter={() => setOpenTooltip("about")}
-          onMouseLeave={() => setOpenTooltip(null)}
-        >
-          <Link href="/about" style={{
-            textDecoration: "none", fontSize: 13, color: "#ff0000",
-            fontWeight: 600, padding: "4px 10px", borderRadius: 6,
-            background: "rgba(220,38,38,0.08)",
-          }}>About</Link>
-
-          {openTooltip === "about" && (
-            <div style={{
-              position: "absolute", top: "calc(100% + 10px)", left: "50%",
-              transform: "translateX(-50%)",
-              background: "#1a1a1a", borderRadius: 8,
-              padding: "10px 14px", minWidth: 180, zIndex: 200,
-              pointerEvents: "none",
-            }}>
-              {/* Arrow */}
-              <div style={{
-                position: "absolute", top: -6, left: "50%", transform: "translateX(-50%)",
-                borderLeft: "6px solid transparent", borderRight: "6px solid transparent",
-                borderBottom: "6px solid #1a1a1a",
-              }}/>
-              {[
-                { label: "Who We Are", desc: "Our story & background" },
-                { label: "Our Mission", desc: "Vision, mission & values" },
-                { label: "Our Team", desc: "Meet our volunteers" },
-                { label: "Our History", desc: "Years of service" },
-              ].map((item, i) => (
-                <div key={item.label} style={{
-                  padding: "5px 0",
-                  borderBottom: i < 3 ? "1px solid rgba(255,255,255,0.06)" : "none",
-                }}>
-                  <div style={{
-                    fontSize: 13, color: i === 0 ? "#fff" : "#ccc",
-                    fontWeight: i === 0 ? 600 : 500,
-                    lineHeight: 1.3,
-                  }}>{item.label}</div>
-                  <div style={{ fontSize: 11, color: "#888", marginTop: 1 }}>{item.desc}</div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* CONTACT with tooltip */}
-        <div
-          style={{ position: "relative" }}
-          onMouseEnter={() => setOpenTooltip("contact")}
-          onMouseLeave={() => setOpenTooltip(null)}
-        >
-          <Link href="/contact" style={{
-            textDecoration: "none", fontSize: 13, color: "#444444",
-            fontWeight: 500, padding: "4px 10px", borderRadius: 6,
-          }}>Contact</Link>
-
-          {openTooltip === "contact" && (
-            <div style={{
-              position: "absolute", top: "calc(100% + 10px)", left: "50%",
-              transform: "translateX(-50%)",
-              background: "#1a1a1a", borderRadius: 8,
-              padding: "10px 14px", minWidth: 180, zIndex: 200,
-              pointerEvents: "none",
-            }}>
-              {/* Arrow */}
-              <div style={{
-                position: "absolute", top: -6, left: "50%", transform: "translateX(-50%)",
-                borderLeft: "6px solid transparent", borderRight: "6px solid transparent",
-                borderBottom: "6px solid #1a1a1a",
-              }}/>
-              {[
-                { label: "Get in Touch", desc: "Send us a message" },
-                { label: "Email Us", desc: "rizalchapter@redcross.org.ph" },
-                { label: "Call Us", desc: "Hotline & emergency numbers" },
-                { label: "Visit Our Office", desc: "Muntinlupa City Branch" },
-              ].map((item, i) => (
-                <div key={item.label} style={{
-                  padding: "5px 0",
-                  borderBottom: i < 3 ? "1px solid rgba(255,255,255,0.06)" : "none",
-                }}>
-                  <div style={{
-                    fontSize: 13, color: i === 0 ? "#fff" : "#ccc",
-                    fontWeight: i === 0 ? 600 : 500,
-                    lineHeight: 1.3,
-                  }}>{item.label}</div>
-                  <div style={{ fontSize: 11, color: "#888", marginTop: 1 }}>{item.desc}</div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <Link href="/login" style={{
-          textDecoration: "none",
-          fontSize: 12, fontWeight: 600, color: "#ffffff",
-          padding: "8px 18px", borderRadius: 6,
-          background: "#ff0000",
-        }}>Log In</Link>
-      </div>
-    </nav>
-  );
-}
-
-function Hero() {
-  return (
-    <div style={{
-      backgroundImage: "linear-gradient(to right, rgba(107,10,10,0.92) 0%, rgba(58,8,8,0.88) 40%, rgba(26,3,3,0.85) 70%, rgba(0,0,0,0.88) 100%), url('/images/hero-bg.jpg')",
-      backgroundSize: "cover",
-      backgroundPosition: "center",
-      padding: "56px 48px 48px",
-      position: "relative", overflow: "hidden",
-    }}>
-      <div style={{
-        position: "absolute", inset: 0,
-        backgroundImage: "linear-gradient(rgba(200,60,60,0.07) 1px, transparent 1px), linear-gradient(90deg, rgba(200,60,60,0.07) 1px, transparent 1px)",
-        backgroundSize: "32px 32px",
-        pointerEvents: "none",
-      }}/>
-      <div style={{
-        position: "absolute", right: -40, bottom: -60,
-        width: 320, height: 320, borderRadius: "50%",
-        background: "rgba(80,10,10,0.45)", pointerEvents: "none",
-      }}/>
-      <div style={{
-        position: "absolute", right: 60, bottom: -80,
-        width: 260, height: 260, borderRadius: "50%",
-        background: "rgba(30,5,5,0.6)", pointerEvents: "none",
-      }}/>
-
-      <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 48, alignItems: "center", position: "relative" }}>
-        <div>
-          <div style={{
-            display: "inline-flex", alignItems: "center", gap: 6,
-            background: "rgba(255,255,255,0.10)", color: WHITE,
-            fontSize: 10, fontWeight: 700, letterSpacing: "0.1em",
-            textTransform: "uppercase", padding: "5px 12px", borderRadius: 100,
-            marginBottom: 20, border: "1px solid rgba(255,255,255,0.22)",
-          }}>
-            <span style={{ width: 5, height: 5, borderRadius: "50%", background: "rgba(255,255,255,0.7)", display: "inline-block" }}/>
-            About Us
-          </div>
-          <h1 style={{
-            fontSize: 38, fontWeight: 800, color: WHITE,
-            lineHeight: 1.15, marginBottom: 16, letterSpacing: "-0.02em",
-          }}>
-            Rizal Chapter<br/>
-            <span style={{ color: "rgba(255,255,255,0.50)" }}>Muntinlupa City Branch</span>
-          </h1>
-          <p style={{ fontSize: 14, color: "rgba(255,255,255,0.48)", lineHeight: 1.8, maxWidth: 460 }}>
-            A local branch of the Philippine Red Cross committed to alleviating human suffering through coordinated relief efforts, community programs, and volunteer service.
-          </p>
-        </div>
-
-        <div style={{ display: "flex", flexDirection: "column", gap: 10, flexShrink: 0 }}>
-          {[
-            { num: "9", label: "Barangays served" },
-            { num: "500+", label: "Active volunteers" },
-            { num: "24 / 7", label: "Emergency response" },
-          ].map(({ num, label }) => (
-            <div key={label} style={{
-              background: "rgba(255,255,255,0.05)",
-              border: "0.5px solid rgba(255,255,255,0.12)",
-              borderRadius: 12, padding: "14px 24px",
-              display: "flex", alignItems: "center", gap: 16,
-            }}>
-              <span style={{ fontSize: 22, fontWeight: 800, color: WHITE, minWidth: 52 }}>{num}</span>
-              <span style={{ fontSize: 12, color: "rgba(255,255,255,0.50)", lineHeight: 1.4 }}>{label}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function SectionLabel({ children }) {
-  return (
-    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
-      <div style={{ width: 20, height: 3, borderRadius: 2, background: RED }}/>
-      <span style={{
-        fontSize: 10, fontWeight: 700, letterSpacing: "0.12em",
-        textTransform: "uppercase", color: RED,
-      }}>{children}</span>
-    </div>
-  );
-}
-
-const photos = [
-  {
-    title: "Community Outreach",
-    location: "Muntinlupa City",
-    desc: "Red Cross volunteers conduct community outreach activities in Muntinlupa, providing assistance, guidance, and support to residents, especially families and children in need.",
-    fullDesc: "Our Community Outreach program reaches the most vulnerable sectors of Muntinlupa City. Volunteers regularly visit barangays to provide basic health consultations, distribute relief goods, and conduct community education sessions. This program has touched thousands of lives across the 9 barangays we serve, ensuring that no family is left behind during times of need.",
-    accent: "#ff0000",
-    tagLabel: "Outreach",
-    image: "/images/outreach.jpg",
-  },
-  {
-    title: "Relief Distribution",
-    location: "Cupang, Muntinlupa",
-    desc: "Volunteers distribute relief goods during a coordinated humanitarian operation in Muntinlupa, ensuring timely aid and strengthening community resilience.",
-    fullDesc: "During disasters and calamities, our Relief Distribution team mobilizes rapidly to deliver food packs, water, hygiene kits, and other essential supplies to affected families. Our logistics network ensures that aid reaches even the most hard-to-reach areas of Muntinlupa within hours of a disaster declaration. We coordinate closely with local government units for maximum efficiency.",
-    accent: "#1A1464",
-    tagLabel: "Relief",
-    image: "/images/relief.jpg",
-  },
-  {
-    title: "Community Assistance",
-    location: "Bayanan Community, Muntinlupa",
-    desc: "Red Cross volunteers visit neighborhoods in Muntinlupa to deliver essential aid and check on residents.",
-    fullDesc: "Our Community Assistance program provides ongoing support to marginalized communities in Muntinlupa. Volunteers conduct regular welfare checks, provide psychosocial support, and connect residents with government services and other humanitarian organizations. Special attention is given to elderly residents, persons with disabilities, and families affected by poverty or displacement.",
-    accent: "#0A6E3A",
-    tagLabel: "Assistance",
-    image: "/images/assistance.jpg",
-  },
+const BRANCH_PILLARS = [
+    {
+        title: 'Emergency Relief & Disaster Response',
+        subtitle: '24/7 rapid deployment',
+        image: '/images/hero-bg.jpg',
+        icon: ShieldAlert,
+        description:
+            'Deploying rescue teams, emergency hot meals, family food packs, and welfare support to disaster-affected communities across Muntinlupa.',
+    },
+    {
+        title: 'National Blood Services & Health',
+        subtitle: 'Safe blood & medical care',
+        image: '/images/donation-hero.jpg',
+        icon: Droplet,
+        description:
+            'Conducting mobile blood drives, ensuring 100% screened safe blood supplies, and delivering community health checkups and hygiene assistance.',
+    },
+    {
+        title: 'Safety Training & Youth Leadership',
+        subtitle: 'Empowering communities',
+        image: '/images/training-hero.jpg',
+        icon: GraduationCap,
+        description:
+            'Equipping citizens with certified First Aid, CPR, and Disaster Preparedness skills, while mobilizing Red Cross 143 volunteers in schools and barangays.',
+    },
 ];
 
-function LocationIcon({ color }) {
-  return (
-    <svg width="11" height="11" viewBox="0 0 14 14" fill="none">
-      <path d="M7 1C4.79 1 3 2.79 3 5c0 3.25 4 8 4 8s4-4.75 4-8c0-2.21-1.79-4-4-4z" fill={color}/>
-      <circle cx="7" cy="5" r="1.5" fill="white"/>
-    </svg>
-  );
-}
+const SYSTEM_PILLARS = [
+    {
+        icon: CalendarCheck,
+        title: 'Activities & Schedules',
+        description:
+            'Approved volunteers can browse upcoming deployment activities, reserve duty shifts, and confirm attendance schedules with real-time slot tracking.',
+    },
+    {
+        icon: Bell,
+        title: 'Official Announcements',
+        description:
+            'Receive official branch notices, emergency callouts, typhoon bulletins, and training advisories instantly through a unified announcement feed.',
+    },
+    {
+        icon: ClipboardCheck,
+        title: 'Volunteer Records & Hours',
+        description:
+            'Keep an accurate, verifiable track of rendered volunteer hours, completed training courses, specializations, and service certifications.',
+    },
+    {
+        icon: Laptop,
+        title: 'Volunteer Services',
+        description:
+            'Access branch communication channels, document submissions, profile updates, and direct coordination with volunteer coordinators.',
+    },
+];
 
-function Modal({ photo, onClose }) {
-  return (
-    <div
-      onClick={onClose}
-      style={{
-        position: "fixed", inset: 0, zIndex: 999,
-        background: "rgba(0,0,0,0.65)",
-        display: "flex", alignItems: "center", justifyContent: "center",
-        padding: 24,
-        backdropFilter: "blur(6px)",
-      }}
-    >
-      <div
-        onClick={e => e.stopPropagation()}
-        style={{
-          background: WHITE, borderRadius: 20,
-          width: "100%", maxWidth: 540,
-          overflow: "hidden",
-          boxShadow: "0 32px 80px rgba(0,0,0,0.3)",
-        }}
-      >
-        <div style={{ height: 260, position: "relative", overflow: "hidden" }}>
-          <img
-            src={photo.image}
-            alt={photo.title}
-            style={{
-              width: "100%", height: "100%",
-              objectFit: "cover", objectPosition: "center top",
-              display: "block",
-            }}
-          />
-          <div style={{
-            position: "absolute", inset: 0,
-            background: "linear-gradient(to bottom, rgba(0,0,0,0.08) 0%, rgba(0,0,0,0.6) 100%)",
-          }}/>
-          <div style={{
-            position: "absolute", inset: 0,
-            background: photo.accent, opacity: 0.12,
-          }}/>
-          <div style={{
-            position: "absolute", top: 14, left: 14,
-            background: "rgba(255,255,255,0.92)",
-            border: `1px solid ${photo.accent}33`,
-            color: photo.accent,
-            fontSize: 9, fontWeight: 700, letterSpacing: "0.07em",
-            padding: "4px 10px", borderRadius: 100, textTransform: "uppercase",
-            backdropFilter: "blur(4px)",
-          }}>
-            Philippine Red Cross
-          </div>
-          <div style={{
-            position: "absolute", bottom: 14, right: 48,
-            background: photo.accent, color: "#fff",
-            fontSize: 10, fontWeight: 700, letterSpacing: "0.08em",
-            padding: "4px 12px", borderRadius: 100, textTransform: "uppercase",
-          }}>
-            {photo.tagLabel}
-          </div>
-          <div style={{
-            position: "absolute", bottom: 14, left: 14,
-            color: WHITE, fontSize: 20, fontWeight: 800,
-            letterSpacing: "-0.02em",
-            textShadow: "0 1px 8px rgba(0,0,0,0.4)",
-          }}>
-            {photo.title}
-          </div>
-          <button
-            onClick={onClose}
-            style={{
-              position: "absolute", top: 12, right: 12,
-              width: 32, height: 32, borderRadius: "50%",
-              background: "rgba(0,0,0,0.45)", border: "none",
-              color: WHITE, fontSize: 18, cursor: "pointer",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              lineHeight: 1, backdropFilter: "blur(4px)",
-            }}
-          >×</button>
-        </div>
+const PURPOSE_BENEFITS = [
+    {
+        icon: Layers,
+        title: 'Organized Volunteer Management',
+        description:
+            'Replaces scattered group chats and manual paperwork with an automated, structured hub. Volunteer rosters, shifts, and branch operations are managed with clear transparency.',
+    },
+    {
+        icon: HeartHandshake,
+        title: 'Accessible All-in-One Platform',
+        description:
+            'Provides approved volunteers with an intuitive, mobile-friendly platform to access their schedules, requirements, and deployment information anytime, anywhere.',
+    },
+    {
+        icon: Award,
+        title: 'Swift Mobilization & Coordination',
+        description:
+            'Empowers branch administrators to rapidly mobilize verified, trained personnel based on skills and availability whenever emergencies occur in Muntinlupa.',
+    },
+];
 
-        <div style={{ padding: "20px 28px 28px" }}>
-          <div style={{
-            display: "inline-flex", alignItems: "center", gap: 4,
-            fontSize: 12, color: photo.accent, fontWeight: 600, marginBottom: 14,
-          }}>
-            <LocationIcon color={photo.accent}/>
-            {photo.location}
-          </div>
-          <p style={{ fontSize: 14, color: MUTED, lineHeight: 1.8, margin: "0 0 24px" }}>
-            {photo.fullDesc}
-          </p>
-          <Link
-            href="/register"
-            style={{
-              display: "inline-block",
-              background: photo.accent, color: WHITE,
-              padding: "11px 24px", borderRadius: 10,
-              fontSize: 13, fontWeight: 700, textDecoration: "none",
-              letterSpacing: "-0.01em",
-            }}
-          >
-            Volunteer Now →
-          </Link>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function PhotoCard({ photo, onOpen }) {
-  const [hovered, setHovered] = useState(false);
-  return (
-    <div
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      onClick={onOpen}
-      style={{
-        background: WHITE, borderRadius: 18, overflow: "hidden",
-        border: `1px solid ${hovered ? photo.accent + "44" : BORDER}`,
-        transform: hovered ? "translateY(-6px) scale(1.01)" : "translateY(0) scale(1)",
-        boxShadow: hovered
-          ? `0 20px 48px rgba(0,0,0,0.12), 0 0 0 3px ${photo.accent}18`
-          : "0 2px 8px rgba(0,0,0,0.05)",
-        transition: "all 0.28s cubic-bezier(0.34,1.56,0.64,1)",
-        cursor: "pointer",
-      }}
-    >
-      <div style={{ height: 200, position: "relative", overflow: "hidden" }}>
-        <img
-          src={photo.image}
-          alt={photo.title}
-          style={{
-            width: "100%", height: "100%",
-            objectFit: "cover", objectPosition: "center top",
-            display: "block",
-            transition: "transform 0.4s ease",
-            transform: hovered ? "scale(1.06)" : "scale(1)",
-          }}
-        />
-        <div style={{
-          position: "absolute", inset: 0,
-          background: "linear-gradient(to bottom, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.45) 100%)",
-        }}/>
-        <div style={{
-          position: "absolute", inset: 0,
-          background: photo.accent,
-          opacity: hovered ? 0.18 : 0.08,
-          transition: "opacity 0.3s ease",
-        }}/>
-        <div style={{
-          position: "absolute", top: 12, left: 12,
-          background: "rgba(255,255,255,0.92)",
-          border: `1px solid ${photo.accent}33`,
-          color: photo.accent,
-          fontSize: 9, fontWeight: 700, letterSpacing: "0.07em",
-          padding: "4px 10px", borderRadius: 100, textTransform: "uppercase",
-          backdropFilter: "blur(4px)",
-        }}>
-          Philippine Red Cross
-        </div>
-        <div style={{
-          position: "absolute", bottom: 12, right: 12,
-          background: photo.accent, color: "#fff",
-          fontSize: 10, fontWeight: 700, letterSpacing: "0.08em",
-          padding: "4px 12px", borderRadius: 100, textTransform: "uppercase",
-        }}>
-          {photo.tagLabel}
-        </div>
-        {hovered && (
-          <div style={{
-            position: "absolute", inset: 0,
-            display: "flex", alignItems: "center", justifyContent: "center",
-          }}>
-            <div style={{
-              background: WHITE, color: photo.accent,
-              fontSize: 12, fontWeight: 700, padding: "8px 20px",
-              borderRadius: 100, letterSpacing: "0.05em",
-              boxShadow: "0 4px 16px rgba(0,0,0,0.15)",
-            }}>View Details</div>
-          </div>
-        )}
-      </div>
-
-      <div style={{ padding: "18px 20px 22px" }}>
-        <div style={{ width: 28, height: 3, borderRadius: 2, background: photo.accent, marginBottom: 12 }}/>
-        <div style={{ fontSize: 15, fontWeight: 700, color: DARK, marginBottom: 4, letterSpacing: "-0.01em" }}>
-          {photo.title}
-        </div>
-        <div style={{
-          display: "inline-flex", alignItems: "center", gap: 4,
-          fontSize: 11, color: photo.accent, fontWeight: 600, marginBottom: 10,
-        }}>
-          <LocationIcon color={photo.accent}/>
-          {photo.location}
-        </div>
-        <div style={{ fontSize: 13, color: MUTED, lineHeight: 1.7 }}>{photo.desc}</div>
-      </div>
-    </div>
-  );
-}
+/* ──────────────────────────── COMPONENT ──────────────────────────── */
 
 export default function About() {
-  const [activeModal, setActiveModal] = useState(null);
+    const { auth } = usePage().props || {};
 
-  return (
-    <>
-      <Head title="About" />
-      <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+    const portalHref =
+        auth?.user?.role === 'admin'
+            ? '/admin/dashboard'
+            : '/volunteer/dashboard';
 
-      <div style={{
-        fontFamily: "'Montserrat', sans-serif",
-        background: LIGHT, backgroundImage: DOT_BG,
-        color: DARK, minHeight: "100vh",
-      }}>
-        <Nav />
-        <Hero />
+    return (
+        <PublicLayout title="About Us - Philippine Red Cross Muntinlupa">
+            {/* ──────────────── 1. HERO SECTION ──────────────── */}
+            <section className="relative min-h-[80vh] flex flex-col items-center justify-center overflow-hidden pt-28 sm:pt-36 pb-16 sm:pb-20">
+                {/* Background Image Layer */}
+                <div className="absolute inset-0 z-0">
+                    <img
+                        src="/images/muntinlupa-map.jpg"
+                        alt="Muntinlupa City Map"
+                        className="w-full h-full object-cover object-center"
+                    />
+                    {/* Soft ambient overlay */}
+                    <div className="absolute inset-0 bg-slate-900/10" />
+                    <div className="absolute inset-0 bg-gradient-to-b from-white/70 via-white/50 to-white/90" />
+                </div>
 
-        <div style={{ padding: "40px 48px 60px" }}>
-          <SectionLabel>Our Work in Action</SectionLabel>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 20 }}>
-            {photos.map((photo, i) => (
-              <PhotoCard
-                key={photo.title}
-                photo={photo}
-                onOpen={() => setActiveModal(i)}
-              />
-            ))}
-          </div>
-        </div>
-      </div>
+                {/* Center Hero Container */}
+                <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 w-full text-center">
+                    {/* Framed Card - Clean without border pixels */}
+                    <div className="relative mx-auto max-w-3xl bg-white/95 backdrop-blur-md rounded-[28px] sm:rounded-[36px] shadow-[0_20px_50px_-15px_rgba(0,0,0,0.08)] pt-0 px-6 sm:px-14 pb-12 sm:pb-16 overflow-hidden">
+                        {/* Sleek Notch Design at Top Center without harsh borders */}
+                        <div className="w-32 sm:w-44 h-5 sm:h-6 bg-gray-100 rounded-b-2xl mx-auto flex items-center justify-center gap-2 mb-10 sm:mb-14">
+                            <span className="w-2 h-2 rounded-full bg-red-600 animate-pulse" />
+                            <span className="w-10 h-1.5 rounded-full bg-gray-300" />
+                        </div>
 
-      {activeModal !== null && (
-        <Modal
-          photo={photos[activeModal]}
-          onClose={() => setActiveModal(null)}
-        />
-      )}
-    </>
-  );
+                        {/* Main Header H1 */}
+                        <FadeIn delay={0.06}>
+                            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-[64px] font-semibold tracking-tight leading-[1.12] mb-3.5 max-w-2xl mx-auto font-manrope">
+                                <span className="text-gray-900 block">Dedicated to humanity,</span>
+                                <span className="text-gray-400 block">driven by purpose</span>
+                            </h1>
+                        </FadeIn>
+
+                        {/* Subtitle */}
+                        <FadeIn delay={0.1}>
+                            <p className="text-sm sm:text-base md:text-lg text-gray-500 max-w-xl mx-auto leading-relaxed mb-8 font-montserrat font-normal">
+                                Philippine Red Cross Rizal Chapter – Muntinlupa City Branch & the Volunteer Management System.
+                            </p>
+                        </FadeIn>
+
+                        {/* Action Buttons without border pixels */}
+                        <FadeIn delay={0.14}>
+                            <div className="flex flex-wrap items-center justify-center gap-3">
+                                {auth?.user ? (
+                                    <Link
+                                        href={portalHref}
+                                        className="inline-flex items-center justify-center px-8 py-3.5 rounded-full bg-red-600 hover:bg-red-700 active:bg-red-800 text-white font-montserrat font-semibold text-sm sm:text-base shadow-sm hover:shadow transition-all duration-150"
+                                    >
+                                        <span>Access Volunteer Portal</span>
+                                    </Link>
+                                ) : (
+                                    <Link
+                                        href={route('register')}
+                                        className="inline-flex items-center justify-center px-8 py-3.5 rounded-full bg-red-600 hover:bg-red-700 active:bg-red-800 text-white font-montserrat font-semibold text-sm sm:text-base shadow-sm hover:shadow transition-all duration-150"
+                                    >
+                                        <span>Join as Volunteer</span>
+                                    </Link>
+                                )}
+
+                                <a
+                                    href="#about-system"
+                                    className="inline-flex items-center justify-center px-7 py-3.5 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-800 font-montserrat font-semibold text-sm sm:text-base transition-all duration-150"
+                                >
+                                    <span>About the System</span>
+                                </a>
+                            </div>
+                        </FadeIn>
+                    </div>
+                </div>
+            </section>
+
+            {/* ──────────────── 2. ABOUT US SECTION ──────────────── */}
+            <section className="py-16 sm:py-24 bg-white" id="about-us">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <FadeIn>
+                        <div className="text-center max-w-3xl mx-auto mb-12 sm:mb-16">
+                            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight text-gray-900 mb-4 font-manrope">
+                                About Us
+                            </h2>
+                            <p className="text-base sm:text-lg text-gray-600 leading-relaxed font-montserrat">
+                                The Philippine Red Cross Rizal Chapter – Muntinlupa City Branch serves as a premier humanitarian auxiliary organization committed to protecting human life, alleviating suffering, and upholding human dignity across every community in Muntinlupa City.
+                            </p>
+                        </div>
+                    </FadeIn>
+
+                    {/* 3 Clean Borderless Cards */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
+                        {BRANCH_PILLARS.map((pillar, i) => {
+                            const Icon = pillar.icon;
+                            return (
+                                <FadeIn key={pillar.title} delay={0.06 * i}>
+                                    <div className="bg-gray-50/70 rounded-2xl overflow-hidden shadow-none hover:shadow-md transition-all duration-200 flex flex-col h-full group">
+                                        {/* Image */}
+                                        <div className="h-48 overflow-hidden bg-gray-100 relative">
+                                            <img
+                                                src={pillar.image}
+                                                alt={pillar.title}
+                                                className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500"
+                                                loading="lazy"
+                                            />
+                                            <div className="absolute top-3 left-3 w-8 h-8 rounded-full bg-white flex items-center justify-center shadow-sm">
+                                                <Icon className="w-4 h-4 text-red-600" />
+                                            </div>
+                                        </div>
+
+                                        {/* Content */}
+                                        <div className="p-6 flex-1 flex flex-col justify-between">
+                                            <div>
+                                                <span className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-2 block font-montserrat">
+                                                    {pillar.subtitle}
+                                                </span>
+                                                <h3 className="text-lg font-semibold text-gray-900 mb-2.5 group-hover:text-red-600 transition-colors font-manrope">
+                                                    {pillar.title}
+                                                </h3>
+                                                <p className="text-xs sm:text-sm text-gray-600 leading-relaxed font-montserrat">
+                                                    {pillar.description}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </FadeIn>
+                            );
+                        })}
+                    </div>
+                </div>
+            </section>
+
+            {/* ──────────────── 3. ABOUT THE SYSTEM SECTION ──────────────── */}
+            <section className="py-16 sm:py-24 bg-gray-50/60" id="about-system">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <FadeIn>
+                        <div className="text-center max-w-3xl mx-auto mb-12 sm:mb-16">
+                            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight text-gray-900 mb-4 font-manrope">
+                                About the System
+                            </h2>
+                            <p className="text-base sm:text-lg text-gray-600 leading-relaxed font-montserrat">
+                                The Volunteer Management System (VMS) is a dedicated digital platform designed exclusively for approved volunteers to access volunteer-related information, activities, schedules, announcements, and other essential branch services.
+                            </p>
+                        </div>
+                    </FadeIn>
+
+                    {/* 4 Clean Borderless Cards */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                        {SYSTEM_PILLARS.map((pillar, i) => {
+                            const Icon = pillar.icon;
+                            return (
+                                <FadeIn key={pillar.title} delay={0.05 * i}>
+                                    <div className="bg-white rounded-2xl shadow-sm hover:shadow-md transition-all duration-200 p-6 flex flex-col justify-between h-full group">
+                                        <div>
+                                            <div className="w-11 h-11 rounded-xl bg-red-50 text-red-600 flex items-center justify-center mb-4 group-hover:bg-red-600 group-hover:text-white transition-colors duration-200">
+                                                <Icon className="w-5 h-5" />
+                                            </div>
+                                            <h3 className="text-base font-semibold text-gray-900 mb-2 font-manrope group-hover:text-red-600 transition-colors">
+                                                {pillar.title}
+                                            </h3>
+                                            <p className="text-xs sm:text-sm text-gray-600 leading-relaxed font-montserrat">
+                                                {pillar.description}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </FadeIn>
+                            );
+                        })}
+                    </div>
+                </div>
+            </section>
+
+            {/* ──────────────── 4. OUR PURPOSE SECTION ──────────────── */}
+            <section className="py-16 sm:py-24 bg-white" id="our-purpose">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <FadeIn>
+                        <div className="text-center max-w-3xl mx-auto mb-12 sm:mb-16">
+                            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight text-gray-900 mb-4 font-manrope">
+                                Our Purpose
+                            </h2>
+                            <p className="text-base sm:text-lg text-gray-600 leading-relaxed font-montserrat">
+                                The system was developed to make volunteer management more organized and provide approved volunteers with an accessible platform for their volunteer activities.
+                            </p>
+                        </div>
+                    </FadeIn>
+
+                    {/* 3 Clean Borderless Cards */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
+                        {PURPOSE_BENEFITS.map((item, i) => {
+                            const Icon = item.icon;
+                            return (
+                                <FadeIn key={item.title} delay={0.06 * i}>
+                                    <div className="bg-gray-50/70 rounded-2xl p-7 flex flex-col justify-between shadow-none hover:shadow-md hover:bg-white transition-all duration-200 h-full group">
+                                        <div>
+                                            <div className="w-12 h-12 rounded-xl bg-white text-red-600 flex items-center justify-center mb-5 group-hover:bg-red-600 group-hover:text-white transition-all duration-200 shadow-sm">
+                                                <Icon className="w-6 h-6" />
+                                            </div>
+                                            <h3 className="text-lg font-semibold text-gray-900 mb-3 font-manrope group-hover:text-red-600 transition-colors">
+                                                {item.title}
+                                            </h3>
+                                            <p className="text-xs sm:text-sm text-gray-600 leading-relaxed font-montserrat">
+                                                {item.description}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </FadeIn>
+                            );
+                        })}
+                    </div>
+                </div>
+            </section>
+
+            {/* ──────────────── 5. MISSION & VISION SECTION ──────────────── */}
+            <section className="py-16 sm:py-24 bg-gray-50/60" id="mission-vision">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <FadeIn>
+                        <div className="text-center max-w-3xl mx-auto mb-12 sm:mb-16">
+                            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-semibold tracking-tight text-gray-900 mb-4 font-manrope">
+                                Mission & Vision
+                            </h2>
+                            <p className="text-base sm:text-lg text-gray-600 leading-relaxed font-montserrat">
+                                Guided by the Fundamental Principles of the Red Cross and Red Crescent Movement.
+                            </p>
+                        </div>
+                    </FadeIn>
+
+                    {/* Dual Clean Borderless Cards */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-5xl mx-auto">
+                        {/* MISSION CARD */}
+                        <FadeIn delay={0.06}>
+                            <div className="bg-white rounded-3xl p-8 sm:p-10 shadow-sm hover:shadow-md transition-all duration-200 flex flex-col justify-between h-full relative overflow-hidden group">
+                                <div className="relative z-10">
+                                    <div className="flex items-center gap-3 mb-6">
+                                        <div className="w-12 h-12 rounded-2xl bg-red-50 text-red-600 flex items-center justify-center group-hover:bg-red-600 group-hover:text-white transition-colors duration-200">
+                                            <Target className="w-6 h-6" />
+                                        </div>
+                                        <h3 className="text-2xl font-bold text-gray-900 font-manrope">
+                                            Mission
+                                        </h3>
+                                    </div>
+
+                                    <p className="text-base sm:text-lg text-gray-800 font-montserrat font-medium leading-relaxed my-4 bg-red-50/40 p-5 rounded-2xl">
+                                        "We act with dispatch to ensure we reach the most vulnerable people and communities so that they will be enabled and ennobled."
+                                    </p>
+                                </div>
+                            </div>
+                        </FadeIn>
+
+                        {/* VISION CARD */}
+                        <FadeIn delay={0.12}>
+                            <div className="bg-white rounded-3xl p-8 sm:p-10 shadow-sm hover:shadow-md transition-all duration-200 flex flex-col justify-between h-full relative overflow-hidden group">
+                                <div className="relative z-10">
+                                    <div className="flex items-center gap-3 mb-6">
+                                        <div className="w-12 h-12 rounded-2xl bg-red-50 text-red-600 flex items-center justify-center group-hover:bg-red-600 group-hover:text-white transition-colors duration-200">
+                                            <Compass className="w-6 h-6" />
+                                        </div>
+                                        <h3 className="text-2xl font-bold text-gray-900 font-manrope">
+                                            Vision
+                                        </h3>
+                                    </div>
+
+                                    <p className="text-base sm:text-lg text-gray-800 font-montserrat font-medium leading-relaxed my-4 bg-red-50/40 p-5 rounded-2xl">
+                                        "A leading humanitarian organization committed to bringing timely, effective, and meaningful assistance to the most vulnerable, guided by the Fundamental Principles of the Red Cross and Red Crescent Movement."
+                                    </p>
+                                </div>
+                            </div>
+                        </FadeIn>
+                    </div>
+                </div>
+            </section>
+
+        </PublicLayout>
+    );
 }

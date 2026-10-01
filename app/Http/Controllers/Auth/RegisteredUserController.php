@@ -11,7 +11,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rules;
-use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 class RegisteredUserController extends Controller
@@ -45,29 +44,10 @@ class RegisteredUserController extends Controller
             'phone'                 => 'required|string|max:20',
             'address'               => 'required|string|max:255',
             'password'              => ['required', 'confirmed', Rules\Password::defaults()],
-            'birth_day'             => 'required|integer|min:1|max:31',
-            'birth_month'           => 'required|integer|min:1|max:12',
-            'birth_year'            => 'required|integer|min:1900|max:'.date('Y'),
-            'gender'                => 'required|in:male,female,custom',
         ]);
 
         // Combine first + last name into the existing single `name` column.
         $fullName = trim($request->first_name.' '.$request->last_name);
-
-        // Build a real date from the three separate dropdowns, and validate
-        // it's an actual calendar date (e.g. rejects Feb 30).
-        $birthdate = sprintf(
-            '%04d-%02d-%02d',
-            $request->birth_year,
-            $request->birth_month,
-            $request->birth_day
-        );
-
-        if (!checkdate((int) $request->birth_month, (int) $request->birth_day, (int) $request->birth_year)) {
-            throw ValidationException::withMessages([
-                'birth_day' => 'Please enter a valid date.',
-            ]);
-        }
 
         $user = User::create([
             'name'      => $fullName,
@@ -77,8 +57,6 @@ class RegisteredUserController extends Controller
             'address'   => $request->address,
             'password'  => Hash::make($request->password),
             'status'    => 'pending',
-            'birthdate' => $birthdate,
-            'gender'    => $request->gender,
         ]);
 
         // Automatically assign volunteer role

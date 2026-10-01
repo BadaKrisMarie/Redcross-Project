@@ -9,26 +9,32 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password;
 
-function notFound(string $message = 'Record not found.')
-{
-    return response()->json(['message' => $message], 404);
+if (!function_exists('notFound')) {
+    function notFound(string $message = 'Record not found.')
+    {
+        return response()->json(['message' => $message], 404);
+    }
 }
 
-function avatarUrl(?string $path): ?string
-{
-    return $path ? Storage::disk('public')->url($path) : null;
+if (!function_exists('avatarUrl')) {
+    function avatarUrl(?string $path): ?string
+    {
+        return $path ? Storage::disk('public')->url($path) : null;
+    }
 }
 
-function formatUser(object $user): array
-{
-    return [
-        'id'         => $user->id,
-        'name'       => $user->name,
-        'email'      => $user->email,
-        'branch'     => $user->branch ?? null,
-        'role'       => $user->role ?? 'volunteer',
-        'avatar_url' => avatarUrl($user->photo ?? null),
-    ];
+if (!function_exists('formatUser')) {
+    function formatUser(object $user): array
+    {
+        return [
+            'id'         => $user->id,
+            'name'       => $user->name,
+            'email'      => $user->email,
+            'branch'     => $user->branch ?? null,
+            'role'       => $user->role ?? 'volunteer',
+            'avatar_url' => avatarUrl($user->photo ?? null),
+        ];
+    }
 }
 
 Route::middleware('auth')->group(function () {

@@ -6,45 +6,45 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    /**
+     * Run the migrations.
+     */
     public function up(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            // ⚠️ phone / address / gender / birthdate ay malamang existing na
-            // (nakita natin sa User model $fillable) — pero naka-guard pa rin
-            // gamit ang hasColumn() kung sakaling wala pa talaga.
-            if (!Schema::hasColumn('users', 'phone')) {
-                $table->string('phone')->nullable();
-            }
-            if (!Schema::hasColumn('users', 'address')) {
-                $table->string('address')->nullable();
-            }
-            if (!Schema::hasColumn('users', 'birthdate')) {
-                $table->date('birthdate')->nullable();
-            }
-            if (!Schema::hasColumn('users', 'gender')) {
-                $table->string('gender')->nullable();
-            }
-            // ✅ Talagang bago: skills/trainings (e.g. First Aid, CPR, Water Rescue)
-            // stored as JSON array of strings, e.g. ["First Aid", "CPR", "Water Rescue"]
-            if (!Schema::hasColumn('users', 'skills')) {
-                $table->json('skills')->nullable();
-            }
-            // ✅ Talagang bago: optional free-text para sa ibang details
-            if (!Schema::hasColumn('users', 'skills_notes')) {
-                $table->text('skills_notes')->nullable();
-            }
+        Schema::create('users', function (Blueprint $table) {
+            $table->id();
+            $table->string('name');
+            $table->string('email')->unique();
+            $table->timestamp('email_verified_at')->nullable();
+            $table->string('password');
+            $table->string('photo')->nullable();
+            $table->string('branch')->nullable();
+            $table->string('role')->nullable();
+            $table->string('phone')->nullable();
+            $table->date('birthdate')->nullable();
+            $table->string('gender')->nullable();
+            $table->string('address')->nullable();
+            $table->string('emergency_contact_name')->nullable();
+            $table->string('emergency_contact_phone')->nullable();
+            $table->json('skills')->nullable();
+            $table->text('skills_notes')->nullable();
+            $table->rememberToken();
+            $table->timestamps();
+        });
+
+        Schema::create('password_reset_tokens', function (Blueprint $table) {
+            $table->string('email')->primary();
+            $table->string('token');
+            $table->timestamp('created_at')->nullable();
         });
     }
 
+    /**
+     * Reverse the migrations.
+     */
     public function down(): void
     {
-        Schema::table('users', function (Blueprint $table) {
-            $columns = ['skills', 'skills_notes'];
-            foreach ($columns as $col) {
-                if (Schema::hasColumn('users', $col)) {
-                    $table->dropColumn($col);
-                }
-            }
-        });
+        Schema::dropIfExists('users');
+        Schema::dropIfExists('password_reset_tokens');
     }
 };

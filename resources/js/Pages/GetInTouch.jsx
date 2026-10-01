@@ -1,186 +1,106 @@
 import React from 'react';
-import { Head } from '@inertiajs/react';
-import SiteNavbar from './SiteNavbar';
-
-const BRANCH_ADDRESS =
-  'GF Red Cross Center, Centennial Lane, Filinvest Corporate City, Alabang, Muntinlupa City 1780';
-const BRANCH_PHONE = '+63 917 322 8143';
+import PublicLayout from '@/Layouts/PublicLayout';
+import PageHero from '@/Components/Public/PageHero';
+import SectionContainer from '@/Components/Public/SectionContainer';
+import SectionHeading from '@/Components/Public/SectionHeading';
+import CTASection from '@/Components/Public/CTASection';
+import FadeIn from '@/Components/Public/FadeIn';
+import { BRANCH_CONTACT_INFO } from '@/data/navigationData';
+import { MapPin, Phone, Mail, Clock, ExternalLink } from 'lucide-react';
 
 export default function GetInTouch() {
-  const mapEmbedSrc = `https://www.google.com/maps?q=${encodeURIComponent(
-    'Philippine Red Cross Rizal Chapter Muntinlupa City Branch, ' + BRANCH_ADDRESS
-  )}&output=embed`;
+    const mapEmbedSrc = `https://www.google.com/maps?q=${encodeURIComponent(
+        'Philippine Red Cross Rizal Chapter Muntinlupa City Branch, ' + BRANCH_CONTACT_INFO.address
+    )}&output=embed`;
 
-  return (
-    <>
-      <Head title="Get in Touch" />
-      <SiteNavbar />
-
-      <div
-        style={{
-          fontFamily: 'monserrat, monserrat',
-          paddingTop: '92px',
-          background: '#F3F4F6',
-          minHeight: '100vh',
-        }}
-      >
-        {/* PAGE HEADER */}
-        <div
-          style={{
-            background: '#ff0000',
-            color: 'white',
-            padding: '48px 24px 36px',
-            textAlign: 'center',
-          }}
-        >
-          <h1 style={{ fontSize: '32px', fontWeight: '800', margin: 0 }}>
-            Get in Touch
-          </h1>
-          <p style={{ marginTop: '8px', color: 'rgba(255,255,255,0.85)', fontSize: '15px' }}>
-            Philippine Red Cross &mdash; Rizal Chapter, Muntinlupa City Branch
-          </p>
-        </div>
-
-        {/* MAP + INFO CONTAINER */}
-        <div
-          style={{
-            maxWidth: '900px',
-            margin: '0 auto',
-            padding: '32px 20px 60px',
-          }}
-        >
-          {/* EMBEDDED MAP */}
-          <div
-            style={{
-              borderRadius: '12px',
-              overflow: 'hidden',
-              boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
-              border: '1px solid #E5E7EB',
-            }}
-          >
-            <iframe
-              title="Philippine Red Cross Muntinlupa City Branch Map"
-              src={mapEmbedSrc}
-              width="100%"
-              height="360"
-              style={{ border: 0, display: 'block' }}
-              loading="lazy"
-              allowFullScreen
-              referrerPolicy="no-referrer-when-downgrade"
+    return (
+        <PublicLayout title="Get in Touch - Philippine Red Cross Muntinlupa">
+            <PageHero
+                title="Chapter Directory & Map"
+                subtitle="Philippine Red Cross - Rizal Chapter Muntinlupa"
+                description="Find directions to our branch center or reach our emergency dispatch team 24/7."
+                breadcrumbs={[
+                    { label: 'Contact Us', href: '/contact' },
+                    { label: 'Get in Touch' },
+                ]}
             />
-          </div>
 
-          {/* CARDS */}
-          <div
-            style={{
-              display: 'flex',
-              flexWrap: 'wrap',
-              gap: '20px',
-              marginTop: '24px',
-            }}
-          >
-            {/* ADDRESS CARD */}
-            <div
-              style={{
-                flex: '1 1 280px',
-                background: '#1F2937',
-                borderRadius: '12px',
-                padding: '24px',
-                color: 'white',
-                display: 'flex',
-                gap: '16px',
-                alignItems: 'flex-start',
-              }}
-            >
-              <div
-                style={{
-                  width: '48px',
-                  height: '48px',
-                  borderRadius: '50%',
-                  background: '#ff0000',
-                  flexShrink: 0,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '22px',
-                }}
-              >
-                
-              </div>
-              <div>
-                <div
-                  style={{
-                    fontSize: '13px',
-                    fontWeight: '700',
-                    letterSpacing: '0.06em',
-                    color: 'rgba(255,255,255,0.6)',
-                    marginBottom: '8px',
-                  }}
-                >
-                  ADDRESS
-                </div>
-                <div style={{ fontSize: '16px', fontWeight: '700', lineHeight: '1.5' }}>
-                  {BRANCH_ADDRESS}
-                </div>
-              </div>
-            </div>
+            <SectionContainer bg="white">
+                {/* Embedded Map */}
+                <FadeIn>
+                    <div className="rounded-2xl overflow-hidden border border-gray-200 bg-white mb-10">
+                        <iframe
+                            title="Philippine Red Cross Muntinlupa City Branch Map"
+                            src={mapEmbedSrc}
+                            width="100%"
+                            height="400"
+                            className="border-0 block w-full"
+                            loading="lazy"
+                            allowFullScreen
+                            referrerPolicy="no-referrer-when-downgrade"
+                        />
+                    </div>
+                </FadeIn>
 
-            {/* HOTLINE CARD */}
-            <div
-              style={{
-                flex: '1 1 280px',
-                background: '#1F2937',
-                borderRadius: '12px',
-                padding: '24px',
-                color: 'white',
-                display: 'flex',
-                gap: '16px',
-                alignItems: 'flex-start',
-              }}
-            >
-              <div
-                style={{
-                  width: '48px',
-                  height: '48px',
-                  borderRadius: '50%',
-                  background: '#ff0000',
-                  flexShrink: 0,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '22px',
-                }}
-              >
-                
-              </div>
-              <div>
-                <div
-                  style={{
-                    fontSize: '13px',
-                    fontWeight: '700',
-                    letterSpacing: '0.06em',
-                    color: 'rgba(255,255,255,0.6)',
-                    marginBottom: '8px',
-                  }}
-                >
-                  BRANCH HOTLINE
+                {/* Contact Cards Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {/* Address */}
+                    <FadeIn delay={0.04}>
+                        <div className="bg-gray-50 rounded-2xl border border-gray-200/80 p-6 flex items-start gap-4 h-full">
+                            <div className="w-12 h-12 rounded-xl bg-red-100 text-red-600 flex items-center justify-center shrink-0">
+                                <MapPin className="w-6 h-6" />
+                            </div>
+                            <div className="space-y-1">
+                                <span className="text-xs font-bold text-gray-500">
+                                    Branch Address
+                                </span>
+                                <div className="text-sm font-bold text-gray-900 leading-snug">
+                                    {BRANCH_CONTACT_INFO.address}
+                                </div>
+                            </div>
+                        </div>
+                    </FadeIn>
+
+                    {/* Phone & Hotline */}
+                    <FadeIn delay={0.08}>
+                        <div className="bg-gray-50 rounded-2xl border border-gray-200/80 p-6 flex items-start gap-4 h-full">
+                            <div className="w-12 h-12 rounded-xl bg-red-100 text-red-600 flex items-center justify-center shrink-0">
+                                <Phone className="w-6 h-6" />
+                            </div>
+                            <div className="space-y-1">
+                                <span className="text-xs font-bold text-gray-500">
+                                    Chapter Phone & Mobile
+                                </span>
+                                <div className="text-sm font-black text-gray-900 font-mono">
+                                    {BRANCH_CONTACT_INFO.phone}
+                                </div>
+                                <div className="text-xs text-red-600 font-bold font-mono">
+                                    {BRANCH_CONTACT_INFO.mobile}
+                                </div>
+                            </div>
+                        </div>
+                    </FadeIn>
+
+                    {/* Operating Hours */}
+                    <FadeIn delay={0.12}>
+                        <div className="bg-gray-50 rounded-2xl border border-gray-200/80 p-6 flex items-start gap-4 h-full">
+                            <div className="w-12 h-12 rounded-xl bg-red-100 text-red-600 flex items-center justify-center shrink-0">
+                                <Clock className="w-6 h-6" />
+                            </div>
+                            <div className="space-y-1">
+                                <span className="text-xs font-bold text-gray-500">
+                                    Service Availability
+                                </span>
+                                <div className="text-sm font-semibold text-gray-800">
+                                    {BRANCH_CONTACT_INFO.operatingHours}
+                                </div>
+                            </div>
+                        </div>
+                    </FadeIn>
                 </div>
-                <a
-                  href={`tel:${BRANCH_PHONE.replace(/\s/g, '')}`}
-                  style={{
-                    fontSize: '20px',
-                    fontWeight: '800',
-                    color: 'white',
-                    textDecoration: 'none',
-                  }}
-                >
-                  {BRANCH_PHONE}
-                </a>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </>
-  );
+            </SectionContainer>
+
+            <CTASection />
+        </PublicLayout>
+    );
 }

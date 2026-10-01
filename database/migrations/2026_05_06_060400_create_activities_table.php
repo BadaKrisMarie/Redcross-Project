@@ -15,6 +15,9 @@ return new class extends Migration
             $table->time('start_time')->nullable();
             $table->time('end_time')->nullable();
             $table->string('location_name')->nullable();
+            $table->decimal('latitude', 10, 7)->nullable();
+            $table->decimal('longitude', 10, 7)->nullable();
+            $table->unsignedInteger('radius_meters')->default(100)->nullable();
             $table->string('status')->default('upcoming');
             $table->unsignedBigInteger('assigned_by')->nullable();
             $table->foreign('assigned_by')->references('id')->on('users')->onDelete('set null');

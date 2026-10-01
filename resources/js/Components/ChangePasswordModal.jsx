@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { X, CheckCircle2 } from 'lucide-react';
 
 const getStrength = (pw) => {
   let score = 0;
@@ -55,13 +56,16 @@ export default function ChangePasswordModal({ onClose, onSubmit }) {
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-head">
           <h3>Change password</h3>
-          <button className="modal-close" onClick={onClose} aria-label="Close">✕</button>
+          <button className="modal-close" onClick={onClose} aria-label="Close">
+            <X style={{ width: 16, height: 16 }} />
+          </button>
         </div>
 
         <div className="modal-body">
           {success ? (
-            <p style={{ textAlign: 'center', color: '#1d9e75', padding: '1rem 0' }}>
-              ✓ Password updated successfully!
+            <p style={{ textAlign: 'center', color: '#16a34a', padding: '1rem 0', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+              <CheckCircle2 style={{ width: 18, height: 18, color: '#16a34a' }} />
+              <span>Password updated successfully!</span>
             </p>
           ) : (
             <>
